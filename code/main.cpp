@@ -1,12 +1,26 @@
+#include "external/stb_image.cpp"
+
+#include "timer.cpp"
+
 #include <GL/glew.h>
 
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 
-#include <stdio.h>
+#include <glm/vec3.hpp> // glm::vec3
+#include <glm/vec4.hpp> // glm::vec4
+#include <glm/mat4x4.hpp> // glm::mat4
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
+#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+#include <glm/gtc/type_ptr.hpp>
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+#include <stdio.h>
+#include <vector>
+
+using namespace glm;
+
+#define WINDOW_WIDTH 1280.0f
+#define WINDOW_HEIGHT 720.0f
 
 struct Engine
 {
@@ -19,6 +33,8 @@ char *LoadShader(char *filepath);
 GLuint CompileShader(char *shaderCode, GLenum shaderType);
 GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode);
 
+GLuint CreateTexture(char *imagePath, int textureUnit);
+
 int main(int argc, char *argv[])
 {
     Engine engine = {};
@@ -27,10 +43,64 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    GLuint containerTexture = CreateTexture("../data/imgs/container.jpg", 0);
+    GLuint faceTexture = CreateTexture("../data/imgs/face.png", 1);
+    GLuint wallTexture = CreateTexture("../data/imgs/wall.jpg", 2);
+
     float vertices[] = {
-        0.0f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-       -0.5f, -0.5f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+
+    float vertices2[] = {
+       -0.5f,  0.5f, -3.0f,  0.0f, 1.0f,
+        0.5f,  0.5f, -3.0f,  1.0f, 1.0f,
+        0.5f, -0.5f, -3.0f,  1.0f, 0.0f,
+       -0.5f, -0.5f, -3.0f,  0.0f, 0.0f
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2,
+        2, 3, 0
     };
 
     GLuint vao;
@@ -43,11 +113,73 @@ int main(int argc, char *argv[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void *)(0 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(0 * sizeof(float)));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+
+    GLuint vao2;
+    glGenVertexArrays(1, &vao2);
+    glBindVertexArray(vao2);
+
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    GLuint vbo2;
+    glGenBuffers(1, &vbo2);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (void *)(0 * sizeof(float)));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (void *)(3 * sizeof(float)));
 
     GLuint shaderProgram = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                LoadShader("../data/shaders/fragment.frag"));
+
+    GLuint animatedShaderProgram = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
+                                                       LoadShader("../data/shaders/fragment_animated.frag"));
+
+
+    mat4 projection = perspective(radians(45.0f), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.01f, 100.0f);
+
     glUseProgram(shaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_projection"), 1, GL_FALSE, value_ptr(projection));
+
+    glUseProgram(animatedShaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(animatedShaderProgram, "u_projection"), 1, GL_FALSE, value_ptr(projection));
+
+    vec3 clearColor1 = vec3(144.0f, 213.0f, 255.0f);
+    vec3 clearColor2 = vec3(173.0f, 216.0f, 230.0f);
+    vec3 clearColor3 = vec3(152.0f, 255.0f, 152.0f);
+    vec3 clearColor4 = vec3(245.0f, 245.0f, 220.0f);
+    vec3 clearColor5 = vec3(204.0f, 153.0f, 153.0f);
+    vec3 clearColor6 = vec3(255.0f, 218.0f, 185.0f);
+    vec3 clearColor7 = vec3(159.0f, 226.0f, 191.0f);
+    vec3 clearColor8 = vec3(230.0f, 230.0f, 250.0f);
+    vec3 clearColor9 = vec3(211.0f, 211.0f, 211.0f);
+    vec3 clearColor10 = vec3(150.0f, 120.0f, 96.0f);
+    vec3 clearColor11 = vec3(200.0f, 162.0f, 200.0f);
+
+    std::vector<vec3> clearColors = {
+        clearColor1, clearColor2, clearColor3,
+        clearColor4, clearColor5, clearColor6,
+        clearColor7, clearColor8, clearColor9,
+        clearColor10, clearColor11
+    };
+
+    int clearColorIndex = SDL_rand((int)clearColors.size());
+
+    float colorTimerDuration = 5.0f * 60.0f;
+    Timer colorTimer = StartTimer(colorTimerDuration);
+
+    Uint64 perfFreq = SDL_GetPerformanceFrequency();
+    Uint64 lastFrame = SDL_GetPerformanceCounter();
+    float deltaTime = 0.0f;
 
     bool isRunning = true;
     while(isRunning)
@@ -72,12 +204,61 @@ int main(int argc, char *argv[])
             }
         }
 
-        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        UpdateTimer(&colorTimer, deltaTime);
+        if(colorTimer.isFinished)
+        {
+            int lastIndex = clearColorIndex;
+            while(lastIndex == clearColorIndex)
+            {
+                clearColorIndex = SDL_rand((int)clearColors.size());
+            }
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+            colorTimer = StartTimer(colorTimerDuration);
+        }
+
+        glClearColor(clearColors[clearColorIndex].r / 255.0f,
+                     clearColors[clearColorIndex].g / 255.0f,
+                     clearColors[clearColorIndex].b / 255.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+        glUniform1i(glGetUniformLocation(shaderProgram, "u_texture"), 0);
+        glUniform1i(glGetUniformLocation(shaderProgram, "u_texture2"), 1);
+
+
+        float time = SDL_GetTicks() / 1000.0f;
+
+        mat4 model = mat4(1.0);
+        model = translate(model, vec3(0.0f, 0.0f, (sin(time * 0.6f) * 2.0f - 5.0f)));
+        model = rotate(model, radians(time * 15.0f), vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.5f);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glBindVertexArray(vao2);
+
+        model = mat4(1.0f);
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 1.0f);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        model = mat4(1.0f);
+        model = translate(model, vec3(sin(time) / 2.0f, 0.0f, 0.0f));
+        model = rotate(model, SDL_GetTicks() / -1000.0f, vec3(0.0f, 0.0f, 1.0f));
+        model = scale(model, vec3(1.5f, 1.5f, 1.0f));
+
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.4f);
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
         SDL_GL_SwapWindow(engine.window);
+
+        Uint64 thisFrame = SDL_GetPerformanceCounter();
+        deltaTime = (thisFrame - lastFrame) / (float)perfFreq;
+
+        lastFrame = thisFrame;
     }
 
     return 0;
@@ -95,7 +276,10 @@ bool Init(Engine *engine)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    engine->window = SDL_CreateWindow("Diplom", WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
+
+    engine->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
     if(!engine->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
@@ -115,6 +299,15 @@ bool Init(Engine *engine)
         SDL_Log("Failed to initialize glew. Error: %s", glewGetErrorString(glewResult));
         return false;
     }
+
+    SDL_Time ticks;
+    SDL_GetCurrentTime(&ticks);
+    SDL_srand(ticks);
+
+    stbi_set_flip_vertically_on_load(true);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     return true;
 }
@@ -192,4 +385,27 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode)
     free(fragmentShaderCode);
 
     return shaderProgram;
+}
+
+
+GLuint CreateTexture(char *imagePath, int textureUnit)
+{
+    int width, height, channels;
+    int desiredChannels = 3;
+    unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    glActiveTexture(GL_TEXTURE0 + textureUnit);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(image);
+
+    return texture;
 }
