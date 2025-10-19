@@ -1,6 +1,7 @@
 #include "external/stb_image.cpp"
 
 #include "timer.cpp"
+#include "camera.cpp"
 
 #include <GL/glew.h>
 
@@ -19,12 +20,18 @@
 
 using namespace glm;
 
+#ifdef WINDOW_TRANSPARENT
+#define WINDOW_WIDTH 1920.0f
+#define WINDOW_HEIGHT 1080.0f
+#else
 #define WINDOW_WIDTH 1280.0f
 #define WINDOW_HEIGHT 720.0f
+#endif
 
 struct Engine
 {
     SDL_Window *window;
+    bool lockFPS;
 };
 
 bool Init(Engine *engine);
@@ -92,10 +99,10 @@ int main(int argc, char *argv[])
     };
 
     float vertices2[] = {
-       -0.5f,  0.5f, -3.0f,  0.0f, 1.0f,
-        0.5f,  0.5f, -3.0f,  1.0f, 1.0f,
-        0.5f, -0.5f, -3.0f,  1.0f, 0.0f,
-       -0.5f, -0.5f, -3.0f,  0.0f, 0.0f
+       -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f, 0.0f,  1.0f, 1.0f,
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+       -0.5f, -0.5f, 0.0f,  0.0f, 0.0f
     };
 
     unsigned int indices[] = {
@@ -147,29 +154,37 @@ int main(int argc, char *argv[])
 
     mat4 projection = perspective(radians(45.0f), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.01f, 100.0f);
 
+
+    Camera camera = {};
+    camera.position = vec3(0.0f, 0.0f, 3.0f);
+    camera.direction = vec3(0.0f, 0.0f, -1.0f);
+    camera.up = vec3(0.0f, 1.0f, 0.0f);
+    camera.speed = 10.0f;
+
     glUseProgram(shaderProgram);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_projection"), 1, GL_FALSE, value_ptr(projection));
 
     glUseProgram(animatedShaderProgram);
     glUniformMatrix4fv(glGetUniformLocation(animatedShaderProgram, "u_projection"), 1, GL_FALSE, value_ptr(projection));
 
-    vec3 clearColor1 = vec3(144.0f, 213.0f, 255.0f);
-    vec3 clearColor2 = vec3(173.0f, 216.0f, 230.0f);
-    vec3 clearColor3 = vec3(152.0f, 255.0f, 152.0f);
-    vec3 clearColor4 = vec3(245.0f, 245.0f, 220.0f);
-    vec3 clearColor5 = vec3(204.0f, 153.0f, 153.0f);
-    vec3 clearColor6 = vec3(255.0f, 218.0f, 185.0f);
-    vec3 clearColor7 = vec3(159.0f, 226.0f, 191.0f);
-    vec3 clearColor8 = vec3(230.0f, 230.0f, 250.0f);
-    vec3 clearColor9 = vec3(211.0f, 211.0f, 211.0f);
-    vec3 clearColor10 = vec3(150.0f, 120.0f, 96.0f);
-    vec3 clearColor11 = vec3(200.0f, 162.0f, 200.0f);
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
     std::vector<vec3> clearColors = {
-        clearColor1, clearColor2, clearColor3,
-        clearColor4, clearColor5, clearColor6,
-        clearColor7, clearColor8, clearColor9,
-        clearColor10, clearColor11
+        vec3(144.0f, 213.0f, 255.0f), vec3(173.0f, 216.0f, 230.0f), vec3(152.0f, 255.0f, 152.0f),
+        vec3(245.0f, 245.0f, 220.0f), vec3(204.0f, 153.0f, 153.0f), vec3(255.0f, 218.0f, 185.0f),
+        vec3(159.0f, 226.0f, 191.0f), vec3(230.0f, 230.0f, 250.0f), vec3(211.0f, 211.0f, 211.0f),
+        vec3(150.0f, 120.0f, 96.0f), vec3(200.0f, 162.0f, 200.0f),
     };
 
     int clearColorIndex = SDL_rand((int)clearColors.size());
@@ -178,8 +193,12 @@ int main(int argc, char *argv[])
     Timer colorTimer = StartTimer(colorTimerDuration);
 
     Uint64 perfFreq = SDL_GetPerformanceFrequency();
-    Uint64 lastFrame = SDL_GetPerformanceCounter();
+    Uint64 lastFrame = 0;
     float deltaTime = 0.0f;
+
+    //engine.lockFPS = true;
+
+    bool *keyboardState = (bool *)SDL_GetKeyboardState(0);
 
     bool isRunning = true;
     while(isRunning)
@@ -200,9 +219,22 @@ int main(int argc, char *argv[])
                     {
                         isRunning = false;
                     }
+
+
                 } break;
             }
         }
+
+        float cameraSpeed = camera.speed * deltaTime;
+        if(keyboardState[SDL_SCANCODE_W])
+            camera.position += cameraSpeed * camera.direction;
+        if(keyboardState[SDL_SCANCODE_S])
+            camera.position -= cameraSpeed * camera.direction;
+        if(keyboardState[SDL_SCANCODE_A])
+            camera.position -= normalize(cross(camera.direction, camera.up)) * cameraSpeed;
+        if(keyboardState[SDL_SCANCODE_D])
+            camera.position += normalize(cross(camera.direction, camera.up)) * cameraSpeed;
+
 
         UpdateTimer(&colorTimer, deltaTime);
         if(colorTimer.isFinished)
@@ -216,46 +248,79 @@ int main(int argc, char *argv[])
             colorTimer = StartTimer(colorTimerDuration);
         }
 
+#ifndef WINDOW_TRANSPARENT
         glClearColor(clearColors[clearColorIndex].r / 255.0f,
                      clearColors[clearColorIndex].g / 255.0f,
-                     clearColors[clearColorIndex].b / 255.0f, 1.0f);
+                     clearColors[clearColorIndex].b / 255.0f, 0.0f);
+#endif
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
         glUniform1i(glGetUniformLocation(shaderProgram, "u_texture"), 0);
         glUniform1i(glGetUniformLocation(shaderProgram, "u_texture2"), 1);
 
+        mat4 view = lookAt(camera.position, camera.position + camera.direction, vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_view"), 1, GL_FALSE, value_ptr(view));
 
         float time = SDL_GetTicks() / 1000.0f;
 
-        mat4 model = mat4(1.0);
-        model = translate(model, vec3(0.0f, 0.0f, (sin(time * 0.6f) * 2.0f - 5.0f)));
-        model = rotate(model, radians(time * 15.0f), vec3(0.0f, 1.0f, 0.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
-        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.5f);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for(int i = 0; i < 10; i++)
+        {
+            mat4 model = mat4(1.0f);
+            model = translate(model, cubePositions[i]);
+            model = translate(model, vec3(0.0f, sin(time) * 0.1f * i * sign(sin(time) * i),
+                                                (sin(time * 0.6f) * 2.0f - 2.0f)));
+            model = rotate(model, radians(time * 15.0f), (i != 0) ? normalize(cubePositions[i]) : vec3(0.0f, 1.0f, 0.0f));
+            model = rotate(model, radians(20.0f * i), vec3(1.0f, 0.3f, 0.5f));
 
-        glBindVertexArray(vao2);
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
-        model = mat4(1.0f);
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
-        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 1.0f);
+        //float time = SDL_GetTicks() / 1000.0f;
+        //mat4 model = mat4(1.0);
+        ////model = translate(model, vec3(0.0f, 0.0f, (sin(time * 0.6f) * 2.0f - 5.0f)));
+        //model = translate(model, vec3(0.0f, 0.0f, (sin(time * 0.6f) * 2.0f - 1.5f)));
+        //model = rotate(model, radians(time * 15.0f), vec3(0.0f, 1.0f, 0.0f));
+        //glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        //glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.0f);
+        //glBindVertexArray(vao);
+        //glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        //glBindVertexArray(vao2);
+        //model = mat4(1.0f);
+        //glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        //glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 1.0f);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        model = mat4(1.0f);
-        model = translate(model, vec3(sin(time) / 2.0f, 0.0f, 0.0f));
-        model = rotate(model, SDL_GetTicks() / -1000.0f, vec3(0.0f, 0.0f, 1.0f));
-        model = scale(model, vec3(1.5f, 1.5f, 1.0f));
-
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
-        glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.4f);
+        //model = mat4(1.0f);
+        //model = translate(model, vec3(sin(time) / 2.0f, 0.0f, 0.0f));
+        //model = rotate(model, SDL_GetTicks() / -1000.0f, vec3(0.0f, 0.0f, 1.0f));
+        //model = scale(model, vec3(1.5f, 1.5f, 1.0f));
+        //glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, value_ptr(model));
+        //glUniform1f(glGetUniformLocation(shaderProgram, "u_mix"), 0.4f);
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
         SDL_GL_SwapWindow(engine.window);
 
         Uint64 thisFrame = SDL_GetPerformanceCounter();
+
+        if(engine.lockFPS)
+        {
+            int targetFrames = 60;
+            float targetTime = 1.0f / targetFrames;
+            float elapsedWhileWaiting = 0.0f;
+            while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)perfFreq) < targetTime)
+            {
+                SDL_Delay((uint32)((targetTime - elapsedWhileWaiting) * 1000));
+            }
+
+            thisFrame = SDL_GetPerformanceCounter();
+        }
+
         deltaTime = (thisFrame - lastFrame) / (float)perfFreq;
 
         lastFrame = thisFrame;
@@ -279,7 +344,19 @@ bool Init(Engine *engine)
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-    engine->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+#ifdef WINDOW_TRANSPARENT
+    bool isBorderless = true;
+    bool isTransparent = true;
+#else
+    bool isBorderless = false;
+    bool isTransparent = false;
+#endif
+
+    Uint64 windowFlags = SDL_WINDOW_OPENGL |
+                        (isBorderless ? SDL_WINDOW_TRANSPARENT : 0) |
+                        (isTransparent ? SDL_WINDOW_TRANSPARENT : 0);
+
+    engine->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
     if(!engine->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
@@ -305,6 +382,8 @@ bool Init(Engine *engine)
     SDL_srand(ticks);
 
     stbi_set_flip_vertically_on_load(true);
+
+    //SDL_GL_SetSwapInterval(1);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -391,7 +470,7 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode)
 GLuint CreateTexture(char *imagePath, int textureUnit)
 {
     int width, height, channels;
-    int desiredChannels = 3;
+    int desiredChannels = 4;
     unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
 
     GLuint texture;
@@ -402,7 +481,7 @@ GLuint CreateTexture(char *imagePath, int textureUnit)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(image);
