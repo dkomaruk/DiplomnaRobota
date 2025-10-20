@@ -152,14 +152,14 @@ int main(int argc, char *argv[])
                                                        LoadShader("../data/shaders/fragment_animated.frag"));
 
 
-    mat4 projection = perspective(radians(45.0f), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.01f, 100.0f);
-
-
     Camera camera = {};
-    camera.position = vec3(0.0f, 0.0f, 3.0f);
+    camera.position = vec3(0.0f, 0.0f, -5.0f);
     camera.direction = vec3(0.0f, 0.0f, -1.0f);
     camera.up = vec3(0.0f, 1.0f, 0.0f);
     camera.speed = 10.0f;
+    camera.sensititivy = 30.0f;
+
+    mat4 projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.01f, 100.0f);
 
     glUseProgram(shaderProgram);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_projection"), 1, GL_FALSE, value_ptr(projection));
@@ -219,7 +219,35 @@ int main(int argc, char *argv[])
                     {
                         isRunning = false;
                     }
+                } break;
 
+                case SDL_EVENT_MOUSE_MOTION:
+                {
+                    SDL_MouseMotionEvent mouse = event.motion;
+
+                    camera.yaw += mouse.xrel * camera.sensititivy * deltaTime;
+                    camera.pitch -= mouse.yrel * camera.sensititivy * deltaTime;
+                    camera.pitch = SDL_clamp(camera.pitch, camera.maxPitch.x, camera.maxPitch.y);
+
+                    camera.direction.x = cos(radians(camera.yaw)) * cos(radians(camera.pitch));
+                    camera.direction.y = sin(radians(camera.pitch));
+                    camera.direction.z = sin(radians(camera.yaw)) * cos(radians(camera.pitch));
+                    camera.direction = normalize(camera.direction);
+                } break;
+
+                case SDL_EVENT_MOUSE_WHEEL:
+                {
+                    SDL_MouseWheelEvent wheel = event.wheel;
+
+                    camera.fov -= wheel.y;
+
+                    camera.fov = SDL_clamp(camera.fov, 1.0f, 45.0f);
+
+                    projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+
+                    glUseProgram(shaderProgram);
+                    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_projection"),
+                                       1, GL_FALSE, value_ptr(projection));
 
                 } break;
             }
@@ -234,7 +262,6 @@ int main(int argc, char *argv[])
             camera.position -= normalize(cross(camera.direction, camera.up)) * cameraSpeed;
         if(keyboardState[SDL_SCANCODE_D])
             camera.position += normalize(cross(camera.direction, camera.up)) * cameraSpeed;
-
 
         UpdateTimer(&colorTimer, deltaTime);
         if(colorTimer.isFinished)
@@ -380,6 +407,9 @@ bool Init(Engine *engine)
     SDL_Time ticks;
     SDL_GetCurrentTime(&ticks);
     SDL_srand(ticks);
+
+    SDL_HideCursor();
+    SDL_SetWindowRelativeMouseMode(engine->window, true);
 
     stbi_set_flip_vertically_on_load(true);
 
