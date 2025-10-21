@@ -17,7 +17,7 @@ struct Camera
     glm::vec2 maxPitch = glm::vec2(-89.0f, 89.0f);
 
     float speed;
-    float sensititivy;
+    float sensitivity;
 };
 
 #define CAMERA_H
