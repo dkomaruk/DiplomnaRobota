@@ -69,13 +69,13 @@ bool InitEngine(Engine *engine)
 
     Camera *camera = &engine->camera;
 
-    camera->position = vec3(0.0f, 0.0f, -5.0f);
+    camera->position = vec3(0.0f, 0.0f, 5.0f);
     camera->direction = vec3(0.0f, 0.0f, -1.0f);
     camera->up = vec3(0.0f, 1.0f, 0.0f);
-    camera->speed = 10.0f;
+    camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    engine->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
+    engine->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
     engine->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 
     engine->perfFreq = SDL_GetPerformanceFrequency();
