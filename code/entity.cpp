@@ -1,10 +1,22 @@
 #include "entity.h"
 
+#include "graphics/shader.h"
+#include "graphics/texture.h"
+
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 using namespace glm;
+
+Entity CreateEntity(Mesh mesh, glm::vec3 color)
+{
+    Entity entity = {};
+    entity.mesh = mesh;
+    entity.color = color;
+
+    return entity;
+}
 
 void RenderEntity(Engine *engine, Entity *entity)
 {
@@ -20,16 +32,17 @@ void RenderEntity(Engine *engine, Entity *entity)
 
     model = scale(model, entity->scale);
 
-    glUseProgram(mesh->shader);
+    UseShader(mesh->shader);
 
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_model"), 1, GL_FALSE, value_ptr(model));
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_view"), 1, GL_FALSE, value_ptr(engine->view));
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_projection"), 1, GL_FALSE, value_ptr(engine->projection));
 
+    ShaderSetVec3(mesh->shader, "u_objectColor", entity->color);
+
     if(mesh->texture)
     {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mesh->texture);
+        SetTexture(mesh->texture, 0);
     }
 
     glBindVertexArray(mesh->vao);

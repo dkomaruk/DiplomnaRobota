@@ -80,7 +80,7 @@ bool InitEngine(Engine *engine)
 
     engine->perfFreq = SDL_GetPerformanceFrequency();
 
-    //SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(1);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);

@@ -23,3 +23,9 @@ GLuint CreateTexture(char *imagePath, int textureUnit)
 
     return texture;
 }
+
+void SetTexture(GLuint texture, GLuint textureSlot)
+{
+    glActiveTexture(GL_TEXTURE0 + textureSlot);
+    glBindTexture(GL_TEXTURE_2D, texture);
+}

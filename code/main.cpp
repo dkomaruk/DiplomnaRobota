@@ -80,15 +80,21 @@ int main(int argc, char *argv[])
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
-    GLuint shaderProgram = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
-                                               LoadShader("../data/shaders/fragment.frag"));
+    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
+                                        LoadShader("../data/shaders/fragment.frag"));
 
-    Mesh cubeMesh = CreateMesh(vertices, sizeof(vertices), shaderProgram);
+    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
+                                                   LoadShader("../data/shaders/fragment2.frag"));
+
+    Mesh cubeMesh = CreateMesh(vertices, sizeof(vertices), shader);
     cubeMesh.texture = CreateTexture("../data/imgs/container.jpg", 0);
 
-    Entity cube = {};
-    cube.mesh = cubeMesh;
-    cube.position = vec3(0.0f, 0.0f, 0.0f);
+    Entity cube = CreateEntity(cubeMesh, vec3(1.0f, 0.5f, 0.31f));
+
+    Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
+    Entity lightSource = CreateEntity(lightMesh);
+    lightSource.scale = vec3(0.2f);
+    lightSource.position = vec3(1.2f, 1.0f, 2.0f);
 
     while(engine.isRunning)
     {
@@ -99,7 +105,9 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //Rendering
+        ShaderSetVec3(cube.mesh.shader, "u_lightColor", vec3(1.0f));
         RenderEntity(&engine, &cube);
+        RenderEntity(&engine, &lightSource);
 
         SDL_GL_SwapWindow(engine.window);
 
