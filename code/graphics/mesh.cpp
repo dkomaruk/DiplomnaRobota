@@ -7,7 +7,7 @@ Mesh InitVBO(float *vertices, int verticesTotalSize)
     Mesh mesh = {};
 
     //TODO: Variable vertex attributes
-    int vertexAttribCount = 5;
+    int vertexAttribCount = 8;
     mesh.verticesCount = verticesTotalSize / (vertexAttribCount * sizeof(float));
 
     glGenVertexArrays(1, &mesh.vao);
@@ -19,10 +19,13 @@ Mesh InitVBO(float *vertices, int verticesTotalSize)
     glBufferData(GL_ARRAY_BUFFER, verticesTotalSize, vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(0 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(0 * sizeof(float)));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(5 * sizeof(float)));
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

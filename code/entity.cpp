@@ -34,6 +34,10 @@ void RenderEntity(Engine *engine, Entity *entity)
 
     UseShader(mesh->shader);
 
+    //mat3 normalMatrix = mat3(transpose(inverse(engine->view * model)));
+    mat3 normalMatrix = mat3(transpose(inverse(model)));
+    glUniformMatrix3fv(glGetUniformLocation(mesh->shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
+
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_model"), 1, GL_FALSE, value_ptr(model));
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_view"), 1, GL_FALSE, value_ptr(engine->view));
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_projection"), 1, GL_FALSE, value_ptr(engine->projection));
