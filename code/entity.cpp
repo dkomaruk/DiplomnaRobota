@@ -9,11 +9,10 @@
 
 using namespace glm;
 
-Entity CreateEntity(Mesh mesh, glm::vec3 color)
+Entity CreateEntity(Mesh mesh)
 {
     Entity entity = {};
     entity.mesh = mesh;
-    entity.color = color;
 
     return entity;
 }
@@ -42,7 +41,11 @@ void RenderEntity(Engine *engine, Entity *entity)
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_view"), 1, GL_FALSE, value_ptr(engine->view));
     glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_projection"), 1, GL_FALSE, value_ptr(engine->projection));
 
-    ShaderSetVec3(mesh->shader, "u_objectColor", entity->color);
+    MaterialPhong mat = mesh->material;
+    ShaderSetVec3(mesh->shader, "u_material.diffuse", mat.diffuse);
+    ShaderSetVec3(mesh->shader, "u_material.ambient", mat.ambient);
+    ShaderSetVec3(mesh->shader, "u_material.specular", mat.specular);
+    ShaderSetFloat(mesh->shader, "u_material.shininess", mat.shininess);
 
     if(mesh->texture)
     {

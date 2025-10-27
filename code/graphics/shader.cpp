@@ -95,6 +95,12 @@ GLuint GetCurrentShader()
     return currentShader;
 }
 
+void ShaderSetFloat(GLuint shader, char *uniform, float v)
+{
+    if(currentShader != shader) UseShader(shader);
+    glUniform1f(glGetUniformLocation(shader, uniform), v);
+}
+
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1)
 {
     if(currentShader != shader) UseShader(shader);
@@ -135,4 +141,10 @@ void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix)
 {
     if(currentShader != shader) UseShader(shader);
     glUniformMatrix4fv(glGetUniformLocation(shader, uniform), 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+void ShaderSetMaterial(GLuint shader, MaterialPhong material)
+{
+    if(currentShader != shader) UseShader(shader);
+
 }

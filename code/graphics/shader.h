@@ -1,5 +1,7 @@
 #ifndef SHADER_H
 
+#include "mesh.h"
+
 #include <GL/glew.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -14,6 +16,8 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode);
 void UseShader(GLuint shader);
 GLuint GetCurrentShader();
 
+void ShaderSetFloat(GLuint shader, char *uniform, float v);
+
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1);
 void ShaderSetVec2(GLuint shader, char *uniform, glm::vec2 vector);
 
@@ -24,6 +28,8 @@ void ShaderSetVec4(GLuint shader, char *uniform, float v0, float v1, float v2, f
 void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
 
 void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
+
+void ShaderSetMaterial(GLuint shader, MaterialPhong material);
 
 #define SHADER_H
 #endif

@@ -12,10 +12,9 @@ struct Entity
 
     glm::vec3 position, rotation;
     glm::vec3 scale = glm::vec3(1.0f);
-    glm::vec3 color;
 };
 
-Entity CreateEntity(Mesh mesh, glm::vec3 color = glm::vec3(0.0f));
+Entity CreateEntity(Mesh mesh);
 void RenderEntity(Engine *engine, Entity *entity);
 
 #define ENTITY_H
