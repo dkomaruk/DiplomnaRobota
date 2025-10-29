@@ -1,5 +1,7 @@
 #include "entity.h"
 
+#include "game.h"
+
 #include "graphics/shader.h"
 #include "graphics/texture.h"
 
@@ -9,7 +11,7 @@
 
 using namespace glm;
 
-Entity CreateEntity(Mesh mesh)
+Entity CreateEntity(Mesh *mesh)
 {
     Entity entity = {};
     entity.mesh = mesh;
@@ -17,9 +19,10 @@ Entity CreateEntity(Mesh mesh)
     return entity;
 }
 
-void RenderEntity(Engine *engine, Entity *entity)
+void RenderEntity(Game *game, Entity *entity)
 {
-    Mesh *mesh = &entity->mesh;
+    Mesh *mesh = entity->mesh;
+    GLuint shader = mesh->shader;
 
     mat4 model = mat4(1.0f);
     model = translate(model, entity->position);
@@ -31,21 +34,21 @@ void RenderEntity(Engine *engine, Entity *entity)
 
     model = scale(model, entity->scale);
 
-    UseShader(mesh->shader);
+    UseShader(shader);
 
-    //mat3 normalMatrix = mat3(transpose(inverse(engine->view * model)));
+    //mat3 normalMatrix = mat3(transpose(inverse(game->view * model)));
     mat3 normalMatrix = mat3(transpose(inverse(model)));
-    glUniformMatrix3fv(glGetUniformLocation(mesh->shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
+    glUniformMatrix3fv(glGetUniformLocation(shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
 
-    glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_model"), 1, GL_FALSE, value_ptr(model));
-    glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_view"), 1, GL_FALSE, value_ptr(engine->view));
-    glUniformMatrix4fv(glGetUniformLocation(mesh->shader, "u_projection"), 1, GL_FALSE, value_ptr(engine->projection));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "u_model"), 1, GL_FALSE, value_ptr(model));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "u_view"), 1, GL_FALSE, value_ptr(game->view));
+    glUniformMatrix4fv(glGetUniformLocation(shader, "u_projection"), 1, GL_FALSE, value_ptr(game->projection));
 
     MaterialPhong mat = mesh->material;
-    ShaderSetVec3(mesh->shader, "u_material.diffuse", mat.diffuse);
-    ShaderSetVec3(mesh->shader, "u_material.ambient", mat.ambient);
-    ShaderSetVec3(mesh->shader, "u_material.specular", mat.specular);
-    ShaderSetFloat(mesh->shader, "u_material.shininess", mat.shininess);
+    ShaderSetVec3(shader, "u_material.diffuse", mat.diffuse);
+    ShaderSetVec3(shader, "u_material.ambient", mat.ambient);
+    ShaderSetVec3(shader, "u_material.specular", mat.specular);
+    ShaderSetFloat(shader, "u_material.shininess", mat.shininess);
 
     if(mesh->texture)
     {

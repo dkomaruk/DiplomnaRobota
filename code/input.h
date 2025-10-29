@@ -2,9 +2,9 @@
 
 #include <SDL3/SDL.h>
 
-#include "engine.h"
+#include "game.h"
 
-void ProcessInput(Engine *engine);
+void ProcessInput(Game *game);
 
 #define INPUT_H
 #endif

@@ -1,7 +1,8 @@
 #include "external/stb_image.cpp"
 
+#include "infantry.cpp"
 #include "entity.cpp"
-#include "engine.cpp"
+#include "game.cpp"
 #include "input.cpp"
 
 #include "util/timer.cpp"
@@ -30,8 +31,8 @@ using namespace glm;
 
 int main(int argc, char *argv[])
 {
-    Engine engine = {};
-    if(!InitEngine(&engine))
+    Game game = {};
+    if(!InitGame(&game))
     {
         return -1;
     }
@@ -116,62 +117,88 @@ int main(int argc, char *argv[])
     //                          0.072169f * cubeMesh.material.ambient.b) / (0.212671f * cubeMesh.material.diffuse.r +
     //                          0.715160f * cubeMesh.material.diffuse.g + 0.072169f * cubeMesh.material.diffuse.b);
 
-    Entity cube = CreateEntity(cubeMesh);
+    Entity cube = CreateEntity(&cubeMesh);
 
     Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
-    Entity lightSource = CreateEntity(lightMesh);
+    Entity lightSource = CreateEntity(&lightMesh);
     lightSource.scale = vec3(0.2f);
     lightSource.position = vec3(1.2f, 1.0f, 2.0f);
 
-    ShaderSetVec3(cube.mesh.shader, "u_light.specular", vec3(1.0f));
+    ShaderSetVec3(cube.mesh->shader, "u_light.specular", vec3(1.0f));
 
-    while(engine.isRunning)
+    Mesh soldierMeshes[2];
+    soldierMeshes[0] = CreateMesh(vertices, sizeof(vertices), shader);
+    soldierMeshes[0].material = emeraldMaterial;
+
+    soldierMeshes[1] = CreateMesh(vertices, sizeof(vertices), shader);
+    soldierMeshes[1].material = redPlasticMaterial;
+
+    for(int i = 0; i < 2; i++)
     {
-        ProcessInput(&engine);
-        UpdateEngine(&engine);
+        InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
+        *squad = CreateInfantrySquad(&soldierMeshes[i], 1, 10);
+        squad->position.z = 3.0f * i * ((i % 2 == 0) ? -1 : 1);
+
+        game.sceneEntities.push_back(squad);
+    }
+
+    while(game.isRunning)
+    {
+        //Input
+        ProcessInput(&game);
+
+        //Update
+        UpdateGame(&game);
 
         //float time = SDL_GetTicks() / 1000.0f;
         //lightSource.position.x = sin(time);
         //lightSource.position.z = cos(time);
         //lightSource.position.y = cos(time);
 
+        //Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //Rendering
-        vec3 lightColor;
-        lightColor.r = sin(SDL_GetTicks() / 1000.0f * 2.0f);
-        lightColor.g = sin(SDL_GetTicks() / 1000.0f * 0.7f);
-        lightColor.b = sin(SDL_GetTicks() / 1000.0f * 1.3f);
+        vec3 lightColor = vec3(1.0f);
+        //lightColor.r = sin(SDL_GetTicks() / 1000.0f * 2.0f);
+        //lightColor.g = sin(SDL_GetTicks() / 1000.0f * 0.7f);
+        //lightColor.b = sin(SDL_GetTicks() / 1000.0f * 1.3f);
 
-        vec3 lightDiffuse = lightColor * vec3(0.5f);
+        //vec3 lightDiffuse = lightColor * vec3(0.5f);
+        vec3 lightDiffuse = lightColor;
 
-        ShaderSetVec3(cube.mesh.shader, "u_light.diffuse", lightDiffuse);
-        ShaderSetVec3(cube.mesh.shader, "u_light.ambient", lightDiffuse * vec3(0.2f));
+        ShaderSetVec3(cube.mesh->shader, "u_light.diffuse", lightDiffuse);
+        ShaderSetVec3(cube.mesh->shader, "u_light.ambient", lightDiffuse * vec3(0.2f));
 
         //ShaderSetVec3(cube.mesh.shader, "u_light.diffuse", vec3(1.0f));
         //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(ambientIntensity));
         //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(1.0f));
 
-        ShaderSetVec3(cube.mesh.shader, "u_viewPos", engine.camera.position);
-        //ShaderSetVec3(cube.mesh.shader, "u_lightPos", vec3(engine.view * vec4(lightSource.position, 1.0f)));
+        ShaderSetVec3(cube.mesh->shader, "u_viewPos", game.camera.position);
+        //ShaderSetVec3(cube.mesh.shader, "u_lightPos", vec3(game.view * vec4(lightSource.position, 1.0f)));
         ShaderSetVec3(shader, "u_light.position", lightSource.position);
 
         ShaderSetVec3(lightSourceShader, "u_lightColor", lightColor);
 
-        RenderEntity(&engine, &cube);
-        RenderEntity(&engine, &lightSource);
+        RenderEntity(&game, &cube);
+        RenderEntity(&game, &lightSource);
 
-        SDL_GL_SwapWindow(engine.window);
+        for(int i = 0; i < game.sceneEntities.size(); i++)
+        {
+            Entity *e = game.sceneEntities[i];
+            e->Render(e, &game);
+        }
+
+        SDL_GL_SwapWindow(game.window);
 
         //Lock FPS and deltaTime calculation
         Uint64 thisFrame = SDL_GetPerformanceCounter();
-        if(engine.lockFPS)
+        if(game.lockFPS)
         {
             int targetFrames = 60;
             float targetTime = 1.0f / targetFrames;
             float elapsedWhileWaiting = 0.0f;
-            while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)engine.perfFreq) < targetTime)
+            while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)game.perfFreq) < targetTime)
             {
                 SDL_Delay((uint32)((targetTime - elapsedWhileWaiting) * 1000));
             }
@@ -179,8 +206,8 @@ int main(int argc, char *argv[])
             thisFrame = SDL_GetPerformanceCounter();
         }
 
-        engine.deltaTime = (thisFrame - engine.lastFrame) / (float)engine.perfFreq;
-        engine.lastFrame = thisFrame;
+        game.deltaTime = (thisFrame - game.lastFrame) / (float)game.perfFreq;
+        game.lastFrame = thisFrame;
     }
 
     return 0;

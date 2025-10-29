@@ -1,9 +1,13 @@
-#ifndef ENGINE_H
+#ifndef GAME_H
+
+#include "entity.h"
 
 #include "graphics/camera.h"
 
 #include <SDL3/SDL.h>
 #include <glm/mat4x4.hpp>
+
+#include <vector>
 
 #ifdef WINDOW_TRANSPARENT
     #define WINDOW_WIDTH 1920.0f
@@ -13,7 +17,7 @@
     #define WINDOW_HEIGHT 720.0f
 #endif
 
-struct Engine
+struct Game
 {
     bool isRunning = true;
     bool lockFPS;
@@ -28,10 +32,12 @@ struct Engine
     float deltaTime;
     Uint64 perfFreq;
     Uint64 lastFrame;
+
+    std::vector<Entity *> sceneEntities; //TODO: Get rid of std::vector
 };
 
-bool InitEngine(Engine *engine);
-void UpdateEngine(Engine *engine);
+bool InitGame(Game *game);
+void UpdateGame(Game *game);
 
-#define ENGINE_H
+#define GAME_H
 #endif

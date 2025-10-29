@@ -3,6 +3,9 @@
 #include <GL/glew.h>
 
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
+
+struct Game;
 
 struct MaterialPhong
 {
@@ -26,6 +29,8 @@ struct Mesh
 
 Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader);
 Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, int indicesTotalSize, GLuint shader);
+
+void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model);
 
 #define MESH_H
 #endif

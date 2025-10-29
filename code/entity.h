@@ -1,21 +1,35 @@
 #ifndef ENTITY_H
 
-#include "engine.h"
-
 #include "graphics/mesh.h"
 
 #include <glm/vec3.hpp>
 
-struct Entity
-{
-    Mesh mesh;
+using namespace glm;
 
-    glm::vec3 position, rotation;
-    glm::vec3 scale = glm::vec3(1.0f);
+struct Game;
+
+enum EntityType
+{
+    EntityType_Static = 1,
+    EntityType_Infantry
 };
 
-Entity CreateEntity(Mesh mesh);
-void RenderEntity(Engine *engine, Entity *entity);
+struct Entity
+{
+    uint16 id;
+    uint16 type;
+
+    Mesh *mesh;
+
+    vec3 position;
+    vec3 rotation;
+    vec3 scale = vec3(1.0f);
+
+    void (* Render)(Entity *self, Game *game);
+};
+
+Entity CreateEntity(Mesh *mesh);
+void RenderEntity(Game *game, Entity *entity);
 
 #define ENTITY_H
 #endif

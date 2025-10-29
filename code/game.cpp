@@ -1,4 +1,4 @@
-#include "engine.h"
+#include "game.h"
 
 #include <stb_image.h>
 
@@ -10,7 +10,7 @@
 
 using namespace glm;
 
-bool InitEngine(Engine *engine)
+bool InitGame(Game *game)
 {
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -37,14 +37,14 @@ bool InitEngine(Engine *engine)
                         (isBorderless ? SDL_WINDOW_TRANSPARENT : 0) |
                         (isTransparent ? SDL_WINDOW_TRANSPARENT : 0);
 
-    engine->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
-    if(!engine->window)
+    game->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
+    if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
         return false;
     }
 
-    SDL_GLContext context = SDL_GL_CreateContext(engine->window);
+    SDL_GLContext context = SDL_GL_CreateContext(game->window);
     if(!context)
     {
         SDL_Log("Failed to create an OpenGL context. Error: %s", SDL_GetError());
@@ -63,11 +63,11 @@ bool InitEngine(Engine *engine)
     SDL_srand(ticks);
 
     SDL_HideCursor();
-    SDL_SetWindowRelativeMouseMode(engine->window, true);
+    SDL_SetWindowRelativeMouseMode(game->window, true);
 
     stbi_set_flip_vertically_on_load(true);
 
-    Camera *camera = &engine->camera;
+    Camera *camera = &game->camera;
 
     camera->position = vec3(0.0f, 0.0f, 5.0f);
     camera->direction = vec3(0.0f, 0.0f, -1.0f);
@@ -75,10 +75,10 @@ bool InitEngine(Engine *engine)
     camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    engine->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
-    engine->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 
-    engine->perfFreq = SDL_GetPerformanceFrequency();
+    game->perfFreq = SDL_GetPerformanceFrequency();
 
     SDL_GL_SetSwapInterval(1);
 
@@ -88,12 +88,12 @@ bool InitEngine(Engine *engine)
     return true;
 }
 
-void UpdateCamera(Engine *engine)
+void UpdateCamera(Game *game)
 {
-    Camera *camera = &engine->camera;
-    int *keyboardState = engine->keys;
+    Camera *camera = &game->camera;
+    int *keyboardState = game->keys;
 
-    float cameraSpeed = camera->speed * engine->deltaTime;
+    float cameraSpeed = camera->speed * game->deltaTime;
     if(keyboardState[SDL_SCANCODE_W])
         camera->position += cameraSpeed * camera->direction;
     if(keyboardState[SDL_SCANCODE_S])
@@ -103,18 +103,40 @@ void UpdateCamera(Engine *engine)
     if(keyboardState[SDL_SCANCODE_D])
         camera->position += normalize(cross(camera->direction, camera->up)) * cameraSpeed;
 
-    engine->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 }
 
-void UpdateEngine(Engine *engine)
+void UpdateGame(Game *game)
 {
-    int *keyboardState = engine->keys;
+    int *keyboardState = game->keys;
 
-    UpdateCamera(engine);
+    UpdateCamera(game);
 
     if(keyboardState[SDL_SCANCODE_ESCAPE])
     {
-        engine->isRunning = false;
+        game->isRunning = false;
     }
 
+    for(int i = 0; i < game->sceneEntities.size(); i++)
+    {
+        Entity *entity = game->sceneEntities[i];
+        switch(entity->type)
+        {
+            case EntityType_Infantry:
+            {
+                InfantrySquad *squad = (InfantrySquad *)entity;
+                squad->position.x = 2.0f + sin(SDL_GetTicks() / 1000.0f) * ((i % 2 == 0) ? -1 : 1);
+            } break;
+
+            case EntityType_Static:
+            {
+
+            } break;
+
+            default:
+            {
+                *(int *)0 = 0; //Invalid entity type
+            } break;
+        }
+    }
 }

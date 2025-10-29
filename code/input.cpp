@@ -9,23 +9,23 @@
 
 using namespace glm;
 
-void ProcessKeyUp(SDL_KeyboardEvent *event, Engine *engine)
+void ProcessKeyUp(SDL_KeyboardEvent *event, Game *game)
 {
     if(event->repeat != 0) return;
-    engine->keys[event->scancode] = 0;
+    game->keys[event->scancode] = 0;
 }
 
-void ProcessKeyDown(SDL_KeyboardEvent *event, Engine *engine)
+void ProcessKeyDown(SDL_KeyboardEvent *event, Game *game)
 {
     if(event->repeat != 0) return;
-    engine->keys[event->scancode] = 1;
+    game->keys[event->scancode] = 1;
 }
 
-void ProcessInput(Engine *engine)
+void ProcessInput(Game *game)
 {
-    Camera &camera = engine->camera;
+    Camera &camera = game->camera;
 
-    memcpy(engine->prevKeys, engine->keys, SDL_SCANCODE_COUNT * sizeof(int));
+    memcpy(game->prevKeys, game->keys, SDL_SCANCODE_COUNT * sizeof(int));
 
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -34,17 +34,17 @@ void ProcessInput(Engine *engine)
         {
             case SDL_EVENT_QUIT:
             {
-                engine->isRunning = false;
+                game->isRunning = false;
             } break;
 
             case SDL_EVENT_KEY_UP:
             {
-                ProcessKeyUp(&event.key, engine);
+                ProcessKeyUp(&event.key, game);
             } break;
 
             case SDL_EVENT_KEY_DOWN:
             {
-                ProcessKeyDown(&event.key, engine);
+                ProcessKeyDown(&event.key, game);
             } break;
 
             case SDL_EVENT_MOUSE_MOTION:
@@ -68,7 +68,7 @@ void ProcessInput(Engine *engine)
                 camera.fov -= wheel.y;
                 camera.fov = SDL_clamp(camera.fov, 1.0f, 45.0f);
 
-                engine->projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+                game->projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
             } break;
 
         }
