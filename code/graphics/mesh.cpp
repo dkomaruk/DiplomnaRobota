@@ -62,6 +62,20 @@ Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, i
     return mesh;
 }
 
+glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _scale)
+{
+    mat4 model = mat4(1.0f);
+    model = translate(model, position);
+
+    //TODO: Rotation using quaternions
+    model = rotate(model, radians(rotation.x), vec3(1.0f, 0.0f, 0.0f));
+    model = rotate(model, radians(rotation.y), vec3(0.0f, 1.0f, 0.0f));
+    model = rotate(model, radians(rotation.z), vec3(0.0f, 0.0f, 1.0f));
+
+    model = scale(model, _scale);
+    return model;
+}
+
 void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model)
 {
     GLuint shader = mesh->shader;
@@ -74,16 +88,9 @@ void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model)
     glUniformMatrix4fv(glGetUniformLocation(shader, "u_view"), 1, GL_FALSE, value_ptr(game->view));
     glUniformMatrix4fv(glGetUniformLocation(shader, "u_projection"), 1, GL_FALSE, value_ptr(game->projection));
 
-    MaterialPhong mat = mesh->material;
-    ShaderSetVec3(shader, "u_material.diffuse", mat.diffuse);
-    ShaderSetVec3(shader, "u_material.ambient", mat.ambient);
-    ShaderSetVec3(shader, "u_material.specular", mat.specular);
-    ShaderSetFloat(shader, "u_material.shininess", mat.shininess);
-
-    if(mesh->texture)
-    {
-        SetTexture(mesh->texture, 0);
-    }
+    ShaderSetMaterial(shader, &mesh->material);
+    SetTexture(mesh->material.diffuseTexture, 0);
+    SetTexture(mesh->material.specularTexture, 1);
 
     glBindVertexArray(mesh->vao);
     if(mesh->indicesCount > 0)

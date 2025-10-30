@@ -16,6 +16,7 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode);
 void UseShader(GLuint shader);
 GLuint GetCurrentShader();
 
+void ShaderSetInt(GLuint shader, char *uniform, int v);
 void ShaderSetFloat(GLuint shader, char *uniform, float v);
 
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1);
@@ -29,7 +30,7 @@ void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
 
 void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
 
-void ShaderSetMaterial(GLuint shader, MaterialPhong material);
+void ShaderSetMaterial(GLuint shader, MaterialPhong *material);
 
 #define SHADER_H
 #endif

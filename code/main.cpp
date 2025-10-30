@@ -87,37 +87,16 @@ int main(int argc, char *argv[])
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
 
+    MaterialPhong containerMaterial = {CreateTexture("../data/imgs/container2.png", 0),
+                                       CreateTexture("../data/imgs/container2_specular.png", 1),
+                                       CreateTexture("../data/imgs/matrix.jpg", 2), 32.0f};
+
     Mesh cubeMesh = CreateMesh(vertices, sizeof(vertices), shader);
-    cubeMesh.texture = CreateTexture("../data/imgs/container.jpg", 0);
-    cubeMesh.material.ambient = vec3(1.0f, 0.5f, 0.31f);
-    cubeMesh.material.diffuse = vec3(1.0f, 0.5f, 0.31f);
-    cubeMesh.material.specular = vec3(0.5f);
-    cubeMesh.material.shininess = 32.0f;
-
-    MaterialPhong whiteMaterial = {vec3(1.0f), vec3(1.0f), vec3(1.0f), 32.0f};
-
-    MaterialPhong emeraldMaterial = {};
-    emeraldMaterial.ambient = vec3(0.0215f, 0.1745f, 0.0215f);
-    emeraldMaterial.diffuse = vec3(0.07568f, 0.61424f, 0.07568f);
-    emeraldMaterial.specular = vec3(0.633f, 0.727811f, 0.633f);
-    emeraldMaterial.shininess = (int)(0.6f * 128);
-
-    MaterialPhong redPlasticMaterial = {};
-
-    redPlasticMaterial.ambient =  vec3(0.1f, 0.0f, 0.0f);
-    redPlasticMaterial.diffuse =  vec3(0.5f, 0.0f, 0.0f);
-    redPlasticMaterial.specular = vec3(0.7f, 0.6f, 0.6f);
-    redPlasticMaterial.shininess = (int)(0.25f * 128);
-
-    //cubeMesh.material = emeraldMaterial;
-    //cubeMesh.material = redPlasticMaterial;
-    cubeMesh.material = whiteMaterial;
-
-    //float ambientIntensity = (0.212671f * cubeMesh.material.ambient.r + 0.715160f * cubeMesh.material.ambient.g +
-    //                          0.072169f * cubeMesh.material.ambient.b) / (0.212671f * cubeMesh.material.diffuse.r +
-    //                          0.715160f * cubeMesh.material.diffuse.g + 0.072169f * cubeMesh.material.diffuse.b);
+    cubeMesh.material = containerMaterial;
+    //cubeMesh.texture = CreateTexture("../data/imgs/container.jpg", 0);
 
     Entity cube = CreateEntity(&cubeMesh);
+
 
     Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
     Entity lightSource = CreateEntity(&lightMesh);
@@ -128,10 +107,10 @@ int main(int argc, char *argv[])
 
     Mesh soldierMeshes[2];
     soldierMeshes[0] = CreateMesh(vertices, sizeof(vertices), shader);
-    soldierMeshes[0].material = emeraldMaterial;
+    soldierMeshes[0].material = containerMaterial;
 
     soldierMeshes[1] = CreateMesh(vertices, sizeof(vertices), shader);
-    soldierMeshes[1].material = redPlasticMaterial;
+    soldierMeshes[1].material = containerMaterial;
 
     for(int i = 0; i < 2; i++)
     {
@@ -141,6 +120,9 @@ int main(int argc, char *argv[])
 
         game.sceneEntities.push_back(squad);
     }
+
+    game.sceneEntities.push_back(&cube);
+    game.sceneEntities.push_back(&lightSource);
 
     while(game.isRunning)
     {
@@ -159,7 +141,7 @@ int main(int argc, char *argv[])
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        vec3 lightColor = vec3(1.0f);
+        vec3 lightColor = vec3(1.0f, 1.0f, 0.0f);
         //lightColor.r = sin(SDL_GetTicks() / 1000.0f * 2.0f);
         //lightColor.g = sin(SDL_GetTicks() / 1000.0f * 0.7f);
         //lightColor.b = sin(SDL_GetTicks() / 1000.0f * 1.3f);
@@ -170,7 +152,7 @@ int main(int argc, char *argv[])
         ShaderSetVec3(cube.mesh->shader, "u_light.diffuse", lightDiffuse);
         ShaderSetVec3(cube.mesh->shader, "u_light.ambient", lightDiffuse * vec3(0.2f));
 
-        //ShaderSetVec3(cube.mesh.shader, "u_light.diffuse", vec3(1.0f));
+        //ShaderSetVec3(cube.mesh.shader, "u_light.diffuseTexture", vec3(1.0f));
         //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(ambientIntensity));
         //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(1.0f));
 
@@ -180,8 +162,7 @@ int main(int argc, char *argv[])
 
         ShaderSetVec3(lightSourceShader, "u_lightColor", lightColor);
 
-        RenderEntity(&game, &cube);
-        RenderEntity(&game, &lightSource);
+        ShaderSetFloat(cube.mesh->shader, "u_time", SDL_GetTicks() / 1000.0f);
 
         for(int i = 0; i < game.sceneEntities.size(); i++)
         {

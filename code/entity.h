@@ -29,7 +29,6 @@ struct Entity
 };
 
 Entity CreateEntity(Mesh *mesh);
-void RenderEntity(Game *game, Entity *entity);
 
 #define ENTITY_H
 #endif

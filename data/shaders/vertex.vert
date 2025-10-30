@@ -9,14 +9,13 @@ uniform mat3 u_normalMatrix;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 
-//out vec2 TexCoords;
+out vec2 TexCoords;
 out vec3 Normal;
 out vec3 FragPos;
 
 void main()
 {
-    //TexCoords = texCoords;
-
+    TexCoords = texCoords;
     Normal = u_normalMatrix * normal;
     FragPos = vec3(u_model * vec4(pos, 1.0));
 

@@ -95,6 +95,12 @@ GLuint GetCurrentShader()
     return currentShader;
 }
 
+void ShaderSetInt(GLuint shader, char *uniform, int v)
+{
+    if(currentShader != shader) UseShader(shader);
+    glUniform1i(glGetUniformLocation(shader, uniform), v);
+}
+
 void ShaderSetFloat(GLuint shader, char *uniform, float v)
 {
     if(currentShader != shader) UseShader(shader);
@@ -143,8 +149,12 @@ void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix)
     glUniformMatrix4fv(glGetUniformLocation(shader, uniform), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-void ShaderSetMaterial(GLuint shader, MaterialPhong material)
+void ShaderSetMaterial(GLuint shader, MaterialPhong *material)
 {
     if(currentShader != shader) UseShader(shader);
+    ShaderSetInt(shader, "u_material.diffuse", 0);
+    ShaderSetInt(shader, "u_material.specular", 1);
+    ShaderSetInt(shader, "u_material.emission", 2);
+    ShaderSetFloat(shader, "u_material.shininess", material->shininess);
 
 }

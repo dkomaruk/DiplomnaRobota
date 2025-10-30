@@ -2,7 +2,6 @@
 
 #include "util_defines.h"
 
-#include <glm/ext/matrix_transform.hpp>
 
 void RenderInfantry(Entity *e, Game *game)
 {
@@ -12,16 +11,8 @@ void RenderInfantry(Entity *e, Game *game)
     Mesh *meshes = squad->meshes;
     for(int i = 0; i < squad->size; i++)
     {
-        mat4 model = mat4(1.0f);
         vec3 offset = vec3(squad->soldierOffsets[i].x, 0.0f, squad->soldierOffsets[i].y);
-        model = translate(model, squad->position + offset);
-
-        //TODO: Rotation using quaternions
-        model = rotate(model, radians(squad->rotation.x), vec3(1.0f, 0.0f, 0.0f));
-        model = rotate(model, radians(squad->rotation.y), vec3(0.0f, 1.0f, 0.0f));
-        model = rotate(model, radians(squad->rotation.z), vec3(0.0f, 0.0f, 1.0f));
-
-        model = scale(model, squad->scale);
+        mat4 model = PrepareModelMatrix(squad->position + offset, squad->rotation, squad->scale);
 
         RenderMesh(game, &meshes[squad->soldierMeshesId[i]], model);
     }

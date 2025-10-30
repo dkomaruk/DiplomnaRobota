@@ -4,14 +4,15 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 struct Game;
 
 struct MaterialPhong
 {
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
+    GLuint diffuseTexture; //GL_TEXTURE0
+    GLuint specularTexture; //GL_TEXTURE1
+    GLuint emissionTexture; //GL_TEXTURE2
 
     float shininess;
 };
@@ -30,6 +31,7 @@ struct Mesh
 Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader);
 Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, int indicesTotalSize, GLuint shader);
 
+glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model);
 
 #define MESH_H
