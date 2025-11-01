@@ -156,5 +156,54 @@ void ShaderSetMaterial(GLuint shader, MaterialPhong *material)
     ShaderSetInt(shader, "u_material.specular", 1);
     ShaderSetInt(shader, "u_material.emission", 2);
     ShaderSetFloat(shader, "u_material.shininess", material->shininess);
-
 }
+
+void ShaderSetDirLight(GLuint shader, DirectionalLight light)
+{
+    if(currentShader != shader) UseShader(shader);
+
+    ShaderSetInt(shader, "u_dirLightCount", 1);
+    ShaderSetVec3(shader, "u_dirLight.direction", light.direction);
+    ShaderSetVec3(shader, "u_dirLight.diffuse", light.diffuse);
+    ShaderSetVec3(shader, "u_dirLight.ambient", light.ambient);
+    ShaderSetVec3(shader, "u_dirLight.specular", light.specular);
+}
+
+void ShaderSetPointLight(GLuint shader, PointLight light, int index)
+{
+    if(currentShader != shader) UseShader(shader);
+
+    char uniformName[128];
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].position", index);
+    ShaderSetVec3(shader, uniformName, light.position);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].constant", index);
+    ShaderSetFloat(shader, uniformName, light.constant);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].linear", index);
+    ShaderSetFloat(shader, uniformName, light.linear);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].quadratic", index);
+    ShaderSetFloat(shader, uniformName, light.quadratic);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].diffuse", index);
+    ShaderSetVec3(shader, uniformName, light.diffuse);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].ambient", index);
+    ShaderSetVec3(shader, uniformName, light.ambient);
+
+    snprintf(uniformName, sizeof(uniformName), "u_pointLights[%d].specular", index);
+    ShaderSetVec3(shader, uniformName, light.specular);
+}
+
+//void ShaderSetSpotLight(GLuint shader, SpotLight light)
+//{
+//    if(currentShader != shader) UseShader(shader);
+
+//    ShaderSetVec3(shader, "u_dirLight.direction", light.position);
+//    ShaderSetVec3(shader, "u_dirLight.diffuse", light.diffuse);
+//    ShaderSetVec3(shader, "u_dirLight.ambient", light.ambient);
+//    ShaderSetVec3(shader, "u_dirLight.specular", light.specular);
+
+//}

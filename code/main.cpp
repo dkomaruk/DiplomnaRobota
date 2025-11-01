@@ -7,6 +7,7 @@
 
 #include "util/timer.cpp"
 
+#include "graphics/light.cpp"
 #include "graphics/camera.cpp"
 #include "graphics/shader.cpp"
 #include "graphics/texture.cpp"
@@ -96,15 +97,51 @@ int main(int argc, char *argv[])
     //cubeMesh.texture = CreateTexture("../data/imgs/container.jpg", 0);
 
     Entity cube = CreateEntity(&cubeMesh);
+    cube.position.x -= 3.0f;
+    cube.position.z += 3.0f;
+    cube.position.y -= 0.5f;
+    game.sceneEntities.push_back(&cube);
 
+    ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), vec3(0.5f), vec3(0.05f), vec3(0.5f, 0.5f, 0.5f));
+    ShaderSetDirLight(shader, dirLight);
+    //ShaderSetInt(shader, "u_dirLightCount", 0);
 
     Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
-    Entity lightSource = CreateEntity(&lightMesh);
-    lightSource.scale = vec3(0.2f);
-    lightSource.position = vec3(1.2f, 1.0f, 2.0f);
+    PointLight pointLights[4] = {};
+    Entity pointLightsSources[4];
+    int width = 10;
+    int maxPointLights = 4;
+    for(int i = 0; i < maxPointLights; i++)
+    {
+        pointLights[i].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
+        pointLights[i].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
+        pointLights[i].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
 
-    ShaderSetVec3(shader, "u_light.specular", vec3(1.0f));
-    ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
+        pointLights[i].diffuse = vec3(0.5f);
+        pointLights[i].ambient = vec3(0.05f);
+        pointLights[i].specular = vec3(0.5f);
+
+        //pointLights[i].constant = 1.0f;
+        //pointLights[i].linear = 0.07f;
+        //pointLights[i].quadratic = 0.017f;
+
+        pointLights[i].constant = 1.0f;
+        pointLights[i].linear = 0.027f;
+        pointLights[i].quadratic = 0.0028f;
+
+        ShaderSetPointLight(shader, pointLights[i], i);
+
+        pointLightsSources[i] = CreateEntity(&lightMesh);
+        pointLightsSources[i].scale = vec3(0.2f);
+        pointLightsSources[i].position = pointLights[i].position;
+
+        game.sceneEntities.push_back(&pointLightsSources[i]);
+    }
+
+    ShaderSetInt(shader, "u_pointLightCount", maxPointLights);
+    ShaderSetVec3(lightSourceShader, "u_lightColor", vec3(1.0f));
 
     Mesh soldierMeshes[2];
     soldierMeshes[0] = CreateMesh(vertices, sizeof(vertices), shader);
@@ -117,13 +154,12 @@ int main(int argc, char *argv[])
     {
         InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
         *squad = CreateInfantrySquad(&soldierMeshes[i], 1, 10);
-        squad->position.z = 3.0f * i * ((i % 2 == 0) ? -1 : 1);
+        squad->position.z = -10.0f / 2.0f;
+        squad->position.x = -10.0f / 2.0f;
+        squad->position.y -= i;
 
         game.sceneEntities.push_back(squad);
     }
-
-    game.sceneEntities.push_back(&cube);
-    game.sceneEntities.push_back(&lightSource);
 
     GLuint flashlightTexture = CreateTexture("../data/imgs/flashlightpattern.png", 3, false);
     ShaderSetInt(shader, "u_flashlightTexture", 3);
@@ -137,38 +173,14 @@ int main(int argc, char *argv[])
         //Update
         UpdateGame(&game);
 
-        //float time = SDL_GetTicks() / 1000.0f;
-        //lightSource.position.x = sin(time);
-        //lightSource.position.z = cos(time);
-        //lightSource.position.y = cos(time);
-
         //Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        vec3 lightColor = vec3(1.0f, 1.0f, 0.0f);
-        //lightColor.r = sin(SDL_GetTicks() / 1000.0f * 2.0f);
-        //lightColor.g = sin(SDL_GetTicks() / 1000.0f * 0.7f);
-        //lightColor.b = sin(SDL_GetTicks() / 1000.0f * 1.3f);
-
-        //vec3 lightDiffuse = lightColor * vec3(0.5f);
-        vec3 lightDiffuse = lightColor;
-
-        ShaderSetVec3(cube.mesh->shader, "u_light.diffuse", lightDiffuse);
-        ShaderSetVec3(cube.mesh->shader, "u_light.ambient", lightDiffuse * vec3(0.2f));
-
-        //ShaderSetVec3(cube.mesh.shader, "u_light.diffuseTexture", vec3(1.0f));
-        //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(ambientIntensity));
-        //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(1.0f));
-
         ShaderSetVec3(cube.mesh->shader, "u_viewPos", game.camera.position);
         ShaderSetVec3(cube.mesh->shader, "u_viewDir", game.camera.direction);
-        //ShaderSetVec3(cube.mesh.shader, "u_lightPos", vec3(game.view * vec4(lightSource.position, 1.0f)));
-        ShaderSetVec3(shader, "u_light.position", lightSource.position);
-
-        ShaderSetVec3(lightSourceShader, "u_lightColor", lightColor);
-
         ShaderSetFloat(cube.mesh->shader, "u_time", SDL_GetTicks() / 1000.0f);
+
 
         for(int i = 0; i < game.sceneEntities.size(); i++)
         {

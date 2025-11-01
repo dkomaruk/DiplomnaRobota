@@ -1,6 +1,7 @@
 #ifndef SHADER_H
 
 #include "mesh.h"
+#include "light.h"
 
 #include <GL/glew.h>
 #include <glm/vec2.hpp>
@@ -31,6 +32,10 @@ void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
 void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
 
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material);
+
+void ShaderSetDirLight(GLuint shader, DirectionalLight light);
+void ShaderSetPointLight(GLuint shader, PointLight light, int index);
+void ShaderSetSpotLight(GLuint shader, SpotLight light);
 
 #define SHADER_H
 #endif

@@ -125,7 +125,7 @@ void UpdateGame(Game *game)
             case EntityType_Infantry:
             {
                 InfantrySquad *squad = (InfantrySquad *)entity;
-                squad->position.x = 2.0f + sin(SDL_GetTicks() / 1000.0f) * ((i % 2 == 0) ? -1 : 1);
+                //squad->position.x = sin(SDL_GetTicks() / 1000.0f) * ((i % 2 == 0) ? -1 : 1);
             } break;
 
             case EntityType_Static:
