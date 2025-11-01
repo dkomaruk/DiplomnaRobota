@@ -103,7 +103,8 @@ int main(int argc, char *argv[])
     lightSource.scale = vec3(0.2f);
     lightSource.position = vec3(1.2f, 1.0f, 2.0f);
 
-    ShaderSetVec3(cube.mesh->shader, "u_light.specular", vec3(1.0f));
+    ShaderSetVec3(shader, "u_light.specular", vec3(1.0f));
+    ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
     Mesh soldierMeshes[2];
     soldierMeshes[0] = CreateMesh(vertices, sizeof(vertices), shader);
@@ -123,6 +124,10 @@ int main(int argc, char *argv[])
 
     game.sceneEntities.push_back(&cube);
     game.sceneEntities.push_back(&lightSource);
+
+    GLuint flashlightTexture = CreateTexture("../data/imgs/flashlightpattern.png", 3, false);
+    ShaderSetInt(shader, "u_flashlightTexture", 3);
+    SetTexture(flashlightTexture, 3);
 
     while(game.isRunning)
     {
@@ -157,6 +162,7 @@ int main(int argc, char *argv[])
         //ShaderSetVec3(cube.mesh.shader, "u_light.ambient", vec3(1.0f));
 
         ShaderSetVec3(cube.mesh->shader, "u_viewPos", game.camera.position);
+        ShaderSetVec3(cube.mesh->shader, "u_viewDir", game.camera.direction);
         //ShaderSetVec3(cube.mesh.shader, "u_lightPos", vec3(game.view * vec4(lightSource.position, 1.0f)));
         ShaderSetVec3(shader, "u_light.position", lightSource.position);
 

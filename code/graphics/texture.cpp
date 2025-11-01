@@ -2,7 +2,7 @@
 
 #include <stb_image.h>
 
-GLuint CreateTexture(char *imagePath, int textureUnit)
+GLuint CreateTexture(char *imagePath, int textureUnit, bool repeat)
 {
     int width, height, channels;
     int desiredChannels = 4;
@@ -16,6 +16,11 @@ GLuint CreateTexture(char *imagePath, int textureUnit)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    GLint wrapping = repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
     glGenerateMipmap(GL_TEXTURE_2D);
 
