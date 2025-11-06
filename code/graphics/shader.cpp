@@ -113,7 +113,7 @@ void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1)
     glUniform2f(glGetUniformLocation(shader, uniform), v0, v1);
 }
 
-void ShaderSetVec2(GLuint shader, char *uniform, glm::vec2 vector)
+void ShaderSetVec2(GLuint shader, char *uniform, vec2 vector)
 {
     if(currentShader != shader) UseShader(shader);
     glUniform2f(glGetUniformLocation(shader, uniform), vector.x, vector.y);
@@ -125,7 +125,7 @@ void ShaderSetVec3(GLuint shader, char *uniform, float v0, float v1, float v2)
     glUniform3f(glGetUniformLocation(shader, uniform), v0, v1, v2);
 }
 
-void ShaderSetVec3(GLuint shader, char *uniform, glm::vec3 vector)
+void ShaderSetVec3(GLuint shader, char *uniform, vec3 vector)
 {
     if(currentShader != shader) UseShader(shader);
     glUniform3f(glGetUniformLocation(shader, uniform), vector.x, vector.y, vector.z);
@@ -137,16 +137,16 @@ void ShaderSetVec4(GLuint shader, char *uniform, float v0, float v1, float v2, f
     glUniform4f(glGetUniformLocation(shader, uniform), v0, v1, v2, v3);
 }
 
-void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector)
+void ShaderSetVec4(GLuint shader, char *uniform, vec4 vector)
 {
     if(currentShader != shader) UseShader(shader);
     glUniform4f(glGetUniformLocation(shader, uniform), vector.x, vector.y, vector.z, vector.w);
 }
 
-void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix)
+void ShaderSetMatrix4(GLuint shader, char *uniform, mat4 matrix)
 {
     if(currentShader != shader) UseShader(shader);
-    glUniformMatrix4fv(glGetUniformLocation(shader, uniform), 1, GL_FALSE, glm::value_ptr(matrix));
+    glUniformMatrix4fv(glGetUniformLocation(shader, uniform), 1, GL_FALSE, value_ptr(matrix));
 }
 
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material)

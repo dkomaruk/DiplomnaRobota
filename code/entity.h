@@ -4,8 +4,6 @@
 
 #include <glm/vec3.hpp>
 
-using namespace glm;
-
 struct Game;
 
 enum EntityType
@@ -13,6 +11,10 @@ enum EntityType
     EntityType_Static = 1,
     EntityType_Infantry
 };
+
+struct Entity;
+
+typedef void RenderEntityFunc(Entity *self, Game *game);
 
 struct Entity
 {
@@ -25,7 +27,8 @@ struct Entity
     vec3 rotation;
     vec3 scale = vec3(1.0f);
 
-    void (* Render)(Entity *self, Game *game);
+    //void (* Render)(Entity *self, Game *game);
+    RenderEntityFunc *Render;
 };
 
 Entity CreateEntity(Mesh *mesh);

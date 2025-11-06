@@ -25,7 +25,7 @@ struct Game
     SDL_Window *window;
 
     Camera camera;
-    glm::mat4 view, projection;
+    mat4 view, projection;
 
     int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
 
@@ -38,6 +38,8 @@ struct Game
 
 bool InitGame(Game *game);
 void UpdateGame(Game *game);
+
+Game *GetGame();
 
 #define GAME_H
 #endif

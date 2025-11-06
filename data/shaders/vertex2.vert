@@ -1,8 +1,8 @@
 #version 460 core
 
 layout(location = 0) in vec3 pos;
-layout(location = 1) in vec2 texCoords;
-layout(location = 2) in mat4 model;
+layout(location = 1) in mat4 model;
+layout(location = 2) in vec2 texCoords;
 
 uniform float u_time;
 

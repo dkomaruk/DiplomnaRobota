@@ -7,8 +7,6 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-using namespace glm;
-
 void ProcessKeyUp(SDL_KeyboardEvent *event, Game *game)
 {
     if(event->repeat != 0) return;

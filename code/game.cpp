@@ -8,8 +8,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-using namespace glm;
-
 bool InitGame(Game *game)
 {
     if(!SDL_Init(SDL_INIT_VIDEO))
@@ -88,20 +86,32 @@ bool InitGame(Game *game)
     return true;
 }
 
+Game *GetGame()
+{
+    static Game game;
+    return &game;
+}
+
 void UpdateCamera(Game *game)
 {
     Camera *camera = &game->camera;
     int *keyboardState = game->keys;
 
+    vec3 dir = camera->direction;
+    //dir.y = 0.0f;
+    dir = normalize(dir);
+
     float cameraSpeed = camera->speed * game->deltaTime;
     if(keyboardState[SDL_SCANCODE_W])
-        camera->position += cameraSpeed * camera->direction;
+        camera->position += cameraSpeed * dir;
     if(keyboardState[SDL_SCANCODE_S])
-        camera->position -= cameraSpeed * camera->direction;
+        camera->position -= cameraSpeed * dir;
     if(keyboardState[SDL_SCANCODE_A])
-        camera->position -= normalize(cross(camera->direction, camera->up)) * cameraSpeed;
+        camera->position -= normalize(cross(dir, camera->up)) * cameraSpeed;
     if(keyboardState[SDL_SCANCODE_D])
-        camera->position += normalize(cross(camera->direction, camera->up)) * cameraSpeed;
+        camera->position += normalize(cross(dir, camera->up)) * cameraSpeed;
+
+    //camera->position.y = 1.0f;
 
     game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 }

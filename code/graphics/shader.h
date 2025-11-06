@@ -21,15 +21,15 @@ void ShaderSetInt(GLuint shader, char *uniform, int v);
 void ShaderSetFloat(GLuint shader, char *uniform, float v);
 
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1);
-void ShaderSetVec2(GLuint shader, char *uniform, glm::vec2 vector);
+void ShaderSetVec2(GLuint shader, char *uniform, vec2 vector);
 
 void ShaderSetVec3(GLuint shader, char *uniform, float v0, float v1, float v2);
-void ShaderSetVec3(GLuint shader, char *uniform, glm::vec3 vector);
+void ShaderSetVec3(GLuint shader, char *uniform, vec3 vector);
 
 void ShaderSetVec4(GLuint shader, char *uniform, float v0, float v1, float v2, float v3);
-void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
+void ShaderSetVec4(GLuint shader, char *uniform, vec4 vector);
 
-void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
+void ShaderSetMatrix4(GLuint shader, char *uniform, mat4 matrix);
 
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material);
 

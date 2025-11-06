@@ -23,8 +23,6 @@ struct SampledTextures
     vec4 specular;
 };
 
-uniform sampler2D u_flashlightTexture;
-
 struct DirLight
 {
     vec3 direction;
@@ -67,8 +65,7 @@ vec3 CalculateDirLight(DirLight light, SampledTextures textures, vec3 normal, ve
     vec3 ambient = textures.diffuse.rgb * light.ambient;
 
     vec3 reflectDir = reflect(-lightDir, normal);
-    float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), u_material.shininess);
-
+    float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
     vec3 specular = specularStrength * textures.specular.rgb * light.specular;
 
     return diffuse + ambient + specular;
@@ -99,7 +96,7 @@ void main()
     sampledTextures.diffuse = texture(u_material.diffuse, TexCoords);
     sampledTextures.specular = texture(u_material.specular, TexCoords);
 
-    vec3 normal = normalize(Normal);
+    vec3 normal = Normal;
     vec3 viewDir = normalize(u_viewPos - FragPos);
 
     vec3 finalColor = vec3(0.0);

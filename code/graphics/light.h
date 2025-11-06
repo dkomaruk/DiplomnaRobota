@@ -2,8 +2,6 @@
 
 #include <glm/vec3.hpp>
 
-using namespace glm;
-
 struct DirectionalLight
 {
     vec3 direction;

@@ -4,7 +4,7 @@
 
 #include "game.h"
 
-Mesh InitVBO(float *vertices, int verticesTotalSize)
+Mesh CreateVBO_Old(float *vertices, int verticesTotalSize)
 {
     Mesh mesh = {};
 
@@ -24,10 +24,10 @@ Mesh InitVBO(float *vertices, int verticesTotalSize)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(0 * sizeof(float)));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(5 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -37,7 +37,7 @@ Mesh InitVBO(float *vertices, int verticesTotalSize)
 
 Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader)
 {
-    Mesh mesh = InitVBO(vertices, verticesTotalSize);
+    Mesh mesh = CreateVBO_Old(vertices, verticesTotalSize);
     mesh.shader = shader;
 
     return mesh;
@@ -45,7 +45,7 @@ Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader)
 
 Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, int indicesTotalSize, GLuint shader)
 {
-    Mesh mesh = InitVBO(vertices, verticesTotalSize);
+    Mesh mesh = CreateVBO_Old(vertices, verticesTotalSize);
     mesh.shader = shader;
     mesh.indicesCount = indicesTotalSize / sizeof(int);
 
@@ -62,7 +62,64 @@ Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, i
     return mesh;
 }
 
-glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _scale)
+//API that uses Vertex struct
+
+Mesh CreateVBO(std::vector<Vertex> vertices)
+{
+    Mesh mesh = {};
+
+    mesh.verticesCount = (uint32)vertices.size();
+
+    glGenVertexArrays(1, &mesh.vao);
+    glBindVertexArray(mesh.vao);
+
+    glGenBuffers(1, &mesh.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, position));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, normal));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, uv));
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    return mesh;
+}
+
+Mesh CreateMesh(std::vector<Vertex> vertices, GLuint shader)
+{
+    Mesh mesh = CreateVBO(vertices);
+    mesh.shader = shader;
+
+    return mesh;
+}
+
+Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, GLuint shader)
+{
+    Mesh mesh = CreateMesh(vertices, shader);
+    mesh.indicesCount = (uint32)indices.size();
+
+    glBindVertexArray(mesh.vao);
+
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return mesh;
+}
+
+mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 {
     mat4 model = mat4(1.0f);
     model = translate(model, position);
@@ -76,7 +133,7 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _
     return model;
 }
 
-void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model)
+void RenderMesh(Game *game, Mesh *mesh, mat4 model)
 {
     GLuint shader = mesh->shader;
     UseShader(shader);

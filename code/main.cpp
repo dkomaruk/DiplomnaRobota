@@ -1,3 +1,12 @@
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+using namespace glm;
+
 #include "external/stb_image.cpp"
 
 #include "infantry.cpp"
@@ -22,79 +31,104 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <stdio.h>
 #include <vector>
 
-using namespace glm;
-
-void ImportModels()
+std::vector<Mesh> ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture)
 {
-    const aiScene *scene = aiImportFile("backpack.obj", 0);
+    std::vector<Mesh> result;
+
+    const aiScene *scene = aiImportFile(filepath, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
     if(!scene)
     {
-        SDL_Log("Failed to load backpack.obj. Error: %s", aiGetErrorString());
+        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
+        return result;
     }
+
+    for(uint32 i = 0; i < scene->mNumMeshes; i++)
+    {
+        aiMesh *mesh = scene->mMeshes[i];
+        bool hasUVs = mesh->HasTextureCoords(0);
+
+        std::vector<Vertex> vertices;
+        std::vector<uint32> indices;
+        for(uint32 j = 0; j < mesh->mNumVertices; j++)
+        {
+            aiVector3D pos = mesh->mVertices[j];
+            aiVector3D norm = mesh->mNormals[j];
+
+            Vertex vertex = {};
+            vertex.position = vec3(pos.x, pos.y, pos.z);
+            vertex.normal = vec3(norm.x, norm.y, norm.z);
+            if(hasUVs)
+            {
+                aiVector3D uv = mesh->mTextureCoords[0][j];
+                vertex.uv = vec2(uv.x, uv.y);
+            }
+
+            vertices.push_back(vertex);
+            indices.push_back(j);
+        }
+
+        result.push_back(CreateMesh(vertices, indices, shader));
+        result[i].material.diffuseTexture = diffuseTexture;
+        result[i].material.specularTexture = specularTexture;
+    }
+
+
+    return result;
 }
 
 int main(int argc, char *argv[])
 {
-    Game game = {};
-    if(!InitGame(&game))
+    Game *game = GetGame();
+    if(!InitGame(game))
     {
         return -1;
     }
 
-    ImportModels();
-
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f,  0.0f, -1.0f,
-        0.5f, -0.5f, -0.5f,   1.0f, 0.0f,   0.0f,  0.0f, -1.0f,
-        0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   0.0f,  0.0f, -1.0f,
-        0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,   1.0f, 0.0f,   0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,   1.0f, 1.0f,   0.0f,  0.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,   1.0f, 1.0f,   0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,   0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
 
-        0.5f,  0.5f,  0.5f,   1.0f, 0.0f,   1.0f,  0.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,   0.0f, 1.0f,   1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,   0.0f, 1.0f,   1.0f,  0.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,   0.0f, 0.0f,   1.0f,  0.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,   1.0f, 0.0f,   1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f, -0.5f,   1.0f, 1.0f,   0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,   1.0f, 0.0f,   0.0f, -1.0f,  0.0f,
-        0.5f, -0.5f,  0.5f,   1.0f, 0.0f,   0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f, -0.5f,   1.0f, 1.0f,   0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,   1.0f, 0.0f,   0.0f,  1.0f,  0.0f,
-        0.5f,  0.5f,  0.5f,   1.0f, 0.0f,   0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,   0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f,  1.0f,  0.0f
+        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
     };
 
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
@@ -103,9 +137,16 @@ int main(int argc, char *argv[])
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
 
-    MaterialPhong containerMaterial = {CreateTexture("../data/imgs/container2.png", 0),
-                                       CreateTexture("../data/imgs/container2_specular.png", 1),
-                                       CreateTexture("../data/imgs/matrix.jpg", 2), 32.0f};
+    GLuint backpackDiffuseTexture = CreateTexture("../data/models/backpack/diffuse.jpg", 0);
+    GLuint backpackSpecularTexture = CreateTexture("../data/models/backpack/specular.jpg", 1);
+    std::vector<Mesh> test = ImportModel("../data/models/backpack/backpack.obj", shader, backpackDiffuseTexture, backpackSpecularTexture);
+
+    MaterialPhong containerMaterial = {};
+    containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png", 0);
+    containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png", 1);
+    //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png", 1);
+    containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg", 2);
+    containerMaterial.shininess = 256.0f;
 
     Mesh cubeMesh = CreateMesh(vertices, sizeof(vertices), shader);
     cubeMesh.material = containerMaterial;
@@ -115,11 +156,15 @@ int main(int argc, char *argv[])
     cube.position.x -= 3.0f;
     cube.position.z += 3.0f;
     cube.position.y -= 0.5f;
-    game.sceneEntities.push_back(&cube);
+    game->sceneEntities.push_back(&cube);
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), vec3(0.5f), vec3(0.05f), vec3(0.5f, 0.5f, 0.5f));
+    vec3 dirDiffuse = vec3(0.9f);
+    vec3 dirAmbient = vec3(0.05f);
+    vec3 dirSpecular = vec3(0.5f);
+    //vec3 dirSpecular = vec3(0.8f, 0.7f, 0.0f);
+    DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(shader, dirLight);
     //ShaderSetInt(shader, "u_dirLightCount", 0);
 
@@ -127,7 +172,7 @@ int main(int argc, char *argv[])
     PointLight pointLights[4] = {};
     Entity pointLightsSources[4];
     int width = 10;
-    int maxPointLights = 4;
+    int maxPointLights = 0;
     for(int i = 0; i < maxPointLights; i++)
     {
         pointLights[i].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
@@ -137,10 +182,6 @@ int main(int argc, char *argv[])
         pointLights[i].diffuse = vec3(0.5f);
         pointLights[i].ambient = vec3(0.05f);
         pointLights[i].specular = vec3(0.5f);
-
-        //pointLights[i].constant = 1.0f;
-        //pointLights[i].linear = 0.07f;
-        //pointLights[i].quadratic = 0.017f;
 
         pointLights[i].constant = 1.0f;
         pointLights[i].linear = 0.027f;
@@ -152,7 +193,7 @@ int main(int argc, char *argv[])
         pointLightsSources[i].scale = vec3(0.2f);
         pointLightsSources[i].position = pointLights[i].position;
 
-        game.sceneEntities.push_back(&pointLightsSources[i]);
+        game->sceneEntities.push_back(&pointLightsSources[i]);
     }
 
     ShaderSetInt(shader, "u_pointLightCount", maxPointLights);
@@ -173,46 +214,55 @@ int main(int argc, char *argv[])
         squad->position.x = -10.0f / 2.0f;
         squad->position.y -= i;
 
-        game.sceneEntities.push_back(squad);
+        game->sceneEntities.push_back(squad);
     }
 
-    GLuint flashlightTexture = CreateTexture("../data/imgs/flashlightpattern.png", 3, false);
-    ShaderSetInt(shader, "u_flashlightTexture", 3);
-    SetTexture(flashlightTexture, 3);
-
-    while(game.isRunning)
+    while(game->isRunning)
     {
         //Input
-        ProcessInput(&game);
+        ProcessInput(game);
 
         //Update
-        UpdateGame(&game);
+        UpdateGame(game);
 
         //Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ShaderSetVec3(cube.mesh->shader, "u_viewPos", game.camera.position);
-        ShaderSetVec3(cube.mesh->shader, "u_viewDir", game.camera.direction);
+        ShaderSetVec3(cube.mesh->shader, "u_viewPos", game->camera.position);
+        SDL_Log("%f %f %f ", game->camera.position.x, game->camera.position.y, game->camera.position.z);
+        ShaderSetVec3(cube.mesh->shader, "u_viewDir", game->camera.direction);
         ShaderSetFloat(cube.mesh->shader, "u_time", SDL_GetTicks() / 1000.0f);
 
-
-        for(int i = 0; i < game.sceneEntities.size(); i++)
+        //for(int i = 0; i < game->sceneEntities.size(); i++)
+        for(int i = 0; i < 1; i++)
         {
-            Entity *e = game.sceneEntities[i];
-            e->Render(e, &game);
+            Entity *e = game->sceneEntities[i];
+            RenderEntityFunc *Render = e->Render;
+            Render(e, game);
+            //e->Render(e, game);
         }
 
-        SDL_GL_SwapWindow(game.window);
+        for(int i = 0; i < test.size(); i++)
+        {
+            mat4 model = mat4(1.0f);
+            model = translate(model, vec3(0.0f, 0.0f, 3.0f));
+            model = rotate(model, SDL_GetTicks() / 1000.0f, vec3(0.0f, 1.0f, 0.0f));
+            model = rotate(model, radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
+            model = scale(model, vec3(0.2f));
+            //RenderMesh(game, &test[i], model);
+        }
+
+        SDL_GL_SwapWindow(game->window);
 
         //Lock FPS and deltaTime calculation
         Uint64 thisFrame = SDL_GetPerformanceCounter();
-        if(game.lockFPS)
+        if(game->lockFPS)
         {
             int targetFrames = 60;
             float targetTime = 1.0f / targetFrames;
             float elapsedWhileWaiting = 0.0f;
-            while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)game.perfFreq) < targetTime)
+            while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)game->perfFreq) < targetTime)
             {
                 SDL_Delay((uint32)((targetTime - elapsedWhileWaiting) * 1000));
             }
@@ -220,8 +270,8 @@ int main(int argc, char *argv[])
             thisFrame = SDL_GetPerformanceCounter();
         }
 
-        game.deltaTime = (thisFrame - game.lastFrame) / (float)game.perfFreq;
-        game.lastFrame = thisFrame;
+        game->deltaTime = (thisFrame - game->lastFrame) / (float)game->perfFreq;
+        game->lastFrame = thisFrame;
     }
 
     return 0;

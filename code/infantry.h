@@ -5,8 +5,6 @@
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 
-using namespace glm;
-
 struct InfantrySquad : public Entity
 {
     int size;
