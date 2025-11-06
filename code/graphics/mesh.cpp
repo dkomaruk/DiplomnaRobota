@@ -141,9 +141,9 @@ void RenderMesh(Game *game, Mesh *mesh, mat4 model)
     mat3 normalMatrix = mat3(transpose(inverse(model)));
     glUniformMatrix3fv(glGetUniformLocation(shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
 
-    glUniformMatrix4fv(glGetUniformLocation(shader, "u_model"), 1, GL_FALSE, value_ptr(model));
-    glUniformMatrix4fv(glGetUniformLocation(shader, "u_view"), 1, GL_FALSE, value_ptr(game->view));
-    glUniformMatrix4fv(glGetUniformLocation(shader, "u_projection"), 1, GL_FALSE, value_ptr(game->projection));
+    ShaderSetMatrix4(shader, "u_model", model);
+    ShaderSetMatrix4(shader, "u_view", game->view);
+    ShaderSetMatrix4(shader, "u_projection", game->projection);
 
     ShaderSetMaterial(shader, &mesh->material);
     SetTexture(mesh->material.diffuseTexture, 0);
@@ -161,5 +161,4 @@ void RenderMesh(Game *game, Mesh *mesh, mat4 model)
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
 }

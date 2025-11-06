@@ -37,6 +37,12 @@ struct Mesh
     int indicesCount, verticesCount;
 };
 
+struct Model
+{
+    Mesh *meshes;
+    int numOfMeshes;
+};
+
 Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader);
 Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, int indicesTotalSize, GLuint shader);
 

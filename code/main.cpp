@@ -34,9 +34,9 @@ using namespace glm;
 #include <stdio.h>
 #include <vector>
 
-std::vector<Mesh> ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture)
+Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture)
 {
-    std::vector<Mesh> result;
+    Model result = {};
 
     const aiScene *scene = aiImportFile(filepath, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
     if(!scene)
@@ -44,6 +44,9 @@ std::vector<Mesh> ImportModel(char *filepath, GLuint shader, GLuint diffuseTextu
         SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
         return result;
     }
+
+    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
+    result.numOfMeshes = scene->mNumMeshes;
 
     for(uint32 i = 0; i < scene->mNumMeshes; i++)
     {
@@ -70,11 +73,10 @@ std::vector<Mesh> ImportModel(char *filepath, GLuint shader, GLuint diffuseTextu
             indices.push_back(j);
         }
 
-        result.push_back(CreateMesh(vertices, indices, shader));
-        result[i].material.diffuseTexture = diffuseTexture;
-        result[i].material.specularTexture = specularTexture;
+        result.meshes[i] = CreateMesh(vertices, indices, shader);
+        result.meshes[i].material.diffuseTexture = diffuseTexture;
+        result.meshes[i].material.specularTexture = specularTexture;
     }
-
 
     return result;
 }
@@ -139,7 +141,13 @@ int main(int argc, char *argv[])
 
     GLuint backpackDiffuseTexture = CreateTexture("../data/models/backpack/diffuse.jpg", 0);
     GLuint backpackSpecularTexture = CreateTexture("../data/models/backpack/specular.jpg", 1);
-    std::vector<Mesh> test = ImportModel("../data/models/backpack/backpack.obj", shader, backpackDiffuseTexture, backpackSpecularTexture);
+
+    Model test = ImportModel("../data/models/backpack/backpack.obj", shader, backpackDiffuseTexture, backpackSpecularTexture);
+    Entity testEntity = CreateEntity(&test);
+    testEntity.position = vec3(0.0f, 0.0f, 3.0f);
+    testEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
+    testEntity.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&testEntity);
 
     MaterialPhong containerMaterial = {};
     containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png", 0);
@@ -162,7 +170,7 @@ int main(int argc, char *argv[])
 
     vec3 dirDiffuse = vec3(0.9f);
     vec3 dirAmbient = vec3(0.05f);
-    vec3 dirSpecular = vec3(0.5f);
+    vec3 dirSpecular = vec3(1.0f);
     //vec3 dirSpecular = vec3(0.8f, 0.7f, 0.0f);
     DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(shader, dirLight);
@@ -172,7 +180,7 @@ int main(int argc, char *argv[])
     PointLight pointLights[4] = {};
     Entity pointLightsSources[4];
     int width = 10;
-    int maxPointLights = 0;
+    int maxPointLights = 4;
     for(int i = 0; i < maxPointLights; i++)
     {
         pointLights[i].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
@@ -181,7 +189,7 @@ int main(int argc, char *argv[])
 
         pointLights[i].diffuse = vec3(0.5f);
         pointLights[i].ambient = vec3(0.05f);
-        pointLights[i].specular = vec3(0.5f);
+        pointLights[i].specular = vec3(0.1f);
 
         pointLights[i].constant = 1.0f;
         pointLights[i].linear = 0.027f;
@@ -223,34 +231,23 @@ int main(int argc, char *argv[])
         ProcessInput(game);
 
         //Update
+        testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
         UpdateGame(game);
 
         //Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ShaderSetVec3(cube.mesh->shader, "u_viewPos", game->camera.position);
-        SDL_Log("%f %f %f ", game->camera.position.x, game->camera.position.y, game->camera.position.z);
-        ShaderSetVec3(cube.mesh->shader, "u_viewDir", game->camera.direction);
-        ShaderSetFloat(cube.mesh->shader, "u_time", SDL_GetTicks() / 1000.0f);
+        ShaderSetVec3(shader, "u_viewPos", game->camera.position);
+        ShaderSetVec3(shader, "u_viewDir", game->camera.direction);
+        ShaderSetFloat(shader, "u_time", SDL_GetTicks() / 1000.0f);
 
-        //for(int i = 0; i < game->sceneEntities.size(); i++)
-        for(int i = 0; i < 1; i++)
+        for(int i = 0; i < game->sceneEntities.size(); i++)
         {
             Entity *e = game->sceneEntities[i];
             RenderEntityFunc *Render = e->Render;
             Render(e, game);
             //e->Render(e, game);
-        }
-
-        for(int i = 0; i < test.size(); i++)
-        {
-            mat4 model = mat4(1.0f);
-            model = translate(model, vec3(0.0f, 0.0f, 3.0f));
-            model = rotate(model, SDL_GetTicks() / 1000.0f, vec3(0.0f, 1.0f, 0.0f));
-            model = rotate(model, radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
-            model = scale(model, vec3(0.2f));
-            //RenderMesh(game, &test[i], model);
         }
 
         SDL_GL_SwapWindow(game->window);

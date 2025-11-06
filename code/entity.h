@@ -21,7 +21,7 @@ struct Entity
     uint16 id;
     uint16 type;
 
-    Mesh *mesh;
+    Model model;
 
     vec3 position;
     vec3 rotation;
@@ -31,7 +31,8 @@ struct Entity
     RenderEntityFunc *Render;
 };
 
-Entity CreateEntity(Mesh *mesh);
+Entity CreateEntity(Mesh *meshes, int numOfMeshes=1);
+Entity CreateEntity(Model *model);
 
 #define ENTITY_H
 #endif

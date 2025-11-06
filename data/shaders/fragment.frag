@@ -81,7 +81,7 @@ vec3 CalculatePointLight(PointLight light, SampledTextures textures, vec3 normal
     vec3 ambient = textures.diffuse.rgb * light.ambient;
 
     vec3 reflectDir = reflect(-lightDir, normal);
-    float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), u_material.shininess);
+    float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), 32.0f);
     vec3 specular = specularStrength * textures.specular.rgb * light.specular;
 
     float distance = length(light.position - fragPos);
