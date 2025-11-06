@@ -34,11 +34,11 @@ using namespace glm;
 #include <stdio.h>
 #include <vector>
 
-Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture)
+Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture, uint32 flags = 0)
 {
     Model result = {};
 
-    const aiScene *scene = aiImportFile(filepath, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    const aiScene *scene = aiImportFile(filepath, flags);
     if(!scene)
     {
         SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
@@ -70,7 +70,14 @@ Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint s
             }
 
             vertices.push_back(vertex);
-            indices.push_back(j);
+        }
+
+        for(uint32 j = 0; j < mesh->mNumFaces; j++)
+        {
+            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
+            {
+                indices.push_back(mesh->mFaces[j].mIndices[k]);
+            }
         }
 
         result.meshes[i] = CreateMesh(vertices, indices, shader);
@@ -142,12 +149,36 @@ int main(int argc, char *argv[])
     GLuint backpackDiffuseTexture = CreateTexture("../data/models/backpack/diffuse.jpg", 0);
     GLuint backpackSpecularTexture = CreateTexture("../data/models/backpack/specular.jpg", 1);
 
-    Model test = ImportModel("../data/models/backpack/backpack.obj", shader, backpackDiffuseTexture, backpackSpecularTexture);
+
+    Model test = ImportModel("../data/models/backpack/backpack.obj", shader,
+                             backpackDiffuseTexture, backpackSpecularTexture,
+                             aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
     Entity testEntity = CreateEntity(&test);
     testEntity.position = vec3(0.0f, 0.0f, 3.0f);
     testEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
     testEntity.scale = vec3(0.2f);
     game->sceneEntities.push_back(&testEntity);
+
+    Model cube2 = ImportModel("../data/models/cube.obj", shader, CreateTexture("../data/models/cube_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Entity cubeEntity = CreateEntity(&cube2);
+    cubeEntity.position = vec3(1.0f, 0.0f, 3.0f);
+    cubeEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
+    cubeEntity.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&cubeEntity);
+
+    Model sphere = ImportModel("../data/models/sphere.obj", shader, CreateTexture("../data/models/sphere_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Entity sphereEntity = CreateEntity(&sphere);
+    sphereEntity.position = vec3(-1.0f, 0.0f, 3.0f);
+    sphereEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
+    sphereEntity.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&sphereEntity);
+
+    Model sphere2 = ImportModel("../data/models/sphere2.obj", shader, CreateTexture("../data/models/sphere2_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Entity sphereEntity2 = CreateEntity(&sphere2);
+    sphereEntity2.position = vec3(0.0f, 1.0f, 3.0f);
+    sphereEntity2.rotation = vec3(0.0f, -90.0f, 0.0f);
+    sphereEntity2.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&sphereEntity2);
 
     MaterialPhong containerMaterial = {};
     containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png", 0);
@@ -235,7 +266,7 @@ int main(int argc, char *argv[])
         UpdateGame(game);
 
         //Rendering
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.8f, 0.8f, 0.8f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ShaderSetVec3(shader, "u_viewPos", game->camera.position);
