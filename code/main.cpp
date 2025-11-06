@@ -18,6 +18,10 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -30,6 +34,15 @@
 
 using namespace glm;
 
+void ImportModels()
+{
+    const aiScene *scene = aiImportFile("backpack.obj", 0);
+    if(!scene)
+    {
+        SDL_Log("Failed to load backpack.obj. Error: %s", aiGetErrorString());
+    }
+}
+
 int main(int argc, char *argv[])
 {
     Game game = {};
@@ -37,6 +50,8 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
+
+    ImportModels();
 
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f,  0.0f, -1.0f,
