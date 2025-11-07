@@ -11,13 +11,11 @@ struct InfantrySquad : public Entity
 
     vec2 *soldierOffsets;
 
-    Mesh *meshes;
-    int *soldierMeshesId;
-    int numOfMeshes;
+    int *soldierModelsId;
 };
 
 void RenderInfantry(Entity *e, Game *game);
-InfantrySquad CreateInfantrySquad(Mesh *soldierMeshes, int numOfMeshes, int squadSize);
+InfantrySquad CreateInfantrySquad(Model *models, int numOfModels, int squadSize);
 
 #define INFANTRY_H
 #endif

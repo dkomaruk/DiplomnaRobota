@@ -11,18 +11,18 @@
 
 void RenderEntity(Entity *self, Game *game)
 {
-    for(int i = 0; i < self->model.numOfMeshes; i++)
-    {
-        RenderMesh(game, &self->model.meshes[i], PrepareModelMatrix(self->position, self->rotation, self->scale));
-    }
+    if(!self->models || !self->numOfModels) return;
+    RenderModel(game, self->models, PrepareModelMatrix(self->position, self->rotation, self->scale));
 }
 
 Entity CreateEntity(Mesh *meshes, int numOfMeshes)
 {
     Entity entity = {};
 
-    entity.model.numOfMeshes = numOfMeshes;
-    entity.model.meshes = meshes;
+    entity.models = (Model *)malloc(sizeof(Model));
+    entity.models->numOfMeshes = numOfMeshes;
+    entity.models->meshes = meshes;
+    entity.numOfModels = 1;
 
     entity.Render = RenderEntity;
     entity.type = EntityType_Static;
@@ -32,5 +32,10 @@ Entity CreateEntity(Mesh *meshes, int numOfMeshes)
 
 Entity CreateEntity(Model *model)
 {
-    return CreateEntity(model->meshes, model->numOfMeshes);
+    Entity entity = {};
+    entity.models = model;
+    entity.numOfModels = 1;
+    entity.Render = RenderEntity;
+    entity.type = EntityType_Static;
+    return entity;
 }

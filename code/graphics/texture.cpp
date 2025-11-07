@@ -2,11 +2,13 @@
 
 #include <stb_image.h>
 
-GLuint CreateTexture(char *imagePath, int textureUnit, bool repeat)
+GLuint CreateTexture(char *imagePath, int textureUnit, bool flipY, bool repeat)
 {
     int width, height, channels;
     int desiredChannels = 4;
     unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
+
+    if(!image) return 0;
 
     GLuint texture;
     glGenTextures(1, &texture);

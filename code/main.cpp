@@ -66,76 +66,23 @@ int main(int argc, char *argv[])
 
     SDL_Log("channels: %d, sampleRate: %d, samplesLoaded: %d\n", channels, sampleRate, samplesLoaded);
 
+    //alDistanceModel(AL_INVERSE_DISTANCE);
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
     ALuint buffer = 0;
     alGenBuffers(1, &buffer);
-    //alBufferData(buffer, AL_FORMAT_STEREO16, output, samplesLoaded * bytesPerStereoSample, sampleRate);
     alBufferData(buffer, AL_FORMAT_MONO16, output, samplesLoaded * channels * sizeof(short), sampleRate);
 
     ALuint source;
     alGenSources(1, &source);
     alSourcei(source, AL_BUFFER, buffer);
-    //alSourcef(source, AL_GAIN, 0.01f);
+    alSourcef(source, AL_GAIN, 0.5f);
 
-    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};    // 10 units away
-    ALfloat srcVel[3] = {0.0f, 0.0f, 0.0f};
+    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};    //30 units away from the listener
     alSourcefv(source, AL_POSITION, srcPos);
-    alSourcefv(source, AL_VELOCITY, srcVel);
-
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-
-    // set reference distance and max distance
-    alSourcef(source, AL_REFERENCE_DISTANCE, 1.0f);   // no attenuation within 1 unit
-    alSourcef(source, AL_MAX_DISTANCE, 50.0f);        // clamp at 50 units
-
-    // optional rolloff factor for faster or slower fade
-    alSourcef(source, AL_ROLLOFF_FACTOR, 1.0f);
+    alSourcef(source, AL_MAX_DISTANCE, 20.0f);
 
     alSourcePlay(source);
-
-    float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,     0.0f,  0.0f, 1.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,    0.0f,  0.0f, 1.0f, 0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-
-        0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,     1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,    0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,     0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,    0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,    0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-    };
 
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                         LoadShader("../data/shaders/fragment.frag"));
@@ -143,41 +90,48 @@ int main(int argc, char *argv[])
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
 
+    Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
+    if(soldier.numOfMeshes != -1)
+    {
+        Entity soldierEntity = CreateEntity(&soldier);
+        soldierEntity.position.y += 0.5f;
+        game->sceneEntities.push_back(&soldierEntity);
+    }
+
     GLuint backpackDiffuseTexture = CreateTexture("../data/models/backpack/diffuse.jpg", 0);
     GLuint backpackSpecularTexture = CreateTexture("../data/models/backpack/specular.jpg", 1);
-
-
     Model test = ImportModel("../data/models/backpack/backpack.obj", shader,
-                             backpackDiffuseTexture, backpackSpecularTexture,
                              aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    test.meshes->material.diffuseTexture = backpackDiffuseTexture;
+    test.meshes->material.specularTexture = backpackSpecularTexture;
+
     Entity testEntity = CreateEntity(&test);
     testEntity.position = vec3(0.0f, 0.0f, 3.0f);
     testEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
     testEntity.scale = vec3(0.2f);
     game->sceneEntities.push_back(&testEntity);
 
-    Model cube2 = ImportModel("../data/models/cube.obj", shader, CreateTexture("../data/models/cube_diffuse.png", 0), 0, aiProcess_Triangulate);
-    Entity cubeEntity = CreateEntity(&cube2);
-    cubeEntity.position = vec3(1.0f, 0.0f, 3.0f);
-    cubeEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
-    cubeEntity.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&cubeEntity);
+    Model sphere = ImportModel("../data/models/sphere.obj", shader, aiProcess_Triangulate);
+    sphere.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png", 0);
 
-    Model sphere = ImportModel("../data/models/sphere.obj", shader, CreateTexture("../data/models/sphere_diffuse.png", 0), 0, aiProcess_Triangulate);
     Entity sphereEntity = CreateEntity(&sphere);
     sphereEntity.position = vec3(-1.0f, 0.0f, 3.0f);
     sphereEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
     sphereEntity.scale = vec3(0.2f);
     game->sceneEntities.push_back(&sphereEntity);
 
-    Model sphere2 = ImportModel("../data/models/sphere2.obj", shader, CreateTexture("../data/models/sphere2_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Model sphere2 = ImportModel("../data/models/sphere2.obj", shader, aiProcess_Triangulate);
+    sphere2.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png", 0);
+
     Entity sphereEntity2 = CreateEntity(&sphere2);
     sphereEntity2.position = vec3(0.0f, 1.0f, 3.0f);
     sphereEntity2.rotation = vec3(0.0f, -90.0f, 0.0f);
     sphereEntity2.scale = vec3(0.2f);
     game->sceneEntities.push_back(&sphereEntity2);
 
-    Model car = ImportModel("../data/models/car_scene.obj", shader, CreateTexture("../data/models/car_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Model car = ImportModel("../data/models/car_scene.obj", shader, aiProcess_Triangulate);
+    car.meshes->material.diffuseTexture = CreateTexture("../data/models/car_diffuse.png", 0);
+
     Entity carEntity = CreateEntity(&car);
     carEntity.position = vec3(0.0f, 1.0f, -3.0f);
     carEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
@@ -191,19 +145,25 @@ int main(int argc, char *argv[])
     containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg", 2);
     containerMaterial.shininess = 256.0f;
 
-    Mesh cubeMesh = CreateMesh(vertices, sizeof(vertices), shader);
-    cubeMesh.material = containerMaterial;
-    //cubeMesh.texture = CreateTexture("../data/imgs/container.jpg", 0);
+    Model cubeMesh = ImportModel("../data/models/cube.obj", shader, aiProcess_Triangulate);
+    cubeMesh.meshes[0].material = containerMaterial;
 
-    Entity cube = CreateEntity(&cubeMesh);
-    cube.position.x -= 3.0f;
-    cube.position.z += 3.0f;
-    cube.position.y -= 0.5f;
-    game->sceneEntities.push_back(&cube);
+    Entity cubeEntity = CreateEntity(&cubeMesh);
+    cubeEntity.position.x -= 3.0f;
+    cubeEntity.position.z += 3.0f;
+    cubeEntity.position.y -= 0.5f;
+    cubeEntity.scale -= vec3(0.5f);
+    game->sceneEntities.push_back(&cubeEntity);
+
+    Entity cubeEntity2 = CreateEntity(&cubeMesh);
+    cubeEntity2.position = vec3(1.0f, 0.0f, 3.0f);
+    cubeEntity2.rotation = vec3(0.0f, 180.0f, 0.0f);
+    cubeEntity2.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&cubeEntity2);
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
+    Model lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
 
     vec3 dirDiffuse = vec3(0.9f);
     vec3 dirAmbient = vec3(0.05f);
@@ -239,7 +199,7 @@ int main(int argc, char *argv[])
         ShaderSetPointLight(shader, pointLights[i], i);
 
         pointLightsSources[i] = CreateEntity(&lightMesh);
-        pointLightsSources[i].scale = vec3(0.2f);
+        pointLightsSources[i].scale = vec3(0.15f);
         pointLightsSources[i].position = pointLights[i].position;
 
         game->sceneEntities.push_back(&pointLightsSources[i]);
@@ -248,17 +208,11 @@ int main(int argc, char *argv[])
     ShaderSetInt(shader, "u_pointLightCount", maxPointLights);
     ShaderSetVec3(lightSourceShader, "u_lightColor", vec3(1.0f));
 
-    Mesh soldierMeshes[2];
-    soldierMeshes[0] = CreateMesh(vertices, sizeof(vertices), shader);
-    soldierMeshes[0].material = containerMaterial;
-
-    soldierMeshes[1] = CreateMesh(vertices, sizeof(vertices), shader);
-    soldierMeshes[1].material = containerMaterial;
-
     for(int i = 0; i < 2; i++)
     {
         InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
-        *squad = CreateInfantrySquad(&soldierMeshes[i], 1, 10);
+        *squad = CreateInfantrySquad(&cubeMesh, 1, 10);
+        squad->scale = vec3(0.5f);
         squad->position.z = -10.0f / 2.0f;
         squad->position.x = -10.0f / 2.0f;
         squad->position.y -= i;
@@ -275,9 +229,16 @@ int main(int argc, char *argv[])
         UpdateGame(game);
 
         Camera *camera = &game->camera;
+        vec3 forward = normalize(camera->direction);
+
+        // reconstruct right and up
+        vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
+        vec3 right = normalize(cross(forward, worldUp));
+        vec3 up = normalize(cross(right, forward));
+
         ALfloat listenerOri[6] = {
             camera->direction.x, camera->direction.y, camera->direction.z,
-            camera->up.x, camera->up.y, camera->up.z
+            up.x, up.y, up.z
         };
         alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
         alListenerfv(AL_ORIENTATION, listenerOri);

@@ -21,7 +21,8 @@ struct Entity
     uint16 id;
     uint16 type;
 
-    Model model;
+    Model *models;
+    int numOfModels;
 
     vec3 position;
     vec3 rotation;

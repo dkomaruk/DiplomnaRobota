@@ -1,5 +1,6 @@
 run.bat
 debug.bat
 data/audio
+data/models/soldier
 .vscode
 build

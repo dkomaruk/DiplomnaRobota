@@ -1,68 +1,101 @@
 #include "mesh.h"
 
 #include "texture.h"
-
 #include "game.h"
 
-Mesh CreateVBO_Old(float *vertices, int verticesTotalSize)
+#include <string>
+
+Model ImportModel(char *filepath, GLuint shader, uint32 flags)
 {
-    Mesh mesh = {};
+    Model result = {};
+    result.numOfMeshes = -1;
 
-    //TODO: Variable vertex attributes
-    int vertexAttribCount = 8;
-    mesh.verticesCount = verticesTotalSize / (vertexAttribCount * sizeof(float));
+    const aiScene *scene = aiImportFile(filepath, flags);
+    if(!scene)
+    {
+        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
+        return result;
+    }
 
-    glGenVertexArrays(1, &mesh.vao);
-    glBindVertexArray(mesh.vao);
+    std::string dirPath = filepath;
+    size_t found = dirPath.find_last_of("\\/");
+    dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
 
-    glGenBuffers(1, &mesh.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
+    result.numOfMeshes = scene->mNumMeshes;
 
-    glBufferData(GL_ARRAY_BUFFER, verticesTotalSize, vertices, GL_STATIC_DRAW);
+    std::vector<std::string> loadedTexturePaths;
+    std::vector<uint32> diffuseTextures;
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(0 * sizeof(float)));
+    for(uint32 i = 0; i < scene->mNumMeshes; i++)
+    {
+        aiMesh *mesh = scene->mMeshes[i];
+        bool hasUVs = mesh->HasTextureCoords(0);
 
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+        std::vector<Vertex> vertices;
+        std::vector<uint32> indices;
+        for(uint32 j = 0; j < mesh->mNumVertices; j++)
+        {
+            aiVector3D pos = mesh->mVertices[j];
+            aiVector3D norm = mesh->mNormals[j];
 
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+            Vertex vertex = {};
+            vertex.position = vec3(pos.x, pos.y, pos.z);
+            vertex.normal = vec3(norm.x, norm.y, norm.z);
+            if(hasUVs)
+            {
+                aiVector3D uv = mesh->mTextureCoords[0][j];
+                vertex.uv = vec2(uv.x, uv.y);
+            }
 
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+            vertices.push_back(vertex);
+        }
 
-    return mesh;
+        for(uint32 j = 0; j < mesh->mNumFaces; j++)
+        {
+            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
+            {
+                indices.push_back(mesh->mFaces[j].mIndices[k]);
+            }
+        }
+
+        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+
+        GLuint diffuseTexture = 0;
+        GLuint specularTexture = 0;
+
+        for(uint32 j = 0; j < material->GetTextureCount(aiTextureType_DIFFUSE); j++)
+        {
+            aiString texPath;
+            material->GetTexture(aiTextureType_DIFFUSE, j, &texPath);
+
+            std::string texturePath = dirPath + '/' + std::string(texPath.C_Str());
+            bool alreadyLoaded = false;
+            for(int k = 0; k < loadedTexturePaths.size(); k++)
+            {
+                if(texturePath == loadedTexturePaths[k])
+                {
+                    alreadyLoaded = true;
+                    diffuseTexture = diffuseTextures[k];
+                    break;
+                }
+            }
+
+            if(!alreadyLoaded)
+            {
+                loadedTexturePaths.push_back(texturePath);
+                diffuseTexture = CreateTexture((char *)texturePath.c_str(), 0);
+                diffuseTextures.push_back(diffuseTexture);
+            }
+        }
+
+        result.meshes[i] = CreateMesh(vertices, indices, shader);
+        result.meshes[i].material.diffuseTexture = diffuseTexture;
+        result.meshes[i].material.specularTexture = specularTexture;
+    }
+
+    return result;
 }
-
-Mesh CreateMesh(float *vertices, int verticesTotalSize, GLuint shader)
-{
-    Mesh mesh = CreateVBO_Old(vertices, verticesTotalSize);
-    mesh.shader = shader;
-
-    return mesh;
-}
-
-Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, int indicesTotalSize, GLuint shader)
-{
-    Mesh mesh = CreateVBO_Old(vertices, verticesTotalSize);
-    mesh.shader = shader;
-    mesh.indicesCount = indicesTotalSize / sizeof(int);
-
-    glBindVertexArray(mesh.vao);
-
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesTotalSize, indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    return mesh;
-}
-
-//API that uses Vertex struct
 
 Mesh CreateVBO(std::vector<Vertex> vertices)
 {
@@ -119,60 +152,6 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
     return mesh;
 }
 
-Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture, uint32 flags)
-{
-    Model result = {};
-
-    const aiScene *scene = aiImportFile(filepath, flags);
-    if(!scene)
-    {
-        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
-        return result;
-    }
-
-    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
-    result.numOfMeshes = scene->mNumMeshes;
-
-    for(uint32 i = 0; i < scene->mNumMeshes; i++)
-    {
-        aiMesh *mesh = scene->mMeshes[i];
-        bool hasUVs = mesh->HasTextureCoords(0);
-
-        std::vector<Vertex> vertices;
-        std::vector<uint32> indices;
-        for(uint32 j = 0; j < mesh->mNumVertices; j++)
-        {
-            aiVector3D pos = mesh->mVertices[j];
-            aiVector3D norm = mesh->mNormals[j];
-
-            Vertex vertex = {};
-            vertex.position = vec3(pos.x, pos.y, pos.z);
-            vertex.normal = vec3(norm.x, norm.y, norm.z);
-            if(hasUVs)
-            {
-                aiVector3D uv = mesh->mTextureCoords[0][j];
-                vertex.uv = vec2(uv.x, uv.y);
-            }
-
-            vertices.push_back(vertex);
-        }
-
-        for(uint32 j = 0; j < mesh->mNumFaces; j++)
-        {
-            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
-            {
-                indices.push_back(mesh->mFaces[j].mIndices[k]);
-            }
-        }
-
-        result.meshes[i] = CreateMesh(vertices, indices, shader);
-        result.meshes[i].material.diffuseTexture = diffuseTexture;
-        result.meshes[i].material.specularTexture = specularTexture;
-    }
-
-    return result;
-}
-
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 {
     mat4 model = mat4(1.0f);
@@ -215,4 +194,12 @@ void RenderMesh(Game *game, Mesh *mesh, mat4 model)
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void RenderModel(Game *game, Model *model, mat4 modelMat)
+{
+    for(int i = 0; i < model->numOfMeshes; i++)
+    {
+        RenderMesh(game, &model->meshes[i], modelMat);
+    }
 }
