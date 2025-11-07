@@ -6,6 +6,10 @@
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include <vector>
 
 struct Game;
@@ -48,6 +52,8 @@ Mesh CreateMesh(float *vertices, int verticesTotalSize, unsigned int *indices, i
 
 Mesh CreateMesh(std::vector<Vertex> vertices, GLuint shader);
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, GLuint shader);
+
+Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture, uint32 flags = 0);
 
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 scale);
 void RenderMesh(Game *game, Mesh *mesh, mat4 model);

@@ -1,6 +1,7 @@
 #ifndef GAME_H
 
 #include "entity.h"
+#include "audio.h"
 
 #include "graphics/camera.h"
 
@@ -34,6 +35,8 @@ struct Game
     Uint64 lastFrame;
 
     std::vector<Entity *> sceneEntities; //TODO: Get rid of std::vector
+
+    Audio audio;
 };
 
 bool InitGame(Game *game);

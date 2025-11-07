@@ -119,6 +119,60 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
     return mesh;
 }
 
+Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture, uint32 flags)
+{
+    Model result = {};
+
+    const aiScene *scene = aiImportFile(filepath, flags);
+    if(!scene)
+    {
+        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
+        return result;
+    }
+
+    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
+    result.numOfMeshes = scene->mNumMeshes;
+
+    for(uint32 i = 0; i < scene->mNumMeshes; i++)
+    {
+        aiMesh *mesh = scene->mMeshes[i];
+        bool hasUVs = mesh->HasTextureCoords(0);
+
+        std::vector<Vertex> vertices;
+        std::vector<uint32> indices;
+        for(uint32 j = 0; j < mesh->mNumVertices; j++)
+        {
+            aiVector3D pos = mesh->mVertices[j];
+            aiVector3D norm = mesh->mNormals[j];
+
+            Vertex vertex = {};
+            vertex.position = vec3(pos.x, pos.y, pos.z);
+            vertex.normal = vec3(norm.x, norm.y, norm.z);
+            if(hasUVs)
+            {
+                aiVector3D uv = mesh->mTextureCoords[0][j];
+                vertex.uv = vec2(uv.x, uv.y);
+            }
+
+            vertices.push_back(vertex);
+        }
+
+        for(uint32 j = 0; j < mesh->mNumFaces; j++)
+        {
+            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
+            {
+                indices.push_back(mesh->mFaces[j].mIndices[k]);
+            }
+        }
+
+        result.meshes[i] = CreateMesh(vertices, indices, shader);
+        result.meshes[i].material.diffuseTexture = diffuseTexture;
+        result.meshes[i].material.specularTexture = specularTexture;
+    }
+
+    return result;
+}
+
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 {
     mat4 model = mat4(1.0f);

@@ -1,4 +1,5 @@
 run.bat
 debug.bat
+data/audio
 .vscode
 build

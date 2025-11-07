@@ -73,7 +73,7 @@ bool InitGame(Game *game)
     camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+    game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
     game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 
     game->perfFreq = SDL_GetPerformanceFrequency();
@@ -82,6 +82,21 @@ bool InitGame(Game *game)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+
+    Audio *audio = &game->audio;
+    audio->device = alcOpenDevice(0);
+    if(!audio->device)
+    {
+        SDL_Log("Failed to open an OpenAL device\n");
+        return false;
+    }
+
+    audio->context = alcCreateContext(audio->device, NULL);
+    if(!audio->context || alcMakeContextCurrent(audio->context) == ALC_FALSE)
+    {
+        SDL_Log("Failed to create an OpenAL context\n");
+        return false;
+    }
 
     return true;
 }

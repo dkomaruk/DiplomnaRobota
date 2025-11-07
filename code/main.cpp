@@ -13,6 +13,7 @@ using namespace glm;
 #include "entity.cpp"
 #include "game.cpp"
 #include "input.cpp"
+#include "audio.cpp"
 
 #include "util/timer.cpp"
 
@@ -27,66 +28,13 @@ using namespace glm;
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include "AL/al.h"
+#include "AL/alext.h"
+
+#include "stb_vorbis.c"
 
 #include <stdio.h>
 #include <vector>
-
-Model ImportModel(char *filepath, GLuint shader, GLuint diffuseTexture, GLuint specularTexture, uint32 flags = 0)
-{
-    Model result = {};
-
-    const aiScene *scene = aiImportFile(filepath, flags);
-    if(!scene)
-    {
-        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
-        return result;
-    }
-
-    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
-    result.numOfMeshes = scene->mNumMeshes;
-
-    for(uint32 i = 0; i < scene->mNumMeshes; i++)
-    {
-        aiMesh *mesh = scene->mMeshes[i];
-        bool hasUVs = mesh->HasTextureCoords(0);
-
-        std::vector<Vertex> vertices;
-        std::vector<uint32> indices;
-        for(uint32 j = 0; j < mesh->mNumVertices; j++)
-        {
-            aiVector3D pos = mesh->mVertices[j];
-            aiVector3D norm = mesh->mNormals[j];
-
-            Vertex vertex = {};
-            vertex.position = vec3(pos.x, pos.y, pos.z);
-            vertex.normal = vec3(norm.x, norm.y, norm.z);
-            if(hasUVs)
-            {
-                aiVector3D uv = mesh->mTextureCoords[0][j];
-                vertex.uv = vec2(uv.x, uv.y);
-            }
-
-            vertices.push_back(vertex);
-        }
-
-        for(uint32 j = 0; j < mesh->mNumFaces; j++)
-        {
-            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
-            {
-                indices.push_back(mesh->mFaces[j].mIndices[k]);
-            }
-        }
-
-        result.meshes[i] = CreateMesh(vertices, indices, shader);
-        result.meshes[i].material.diffuseTexture = diffuseTexture;
-        result.meshes[i].material.specularTexture = specularTexture;
-    }
-
-    return result;
-}
 
 int main(int argc, char *argv[])
 {
@@ -95,6 +43,55 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
+
+    int channels, sampleRate;
+    int bytesPerStereoSample = 4;
+    short *output, *output2;
+    int samplesLoaded = stb_vorbis_decode_filename("../data/audio/test_sample.ogg", &channels, &sampleRate, &output);
+
+    if (channels != 1)
+    {
+        int monoSamples = samplesLoaded;
+        short* mono = (short*)malloc(monoSamples * sizeof(short));
+        for (int i = 0; i < monoSamples; i++) {
+            int left  = output[2*i];
+            int right = output[2*i + 1];
+            mono[i] = (short)((left + right) / 2);
+        }
+        free(output);
+        output = mono;
+        channels = 1;
+        samplesLoaded = monoSamples;
+    }
+
+    SDL_Log("channels: %d, sampleRate: %d, samplesLoaded: %d\n", channels, sampleRate, samplesLoaded);
+
+
+    ALuint buffer = 0;
+    alGenBuffers(1, &buffer);
+    //alBufferData(buffer, AL_FORMAT_STEREO16, output, samplesLoaded * bytesPerStereoSample, sampleRate);
+    alBufferData(buffer, AL_FORMAT_MONO16, output, samplesLoaded * channels * sizeof(short), sampleRate);
+
+    ALuint source;
+    alGenSources(1, &source);
+    alSourcei(source, AL_BUFFER, buffer);
+    //alSourcef(source, AL_GAIN, 0.01f);
+
+    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};    // 10 units away
+    ALfloat srcVel[3] = {0.0f, 0.0f, 0.0f};
+    alSourcefv(source, AL_POSITION, srcPos);
+    alSourcefv(source, AL_VELOCITY, srcVel);
+
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+
+    // set reference distance and max distance
+    alSourcef(source, AL_REFERENCE_DISTANCE, 1.0f);   // no attenuation within 1 unit
+    alSourcef(source, AL_MAX_DISTANCE, 50.0f);        // clamp at 50 units
+
+    // optional rolloff factor for faster or slower fade
+    alSourcef(source, AL_ROLLOFF_FACTOR, 1.0f);
+
+    alSourcePlay(source);
 
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -180,6 +177,13 @@ int main(int argc, char *argv[])
     sphereEntity2.scale = vec3(0.2f);
     game->sceneEntities.push_back(&sphereEntity2);
 
+    Model car = ImportModel("../data/models/car_scene.obj", shader, CreateTexture("../data/models/car_diffuse.png", 0), 0, aiProcess_Triangulate);
+    Entity carEntity = CreateEntity(&car);
+    carEntity.position = vec3(0.0f, 1.0f, -3.0f);
+    carEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
+    //carEntity.scale = vec3(0.2f);
+    game->sceneEntities.push_back(&carEntity);
+
     MaterialPhong containerMaterial = {};
     containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png", 0);
     containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png", 1);
@@ -199,6 +203,8 @@ int main(int argc, char *argv[])
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
+    Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
+
     vec3 dirDiffuse = vec3(0.9f);
     vec3 dirAmbient = vec3(0.05f);
     vec3 dirSpecular = vec3(1.0f);
@@ -206,8 +212,12 @@ int main(int argc, char *argv[])
     DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(shader, dirLight);
     //ShaderSetInt(shader, "u_dirLightCount", 0);
+    Entity dirLightMesh = CreateEntity(&lightMesh);
+    dirLightMesh.scale = vec3(50.0f);
+    dirLightMesh.position = -dirLight.direction * 200.0f;
 
-    Mesh lightMesh = CreateMesh(vertices, sizeof(vertices), lightSourceShader);
+    game->sceneEntities.push_back(&dirLightMesh);
+
     PointLight pointLights[4] = {};
     Entity pointLightsSources[4];
     int width = 10;
@@ -262,11 +272,35 @@ int main(int argc, char *argv[])
         ProcessInput(game);
 
         //Update
-        testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
         UpdateGame(game);
 
+        Camera *camera = &game->camera;
+        ALfloat listenerOri[6] = {
+            camera->direction.x, camera->direction.y, camera->direction.z,
+            camera->up.x, camera->up.y, camera->up.z
+        };
+        alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
+        alListenerfv(AL_ORIENTATION, listenerOri);
+
+        if(game->keys[SDL_SCANCODE_SPACE] && !game->prevKeys[SDL_SCANCODE_SPACE])
+        {
+            int sourceState;
+            alGetSourcei(source, AL_SOURCE_STATE, &sourceState);
+            if(sourceState == AL_PLAYING)
+            {
+                alSourcePause(source);
+            }
+            else
+            {
+                alSourcePlay(source);
+            }
+        }
+
+        testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
+
+
         //Rendering
-        glClearColor(0.8f, 0.8f, 0.8f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ShaderSetVec3(shader, "u_viewPos", game->camera.position);
