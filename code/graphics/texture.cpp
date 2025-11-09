@@ -2,18 +2,11 @@
 
 #include <stb_image.h>
 
-GLuint CreateTexture(char *imagePath, int textureUnit, bool flipY, bool repeat)
+GLuint CreateGLTexture(uint8 *image, int width, int height, bool repeat)
 {
-    int width, height, channels;
-    int desiredChannels = 4;
-    unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
-
-    if(!image) return 0;
-
     GLuint texture;
     glGenTextures(1, &texture);
 
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -29,6 +22,20 @@ GLuint CreateTexture(char *imagePath, int textureUnit, bool flipY, bool repeat)
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
     glGenerateMipmap(GL_TEXTURE_2D);
+
+    return texture;
+}
+
+GLuint CreateTexture(char *imagePath, bool flipY, bool repeat)
+{
+    int width, height, channels;
+    int desiredChannels = 4;
+    stbi_set_flip_vertically_on_load(flipY);
+    unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
+
+    if(!image) return 0;
+
+    GLuint texture = CreateGLTexture(image, width, height, repeat);
 
     stbi_image_free(image);
 

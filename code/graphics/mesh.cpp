@@ -5,6 +5,79 @@
 
 #include <string>
 
+GLuint LoadTextures(const aiScene *scene, aiMaterial *material, std::string dirPath, std::vector<std::string> *loadedPaths,
+                    std::vector<uint32> *loadedTextures, aiTextureType type);
+Mesh CreateVBO(std::vector<Vertex> vertices);
+
+GLuint LoadTextures(const aiScene *scene, aiMaterial *material, std::string dirPath, std::vector<std::string> *loadedPaths,
+                    std::vector<uint32> *loadedTextures, aiTextureType type)
+{
+    GLuint result = 0;
+
+    int texturesCount = material->GetTextureCount(type);
+    if(!texturesCount) return 0;
+
+    Assert(texturesCount < 2); //TODO: Handle multiple textures of the same type on one mesh
+
+    aiString texPath;
+    material->GetTexture(type, 0, &texPath);
+
+    std::string texturePath = "";
+    if(texPath.C_Str()[0] == '*')
+    {
+        texturePath = texPath.C_Str() + 1;
+        for(int i = 0; i < loadedPaths->size(); i++)
+        {
+            if(texturePath == (*loadedPaths)[i]) return (*loadedTextures)[i];
+        }
+
+        int index = atoi(texturePath.c_str());
+        aiTexture *texture = scene->mTextures[index];
+
+        if(texture->mHeight == 0)
+        {
+            int w, h;
+            uint8 *image = stbi_load_from_memory((uint8 *)texture->pcData, texture->mWidth, &w, &h, 0, 4);
+            if(!image) return 0;
+
+            result = CreateGLTexture(image, w, h);
+            stbi_image_free(image);
+        }
+        else
+        {
+            result = CreateGLTexture((uint8 *)texture->pcData, texture->mWidth, texture->mHeight);
+        }
+    }
+    else
+    {
+        texturePath = dirPath + '/' + std::string(texPath.C_Str());
+        for(int i = 0; i < loadedPaths->size(); i++)
+        {
+            if(texturePath == (*loadedPaths)[i]) return (*loadedTextures)[i];
+        }
+
+        result = CreateTexture((char *)texturePath.c_str());
+    }
+
+    loadedPaths->push_back(texturePath);
+    loadedTextures->push_back(result);
+
+    return result;
+}
+
+void ProcessNode(aiNode *node, int *meshCounter, int *nodeCounter)
+{
+    if(!node) return;
+
+    *nodeCounter += 1;
+    *meshCounter += node->mNumMeshes;
+
+    for(uint32 i = 0; i < node->mNumChildren; i++)
+    {
+        ProcessNode(node->mChildren[i], meshCounter, nodeCounter);
+    }
+}
+
 Model ImportModel(char *filepath, GLuint shader, uint32 flags)
 {
     Model result = {};
@@ -17,6 +90,11 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
         return result;
     }
 
+    int meshCounter = 0;
+    int nodeCounter = 0;
+    ProcessNode(scene->mRootNode, &meshCounter, &nodeCounter);
+    SDL_Log("mNumMeshes: %d, Mesh counter: %d, Node counter: %d", scene->mNumMeshes, meshCounter, nodeCounter);
+
     std::string dirPath = filepath;
     size_t found = dirPath.find_last_of("\\/");
     dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
@@ -24,8 +102,8 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
     result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
     result.numOfMeshes = scene->mNumMeshes;
 
-    std::vector<std::string> loadedTexturePaths;
-    std::vector<uint32> diffuseTextures;
+    std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
+    std::vector<uint32> diffuseTextures, specularTextures;
 
     for(uint32 i = 0; i < scene->mNumMeshes; i++)
     {
@@ -61,33 +139,8 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
 
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-        GLuint diffuseTexture = 0;
-        GLuint specularTexture = 0;
-
-        for(uint32 j = 0; j < material->GetTextureCount(aiTextureType_DIFFUSE); j++)
-        {
-            aiString texPath;
-            material->GetTexture(aiTextureType_DIFFUSE, j, &texPath);
-
-            std::string texturePath = dirPath + '/' + std::string(texPath.C_Str());
-            bool alreadyLoaded = false;
-            for(int k = 0; k < loadedTexturePaths.size(); k++)
-            {
-                if(texturePath == loadedTexturePaths[k])
-                {
-                    alreadyLoaded = true;
-                    diffuseTexture = diffuseTextures[k];
-                    break;
-                }
-            }
-
-            if(!alreadyLoaded)
-            {
-                loadedTexturePaths.push_back(texturePath);
-                diffuseTexture = CreateTexture((char *)texturePath.c_str(), 0);
-                diffuseTextures.push_back(diffuseTexture);
-            }
-        }
+        GLuint diffuseTexture = LoadTextures(scene, material, dirPath, &loadedDiffusePaths, &diffuseTextures, aiTextureType_DIFFUSE);
+        GLuint specularTexture = LoadTextures(scene, material, dirPath, &loadedSpecularPaths, &specularTextures, aiTextureType_SPECULAR);
 
         result.meshes[i] = CreateMesh(vertices, indices, shader);
         result.meshes[i].material.diffuseTexture = diffuseTexture;

@@ -2,7 +2,8 @@
 
 #include <GL/glew.h>
 
-GLuint CreateTexture(char *imagePath, int textureUnit, bool flipY = true, bool repeat = true);
+GLuint CreateGLTexture(uint8 *image, int width, int height, bool repeat = true);
+GLuint CreateTexture(char *imagePath, bool flipY = true, bool repeat = true);
 
 void SetTexture(GLuint texture, GLuint textureSlot);
 

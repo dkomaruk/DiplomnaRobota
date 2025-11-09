@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     alSourcei(source, AL_BUFFER, buffer);
     alSourcef(source, AL_GAIN, 0.5f);
 
-    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};    //30 units away from the listener
+    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};
     alSourcefv(source, AL_POSITION, srcPos);
     alSourcef(source, AL_MAX_DISTANCE, 20.0f);
 
@@ -90,7 +90,8 @@ int main(int argc, char *argv[])
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
 
-    Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
+    //Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
+    Model soldier = ImportModel("../data/models/soldier/soldier.glb", shader, aiProcess_Triangulate);
     if(soldier.numOfMeshes != -1)
     {
         Entity soldierEntity = CreateEntity(&soldier);
@@ -98,12 +99,8 @@ int main(int argc, char *argv[])
         game->sceneEntities.push_back(&soldierEntity);
     }
 
-    GLuint backpackDiffuseTexture = CreateTexture("../data/models/backpack/diffuse.jpg", 0);
-    GLuint backpackSpecularTexture = CreateTexture("../data/models/backpack/specular.jpg", 1);
     Model test = ImportModel("../data/models/backpack/backpack.obj", shader,
                              aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
-    test.meshes->material.diffuseTexture = backpackDiffuseTexture;
-    test.meshes->material.specularTexture = backpackSpecularTexture;
 
     Entity testEntity = CreateEntity(&test);
     testEntity.position = vec3(0.0f, 0.0f, 3.0f);
@@ -112,7 +109,7 @@ int main(int argc, char *argv[])
     game->sceneEntities.push_back(&testEntity);
 
     Model sphere = ImportModel("../data/models/sphere.obj", shader, aiProcess_Triangulate);
-    sphere.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png", 0);
+    sphere.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
 
     Entity sphereEntity = CreateEntity(&sphere);
     sphereEntity.position = vec3(-1.0f, 0.0f, 3.0f);
@@ -121,7 +118,7 @@ int main(int argc, char *argv[])
     game->sceneEntities.push_back(&sphereEntity);
 
     Model sphere2 = ImportModel("../data/models/sphere2.obj", shader, aiProcess_Triangulate);
-    sphere2.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png", 0);
+    sphere2.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
 
     Entity sphereEntity2 = CreateEntity(&sphere2);
     sphereEntity2.position = vec3(0.0f, 1.0f, 3.0f);
@@ -130,7 +127,11 @@ int main(int argc, char *argv[])
     game->sceneEntities.push_back(&sphereEntity2);
 
     Model car = ImportModel("../data/models/car_scene.obj", shader, aiProcess_Triangulate);
-    car.meshes->material.diffuseTexture = CreateTexture("../data/models/car_diffuse.png", 0);
+    GLuint carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
+    for(int i = 0; i < car.numOfMeshes; i++)
+    {
+        car.meshes[i].material.diffuseTexture = carDiffuseTexture;
+    }
 
     Entity carEntity = CreateEntity(&car);
     carEntity.position = vec3(0.0f, 1.0f, -3.0f);
@@ -139,10 +140,10 @@ int main(int argc, char *argv[])
     game->sceneEntities.push_back(&carEntity);
 
     MaterialPhong containerMaterial = {};
-    containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png", 0);
-    containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png", 1);
-    //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png", 1);
-    containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg", 2);
+    containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png");
+    containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png");
+    //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png");
+    containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg");
     containerMaterial.shininess = 256.0f;
 
     Model cubeMesh = ImportModel("../data/models/cube.obj", shader, aiProcess_Triangulate);
@@ -231,7 +232,6 @@ int main(int argc, char *argv[])
         Camera *camera = &game->camera;
         vec3 forward = normalize(camera->direction);
 
-        // reconstruct right and up
         vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
         vec3 right = normalize(cross(forward, worldUp));
         vec3 up = normalize(cross(right, forward));
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 
 
         //Rendering
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ShaderSetVec3(shader, "u_viewPos", game->camera.position);
@@ -278,7 +278,6 @@ int main(int argc, char *argv[])
 
         SDL_GL_SwapWindow(game->window);
 
-        //Lock FPS and deltaTime calculation
         Uint64 thisFrame = SDL_GetPerformanceCounter();
         if(game->lockFPS)
         {
