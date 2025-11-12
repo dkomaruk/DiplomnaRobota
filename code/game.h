@@ -6,6 +6,8 @@
 #include "graphics/camera.h"
 
 #include <SDL3/SDL.h>
+
+#include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
 #include <vector>
@@ -29,6 +31,8 @@ struct Game
     GLuint outlineShader, pickingShader;
 
     bool outlinePass, pickingPass;
+
+    uint32 selectedID;
 
     Camera camera;
     mat4 view, projection;

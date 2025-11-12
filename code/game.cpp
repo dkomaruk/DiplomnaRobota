@@ -120,10 +120,13 @@ void RenderScene(Game *game)
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
-        Entity *e = game->sceneEntities[i];
-        RenderEntityFunc *Render = e->Render;
-        Render(e, game);
-        //e->Render(e, game);
+        if((game->outlinePass && game->sceneEntities[i]->id == game->selectedID) || !game->outlinePass)
+        {
+            Entity *e = game->sceneEntities[i];
+            RenderEntityFunc *Render = e->Render;
+            Render(e, game);
+            //e->Render(e, game);
+        }
     }
 }
 

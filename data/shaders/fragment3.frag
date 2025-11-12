@@ -132,7 +132,7 @@ void main()
         float sinWave = sin(u_time * pulseSpeed);
         //float pulse = (sinWave * 0.5) + 0.5;
 
-        float minBrightness = 0.1;
+        float minBrightness = 0.5;
         float pulse = (sinWave * (1.0 - minBrightness)) + minBrightness;
         gl_FragColor = mix(sceneColor, vec4(outlineColor, 1.0), pulse);
     }

@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
     for(uint16 i = 0; i < game->sceneEntities.size(); i++)
     {
-        game->sceneEntities[i]->id = (i + 5) * 3;
+        game->sceneEntities[i]->id = i + 1;
     }
 
     //Framebuffer
@@ -241,8 +241,8 @@ int main(int argc, char *argv[])
     glGenTextures(1, &pickingTexture);
     glBindTexture(GL_TEXTURE_2D, pickingTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTexture, 0);
 
     GLuint pickingRbo;
@@ -399,6 +399,20 @@ int main(int argc, char *argv[])
         glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
         RenderScene(game);
         game->pickingPass = false;
+
+        float x = WINDOW_WIDTH / 2.0f;
+        float y = WINDOW_HEIGHT / 2.0f;
+        //SDL_GetMouseState(&x, &y);
+        //y = (int)WINDOW_HEIGHT - y;
+
+        uint8 pixels[3];
+        glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        uint32 pickedID = pixels[0];
+        if(game->selectedID != pickedID)
+        {
+            game->selectedID = pickedID;
+            SDL_Log("%d", game->selectedID);
+        }
 
         game->outlinePass = true;
         glBindFramebuffer(GL_FRAMEBUFFER, outlineFbo);
