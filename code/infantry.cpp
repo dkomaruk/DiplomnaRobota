@@ -1,12 +1,18 @@
 #include "infantry.h"
 
 #include "util_defines.h"
-
+#include "game.h"
+#include "graphics/shader.h"
 
 void RenderInfantry(Entity *e, Game *game)
 {
     Assert(e->type == EntityType_Infantry)
     InfantrySquad *squad = (InfantrySquad *)(e);
+
+    if(game->pickingPass)
+    {
+        ShaderSetUInt(game->pickingShader, "u_objectIndex", e->id);
+    }
 
     for(int i = 0; i < squad->size; i++)
     {

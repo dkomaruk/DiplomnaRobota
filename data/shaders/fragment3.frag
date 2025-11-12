@@ -94,7 +94,7 @@ void main()
     for(int i = 0; i < 9; i++)
         col += sampleTex[i] * kernel[i];
 
-    sceneColor = vec4(col, 1.0);
+    //sceneColor = vec4(col, 1.0);
 
     bool isEdge = false;
     if(u_showOutline)
@@ -138,13 +138,6 @@ void main()
     }
     else
     {
-        if(sceneColor.r > 0.8 && sceneColor.g > 0.8 && sceneColor.b > 0.8)
-        {
-            gl_FragColor = sceneColor;
-        }
-        else
-        {
-            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        }
+        gl_FragColor = sceneColor;
     }
 }

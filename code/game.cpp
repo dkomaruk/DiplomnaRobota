@@ -64,6 +64,7 @@ bool InitGame(Game *game)
     SDL_SetWindowRelativeMouseMode(game->window, true);
 
     stbi_set_flip_vertically_on_load(true);
+    stbi_flip_vertically_on_write(true);
 
     Camera *camera = &game->camera;
 

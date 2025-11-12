@@ -8,6 +8,7 @@
 using namespace glm;
 
 #include "external/stb_image.cpp"
+#include "external/stb_image_write.cpp"
 
 #include "infantry.cpp"
 #include "entity.cpp"
@@ -82,7 +83,7 @@ int main(int argc, char *argv[])
     alSourcefv(source, AL_POSITION, srcPos);
     alSourcef(source, AL_MAX_DISTANCE, 20.0f);
 
-    alSourcePlay(source);
+    //alSourcePlay(source);
 
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                         LoadShader("../data/shaders/fragment.frag"));
@@ -225,27 +226,57 @@ int main(int argc, char *argv[])
         game->sceneEntities.push_back(squad);
     }
 
+    for(uint16 i = 0; i < game->sceneEntities.size(); i++)
+    {
+        game->sceneEntities[i]->id = (i + 5) * 3;
+    }
+
     //Framebuffer
     //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
-    GLuint fbo;
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    GLuint pickingFbo;
+    glGenFramebuffers(1, &pickingFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
 
-    GLuint fboTexture;
-    glGenTextures(1, &fboTexture);
-    glBindTexture(GL_TEXTURE_2D, fboTexture);
+    GLuint pickingTexture;
+    glGenTextures(1, &pickingTexture);
+    glBindTexture(GL_TEXTURE_2D, pickingTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTexture, 0);
 
-    GLuint fboTexture2;
-    glGenTextures(1, &fboTexture2);
-    glBindTexture(GL_TEXTURE_2D, fboTexture2);
+    GLuint pickingRbo;
+    glGenRenderbuffers(1, &pickingRbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, pickingRbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pickingRbo);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        SDL_Log("Picking framebuffer is complete");
+    }
+
+    //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
+    GLuint outlineFbo;
+    glGenFramebuffers(1, &outlineFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, outlineFbo);
+
+    GLuint outlineTexture;
+    glGenTextures(1, &outlineTexture);
+    glBindTexture(GL_TEXTURE_2D, outlineTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture2, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outlineTexture, 0);
+
+    GLuint fullSceneTexture;
+    glGenTextures(1, &fullSceneTexture);
+    glBindTexture(GL_TEXTURE_2D, fullSceneTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fullSceneTexture, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -258,7 +289,7 @@ int main(int argc, char *argv[])
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
     {
-        SDL_Log("Framebuffer is complete!");
+        SDL_Log("Outline/scene framebuffer is complete");
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -290,13 +321,17 @@ int main(int argc, char *argv[])
     GLuint outlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                LoadShader("../data/shaders/fragment3.frag"));
 
+    GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
+                                               LoadShader("../data/shaders/picking.frag"));
+    game->shaders.push_back(pickingShader);
+    game->pickingShader = pickingShader;
 
     float outlineThickness = 2.0f;
     ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
 
     ShaderSetInt(outlineShader, "u_inverted", 0);
     ShaderSetInt(outlineShader, "u_grayscale", 0);
-    ShaderSetInt(outlineShader, "u_showOutline", 0);
+    ShaderSetInt(outlineShader, "u_showOutline", 1);
 
     while(game->isRunning)
     {
@@ -343,19 +378,35 @@ int main(int argc, char *argv[])
             {
                 alSourcePlay(source);
             }
+
+            int w = (int)WINDOW_WIDTH;
+            int h = (int)WINDOW_HEIGHT;
+            int bytesPerPixel = 3;
+
+            uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+            glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
+            glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+            stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
+            free(pixels);
         }
 
         testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
 
         //Rendering
-        game->outlinePass = true;
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
         glEnable(GL_DEPTH_TEST);
-        RenderScene(game);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture2, 0);
+        game->pickingPass = true;
+        glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
+        RenderScene(game);
+        game->pickingPass = false;
+
+        game->outlinePass = true;
+        glBindFramebuffer(GL_FRAMEBUFFER, outlineFbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outlineTexture, 0);
+        RenderScene(game);
         game->outlinePass = false;
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fullSceneTexture, 0);
         RenderScene(game);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -366,9 +417,9 @@ int main(int argc, char *argv[])
         glUseProgram(outlineShader);
         ShaderSetFloat(outlineShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
 
-        SetTexture(fboTexture, 0);
+        SetTexture(outlineTexture, 0);
         ShaderSetInt(outlineShader, "u_outline", 0);
-        SetTexture(fboTexture2, 1);
+        SetTexture(fullSceneTexture, 1);
         ShaderSetInt(outlineShader, "u_scene", 1);
 
         glBindVertexArray(vao);

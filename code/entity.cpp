@@ -12,6 +12,11 @@
 void RenderEntity(Entity *self, Game *game)
 {
     if(!self->models || !self->numOfModels) return;
+
+    if(game->pickingPass)
+    {
+        ShaderSetUInt(game->pickingShader, "u_objectIndex", self->id);
+    }
     RenderModel(game, self->models, PrepareModelMatrix(self->position, self->rotation, self->scale));
 }
 

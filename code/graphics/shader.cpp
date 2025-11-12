@@ -101,6 +101,12 @@ void ShaderSetInt(GLuint shader, char *uniform, int v)
     glUniform1i(glGetUniformLocation(shader, uniform), v);
 }
 
+void ShaderSetUInt(GLuint shader, char *uniform, uint32 v)
+{
+    if(currentShader != shader) UseShader(shader);
+    glUniform1ui(glGetUniformLocation(shader, uniform), v);
+}
+
 void ShaderSetFloat(GLuint shader, char *uniform, float v)
 {
     if(currentShader != shader) UseShader(shader);

@@ -221,8 +221,19 @@ mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 
 void RenderMesh(Game *game, Mesh *mesh, mat4 model)
 {
-    GLuint shader = game->outlinePass ? game->outlineShader : mesh->shader;
+    GLuint shader = mesh->shader;
+    if(game->outlinePass)
+    {
+        shader = game->outlineShader;
+    }
+    if(game->pickingPass)
+    {
+        shader = game->pickingShader;
+    }
+
+    //GLuint shader = game->outlinePass ? game->outlineShader : mesh->shader;
     //GLuint shader = game->outlineShader;
+
     UseShader(shader);
 
     mat3 normalMatrix = mat3(transpose(inverse(model)));
