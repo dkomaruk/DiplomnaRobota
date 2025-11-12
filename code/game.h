@@ -25,6 +25,10 @@ struct Game
 
     SDL_Window *window;
 
+    std::vector<GLuint> shaders;
+    GLuint outlineShader;
+    bool outlinePass;
+
     Camera camera;
     mat4 view, projection;
 
@@ -41,6 +45,8 @@ struct Game
 
 bool InitGame(Game *game);
 void UpdateGame(Game *game);
+
+void RenderScene(Game *game);
 
 Game *GetGame();
 

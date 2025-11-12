@@ -90,8 +90,12 @@ int main(int argc, char *argv[])
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
 
-    //Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
-    Model soldier = ImportModel("../data/models/soldier/soldier.glb", shader, aiProcess_Triangulate);
+    game->shaders.push_back(shader);
+    game->shaders.push_back(lightSourceShader);
+    game->outlineShader = lightSourceShader;
+
+    Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
+    //Model soldier = ImportModel("../data/models/soldier/soldier.glb", shader, aiProcess_Triangulate);
     if(soldier.numOfMeshes != -1)
     {
         Entity soldierEntity = CreateEntity(&soldier);
@@ -221,6 +225,70 @@ int main(int argc, char *argv[])
         game->sceneEntities.push_back(squad);
     }
 
+    //Framebuffer
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    GLuint fboTexture;
+    glGenTextures(1, &fboTexture);
+    glBindTexture(GL_TEXTURE_2D, fboTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+
+    GLuint fboTexture2;
+    glGenTextures(1, &fboTexture2);
+    glBindTexture(GL_TEXTURE_2D, fboTexture2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture2, 0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        SDL_Log("Framebuffer is complete!");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    float quadVertices[] = {
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+        1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(0 * sizeof(float)));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+
+    GLuint outlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
+                                               LoadShader("../data/shaders/fragment3.frag"));
+
     while(game->isRunning)
     {
         //Input
@@ -259,22 +327,32 @@ int main(int argc, char *argv[])
 
         testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
 
-
         //Rendering
-        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        game->outlinePass = true;
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+        glEnable(GL_DEPTH_TEST);
+        RenderScene(game);
 
-        ShaderSetVec3(shader, "u_viewPos", game->camera.position);
-        ShaderSetVec3(shader, "u_viewDir", game->camera.direction);
-        ShaderSetFloat(shader, "u_time", SDL_GetTicks() / 1000.0f);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture2, 0);
+        game->outlinePass = false;
+        RenderScene(game);
 
-        for(int i = 0; i < game->sceneEntities.size(); i++)
-        {
-            Entity *e = game->sceneEntities[i];
-            RenderEntityFunc *Render = e->Render;
-            Render(e, game);
-            //e->Render(e, game);
-        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+
+        glUseProgram(outlineShader);
+        ShaderSetFloat(outlineShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
+
+        SetTexture(fboTexture, 0);
+        ShaderSetInt(outlineShader, "u_outline", 0);
+        SetTexture(fboTexture2, 1);
+        ShaderSetInt(outlineShader, "u_scene", 1);
+
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         SDL_GL_SwapWindow(game->window);
 

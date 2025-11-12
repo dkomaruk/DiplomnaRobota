@@ -70,7 +70,8 @@ bool InitGame(Game *game)
     camera->position = vec3(0.0f, 0.0f, 5.0f);
     camera->direction = vec3(0.0f, 0.0f, -1.0f);
     camera->up = vec3(0.0f, 1.0f, 0.0f);
-    camera->speed = 2.5f;
+    //camera->speed = 2.5f;
+    camera->speed = 50.5f;
     camera->sensitivity = 0.1f;
 
     game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
@@ -99,6 +100,30 @@ bool InitGame(Game *game)
     }
 
     return true;
+}
+
+void RenderScene(Game *game)
+{
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    for(int i = 0; i < game->shaders.size(); i++)
+    {
+        GLuint shader = game->shaders[i];
+        ShaderSetVec3(shader, "u_viewPos", game->camera.position);
+        ShaderSetVec3(shader, "u_viewDir", game->camera.direction);
+        ShaderSetFloat(shader, "u_time", SDL_GetTicks() / 1000.0f);
+        ShaderSetMatrix4(shader, "u_view", game->view);
+        ShaderSetMatrix4(shader, "u_projection", game->projection);
+    }
+
+    for(int i = 0; i < game->sceneEntities.size(); i++)
+    {
+        Entity *e = game->sceneEntities[i];
+        RenderEntityFunc *Render = e->Render;
+        Render(e, game);
+        //e->Render(e, game);
+    }
 }
 
 Game *GetGame()

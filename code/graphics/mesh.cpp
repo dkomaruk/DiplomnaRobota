@@ -221,15 +221,14 @@ mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 
 void RenderMesh(Game *game, Mesh *mesh, mat4 model)
 {
-    GLuint shader = mesh->shader;
+    GLuint shader = game->outlinePass ? game->outlineShader : mesh->shader;
+    //GLuint shader = game->outlineShader;
     UseShader(shader);
 
     mat3 normalMatrix = mat3(transpose(inverse(model)));
     glUniformMatrix3fv(glGetUniformLocation(shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
 
     ShaderSetMatrix4(shader, "u_model", model);
-    ShaderSetMatrix4(shader, "u_view", game->view);
-    ShaderSetMatrix4(shader, "u_projection", game->projection);
 
     ShaderSetMaterial(shader, &mesh->material);
     SetTexture(mesh->material.diffuseTexture, 0);

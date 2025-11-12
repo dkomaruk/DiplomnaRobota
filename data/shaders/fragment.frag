@@ -8,6 +8,9 @@ uniform vec3 u_viewDir;
 
 uniform float u_time;
 
+uniform sampler2D u_outlineTexture;
+uniform bool u_outlinePass;
+
 struct Material
 {
     sampler2D diffuse;
