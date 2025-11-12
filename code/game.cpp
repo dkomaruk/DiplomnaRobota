@@ -71,7 +71,7 @@ bool InitGame(Game *game)
     camera->direction = vec3(0.0f, 0.0f, -1.0f);
     camera->up = vec3(0.0f, 1.0f, 0.0f);
     //camera->speed = 2.5f;
-    camera->speed = 50.5f;
+    camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
     game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);

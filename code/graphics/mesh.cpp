@@ -90,10 +90,10 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
         return result;
     }
 
-    int meshCounter = 0;
-    int nodeCounter = 0;
-    ProcessNode(scene->mRootNode, &meshCounter, &nodeCounter);
-    SDL_Log("mNumMeshes: %d, Mesh counter: %d, Node counter: %d", scene->mNumMeshes, meshCounter, nodeCounter);
+    //int meshCounter = 0;
+    //int nodeCounter = 0;
+    //ProcessNode(scene->mRootNode, &meshCounter, &nodeCounter);
+    //SDL_Log("mNumMeshes: %d, Mesh counter: %d, Node counter: %d", scene->mNumMeshes, meshCounter, nodeCounter);
 
     std::string dirPath = filepath;
     size_t found = dirPath.find_last_of("\\/");

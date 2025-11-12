@@ -226,6 +226,7 @@ int main(int argc, char *argv[])
     }
 
     //Framebuffer
+    //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
     GLuint fbo;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -289,6 +290,14 @@ int main(int argc, char *argv[])
     GLuint outlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                LoadShader("../data/shaders/fragment3.frag"));
 
+
+    float outlineThickness = 2.0f;
+    ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
+
+    ShaderSetInt(outlineShader, "u_inverted", 0);
+    ShaderSetInt(outlineShader, "u_grayscale", 0);
+    ShaderSetInt(outlineShader, "u_showOutline", 0);
+
     while(game->isRunning)
     {
         //Input
@@ -310,6 +319,17 @@ int main(int argc, char *argv[])
         };
         alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
         alListenerfv(AL_ORIENTATION, listenerOri);
+
+        if(game->keys[SDL_SCANCODE_DOWN])
+        {
+            outlineThickness -= 5.0f * game->deltaTime;
+            ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
+        }
+        if(game->keys[SDL_SCANCODE_UP])
+        {
+            outlineThickness += 5.0f * game->deltaTime;
+            ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
+        }
 
         if(game->keys[SDL_SCANCODE_SPACE] && !game->prevKeys[SDL_SCANCODE_SPACE])
         {
