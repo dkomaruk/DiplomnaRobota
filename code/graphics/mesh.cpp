@@ -78,10 +78,10 @@ void ProcessNode(aiNode *node, int *meshCounter, int *nodeCounter)
     }
 }
 
-Model ImportModel(char *filepath, GLuint shader, uint32 flags)
+Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
 {
-    Model result = {};
-    result.numOfMeshes = -1;
+    Model *result = (Model *)malloc(sizeof(Model));
+    result->numOfMeshes = -1;
 
     const aiScene *scene = aiImportFile(filepath, flags);
     if(!scene)
@@ -99,8 +99,8 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
     size_t found = dirPath.find_last_of("\\/");
     dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
 
-    result.meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
-    result.numOfMeshes = scene->mNumMeshes;
+    result->meshes = (Mesh *)malloc(sizeof(Mesh) * scene->mNumMeshes);
+    result->numOfMeshes = scene->mNumMeshes;
 
     std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
     std::vector<uint32> diffuseTextures, specularTextures;
@@ -142,9 +142,9 @@ Model ImportModel(char *filepath, GLuint shader, uint32 flags)
         GLuint diffuseTexture = LoadTextures(scene, material, dirPath, &loadedDiffusePaths, &diffuseTextures, aiTextureType_DIFFUSE);
         GLuint specularTexture = LoadTextures(scene, material, dirPath, &loadedSpecularPaths, &specularTextures, aiTextureType_SPECULAR);
 
-        result.meshes[i] = CreateMesh(vertices, indices, shader);
-        result.meshes[i].material.diffuseTexture = diffuseTexture;
-        result.meshes[i].material.specularTexture = specularTexture;
+        result->meshes[i] = CreateMesh(vertices, indices, shader);
+        result->meshes[i].material.diffuseTexture = diffuseTexture;
+        result->meshes[i].material.specularTexture = specularTexture;
     }
 
     return result;

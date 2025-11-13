@@ -15,6 +15,7 @@ using namespace glm;
 #include "game.cpp"
 #include "input.cpp"
 #include "audio.cpp"
+#include "asset_loader.cpp"
 
 #include "util/timer.cpp"
 
@@ -27,6 +28,7 @@ using namespace glm;
 #include <GL/glew.h>
 
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_thread.h>
 #include <SDL3/SDL.h>
 
 #include "AL/al.h"
@@ -65,9 +67,6 @@ int main(int argc, char *argv[])
         samplesLoaded = monoSamples;
     }
 
-    SDL_Log("channels: %d, sampleRate: %d, samplesLoaded: %d\n", channels, sampleRate, samplesLoaded);
-
-    //alDistanceModel(AL_INVERSE_DISTANCE);
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
     ALuint buffer = 0;
@@ -85,151 +84,7 @@ int main(int argc, char *argv[])
 
     //alSourcePlay(source);
 
-    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
-                                        LoadShader("../data/shaders/fragment.frag"));
-
-    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
-                                                   LoadShader("../data/shaders/fragment2.frag"));
-
-    game->shaders.push_back(shader);
-    game->shaders.push_back(lightSourceShader);
-    game->outlineShader = lightSourceShader;
-
-    Model soldier = ImportModel("../data/models/soldier/soldier.obj", shader, aiProcess_Triangulate);
-    //Model soldier = ImportModel("../data/models/soldier/soldier.glb", shader, aiProcess_Triangulate);
-    if(soldier.numOfMeshes != -1)
-    {
-        Entity soldierEntity = CreateEntity(&soldier);
-        soldierEntity.position.y += 0.5f;
-        game->sceneEntities.push_back(&soldierEntity);
-    }
-
-    Model test = ImportModel("../data/models/backpack/backpack.obj", shader,
-                             aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
-
-    Entity testEntity = CreateEntity(&test);
-    testEntity.position = vec3(0.0f, 0.0f, 3.0f);
-    testEntity.rotation = vec3(0.0f, 180.0f, 0.0f);
-    testEntity.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&testEntity);
-
-    Model sphere = ImportModel("../data/models/sphere.obj", shader, aiProcess_Triangulate);
-    sphere.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
-
-    Entity sphereEntity = CreateEntity(&sphere);
-    sphereEntity.position = vec3(-1.0f, 0.0f, 3.0f);
-    sphereEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&sphereEntity);
-
-    Model sphere2 = ImportModel("../data/models/sphere2.obj", shader, aiProcess_Triangulate);
-    sphere2.meshes->material.diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
-
-    Entity sphereEntity2 = CreateEntity(&sphere2);
-    sphereEntity2.position = vec3(0.0f, 1.0f, 3.0f);
-    sphereEntity2.rotation = vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity2.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&sphereEntity2);
-
-    Model car = ImportModel("../data/models/car_scene.obj", shader, aiProcess_Triangulate);
-    GLuint carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
-    for(int i = 0; i < car.numOfMeshes; i++)
-    {
-        car.meshes[i].material.diffuseTexture = carDiffuseTexture;
-    }
-
-    Entity carEntity = CreateEntity(&car);
-    carEntity.position = vec3(0.0f, 1.0f, -3.0f);
-    carEntity.rotation = vec3(0.0f, -90.0f, 0.0f);
-    //carEntity.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&carEntity);
-
-    MaterialPhong containerMaterial = {};
-    containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png");
-    containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png");
-    //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png");
-    containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg");
-    containerMaterial.shininess = 256.0f;
-
-    Model cubeMesh = ImportModel("../data/models/cube.obj", shader, aiProcess_Triangulate);
-    cubeMesh.meshes[0].material = containerMaterial;
-
-    Entity cubeEntity = CreateEntity(&cubeMesh);
-    cubeEntity.position.x -= 3.0f;
-    cubeEntity.position.z += 3.0f;
-    cubeEntity.position.y -= 0.5f;
-    cubeEntity.scale -= vec3(0.5f);
-    game->sceneEntities.push_back(&cubeEntity);
-
-    Entity cubeEntity2 = CreateEntity(&cubeMesh);
-    cubeEntity2.position = vec3(1.0f, 0.0f, 3.0f);
-    cubeEntity2.rotation = vec3(0.0f, 180.0f, 0.0f);
-    cubeEntity2.scale = vec3(0.2f);
-    game->sceneEntities.push_back(&cubeEntity2);
-
-    ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
-
-    Model lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
-
-    vec3 dirDiffuse = vec3(0.9f);
-    vec3 dirAmbient = vec3(0.05f);
-    vec3 dirSpecular = vec3(1.0f);
-    //vec3 dirSpecular = vec3(0.8f, 0.7f, 0.0f);
-    DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
-    ShaderSetDirLight(shader, dirLight);
-    //ShaderSetInt(shader, "u_dirLightCount", 0);
-    Entity dirLightMesh = CreateEntity(&lightMesh);
-    dirLightMesh.scale = vec3(50.0f);
-    dirLightMesh.position = -dirLight.direction * 200.0f;
-
-    game->sceneEntities.push_back(&dirLightMesh);
-
-    PointLight pointLights[4] = {};
-    Entity pointLightsSources[4];
-    int width = 10;
-    int maxPointLights = 4;
-    for(int i = 0; i < maxPointLights; i++)
-    {
-        pointLights[i].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[i].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[i].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
-
-        pointLights[i].diffuse = vec3(0.5f);
-        pointLights[i].ambient = vec3(0.05f);
-        pointLights[i].specular = vec3(0.1f);
-
-        pointLights[i].constant = 1.0f;
-        pointLights[i].linear = 0.027f;
-        pointLights[i].quadratic = 0.0028f;
-
-        ShaderSetPointLight(shader, pointLights[i], i);
-
-        pointLightsSources[i] = CreateEntity(&lightMesh);
-        pointLightsSources[i].scale = vec3(0.15f);
-        pointLightsSources[i].position = pointLights[i].position;
-
-        game->sceneEntities.push_back(&pointLightsSources[i]);
-    }
-
-    ShaderSetInt(shader, "u_pointLightCount", maxPointLights);
-    ShaderSetVec3(lightSourceShader, "u_lightColor", vec3(1.0f));
-
-    for(int i = 0; i < 2; i++)
-    {
-        InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
-        *squad = CreateInfantrySquad(&cubeMesh, 1, 10);
-        squad->scale = vec3(0.5f);
-        squad->position.z = -10.0f / 2.0f;
-        squad->position.x = -10.0f / 2.0f;
-        squad->position.y -= i;
-
-        game->sceneEntities.push_back(squad);
-    }
-
-    for(uint16 i = 0; i < game->sceneEntities.size(); i++)
-    {
-        game->sceneEntities[i]->id = i + 1;
-    }
+    LoadAssets(game);
 
     //Framebuffer
     //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
@@ -318,20 +173,6 @@ int main(int argc, char *argv[])
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 
-    GLuint outlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
-                                               LoadShader("../data/shaders/fragment3.frag"));
-
-    GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
-                                               LoadShader("../data/shaders/picking.frag"));
-    game->shaders.push_back(pickingShader);
-    game->pickingShader = pickingShader;
-
-    float outlineThickness = 2.0f;
-    ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
-
-    ShaderSetInt(outlineShader, "u_inverted", 0);
-    ShaderSetInt(outlineShader, "u_grayscale", 0);
-    ShaderSetInt(outlineShader, "u_showOutline", 1);
 
     while(game->isRunning)
     {
@@ -357,13 +198,13 @@ int main(int argc, char *argv[])
 
         if(game->keys[SDL_SCANCODE_DOWN])
         {
-            outlineThickness -= 5.0f * game->deltaTime;
-            ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
+            game->outlineThickness -= 5.0f * game->deltaTime;
+            ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
         }
         if(game->keys[SDL_SCANCODE_UP])
         {
-            outlineThickness += 5.0f * game->deltaTime;
-            ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
+            game->outlineThickness += 5.0f * game->deltaTime;
+            ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
         }
 
         if(IsFirstPress(game, SDL_SCANCODE_SPACE))
@@ -415,7 +256,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
+        game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
 
         //Rendering
         glEnable(GL_DEPTH_TEST);
@@ -463,13 +304,13 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
 
-        glUseProgram(outlineShader);
-        ShaderSetFloat(outlineShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
+        glUseProgram(game->postProcessShader);
+        ShaderSetFloat(game->postProcessShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
 
         SetTexture(outlineTexture, 0);
-        ShaderSetInt(outlineShader, "u_outline", 0);
+        ShaderSetInt(game->postProcessShader, "u_outline", 0);
         SetTexture(fullSceneTexture, 1);
-        ShaderSetInt(outlineShader, "u_scene", 1);
+        ShaderSetInt(game->postProcessShader, "u_scene", 1);
 
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);

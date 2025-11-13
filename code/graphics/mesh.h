@@ -49,7 +49,7 @@ struct Model
 Mesh CreateMesh(std::vector<Vertex> vertices, GLuint shader);
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, GLuint shader);
 
-Model ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
+Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
 
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 scale);
 void RenderMesh(Game *game, Mesh *mesh, mat4 model);

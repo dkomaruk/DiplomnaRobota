@@ -29,9 +29,10 @@ struct Game
     SDL_Window *window;
 
     std::vector<GLuint> shaders;
-    GLuint outlineShader, pickingShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader;
 
     bool outlinePass, pickingPass;
+    float outlineThickness = 2.0f;
 
     uint32 selectedID;
 
@@ -47,7 +48,8 @@ struct Game
     Uint64 perfFreq;
     Uint64 lastFrame;
 
-    std::vector<Entity *> sceneEntities; //TODO: Get rid of std::vector
+    std::vector<Entity *> sceneEntities; //TODO: Change std::vector to a custom data structure
+    Entity *testEntity;
 
     Audio audio;
 };
