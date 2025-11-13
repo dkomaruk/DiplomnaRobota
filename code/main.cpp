@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
             ShaderSetInt(outlineShader, "u_outlineThickness", (int)outlineThickness);
         }
 
-        if(game->keys[SDL_SCANCODE_SPACE] && !game->prevKeys[SDL_SCANCODE_SPACE])
+        if(IsFirstPress(game, SDL_SCANCODE_SPACE))
         {
             int sourceState;
             alGetSourcei(source, AL_SOURCE_STATE, &sourceState);
@@ -378,7 +378,9 @@ int main(int argc, char *argv[])
             {
                 alSourcePlay(source);
             }
-
+        }
+        if(IsFirstPress(game, SDL_SCANCODE_U))
+        {
             int w = (int)WINDOW_WIDTH;
             int h = (int)WINDOW_HEIGHT;
             int bytesPerPixel = 3;
@@ -388,6 +390,29 @@ int main(int argc, char *argv[])
             glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
             stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
             free(pixels);
+        }
+        if(IsFirstPress(game, SDL_SCANCODE_P))
+        {
+            if(game->isCursorHidden)
+            {
+                SDL_ShowCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, false);
+            }
+            else
+            {
+                SDL_HideCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, true);
+            }
+
+            game->isCursorHidden = !game->isCursorHidden;
+        }
+
+        for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
+        {
+            if(IsFirstClick(game, i))
+            {
+                SDL_Log("%s", GetMouseButtonName(i));
+            }
         }
 
         testEntity.rotation.y = (float)SDL_GetTicks() / 25.0f;
@@ -400,18 +425,28 @@ int main(int argc, char *argv[])
         RenderScene(game);
         game->pickingPass = false;
 
-        float x = WINDOW_WIDTH / 2.0f;
-        float y = WINDOW_HEIGHT / 2.0f;
-        //SDL_GetMouseState(&x, &y);
-        //y = (int)WINDOW_HEIGHT - y;
-
-        uint8 pixels[3];
-        glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        uint32 pickedID = pixels[0];
-        if(game->selectedID != pickedID)
+        if(IsFirstClick(game, MOUSE_LEFT))
         {
-            game->selectedID = pickedID;
-            SDL_Log("%d", game->selectedID);
+            float x, y;
+            if(game->isCursorHidden)
+            {
+                x = WINDOW_WIDTH / 2.0f;
+                y = WINDOW_HEIGHT / 2.0f;
+            }
+            else
+            {
+                SDL_GetMouseState(&x, &y);
+                y = (int)WINDOW_HEIGHT - y;
+            }
+
+            uint8 pixels[3];
+            glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+            uint32 pickedID = pixels[0];
+            if(game->selectedID != pickedID)
+            {
+                game->selectedID = pickedID;
+                SDL_Log("%d", game->selectedID);
+            }
         }
 
         game->outlinePass = true;

@@ -62,6 +62,7 @@ bool InitGame(Game *game)
 
     SDL_HideCursor();
     SDL_SetWindowRelativeMouseMode(game->window, true);
+    game->isCursorHidden = true;
 
     stbi_set_flip_vertically_on_load(true);
     stbi_flip_vertically_on_write(true);

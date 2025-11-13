@@ -2,6 +2,7 @@
 
 #include "entity.h"
 #include "audio.h"
+#include "input.h"
 
 #include "graphics/camera.h"
 
@@ -38,6 +39,9 @@ struct Game
     mat4 view, projection;
 
     int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
+
+    int mouseButtons[MOUSE_BUTTONS_COUNT], prevMouseButtons[MOUSE_BUTTONS_COUNT];
+    bool isCursorHidden;
 
     float deltaTime;
     Uint64 perfFreq;

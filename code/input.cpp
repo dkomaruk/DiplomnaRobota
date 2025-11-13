@@ -1,5 +1,7 @@
 #include "input.h"
 
+#include "game.h"
+
 #include <GL/glew.h>
 
 #include <glm/mat4x4.hpp>
@@ -7,23 +9,12 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-void ProcessKeyUp(SDL_KeyboardEvent *event, Game *game)
-{
-    if(event->repeat != 0) return;
-    game->keys[event->scancode] = 0;
-}
-
-void ProcessKeyDown(SDL_KeyboardEvent *event, Game *game)
-{
-    if(event->repeat != 0) return;
-    game->keys[event->scancode] = 1;
-}
-
 void ProcessInput(Game *game)
 {
     Camera &camera = game->camera;
 
     memcpy(game->prevKeys, game->keys, SDL_SCANCODE_COUNT * sizeof(int));
+    memcpy(game->prevMouseButtons, game->mouseButtons, MOUSE_BUTTONS_COUNT * sizeof(int));
 
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -37,12 +28,14 @@ void ProcessInput(Game *game)
 
             case SDL_EVENT_KEY_UP:
             {
-                ProcessKeyUp(&event.key, game);
+                if(event.key.repeat != 0) return;
+                game->keys[event.key.scancode] = 0;
             } break;
 
             case SDL_EVENT_KEY_DOWN:
             {
-                ProcessKeyDown(&event.key, game);
+                if(event.key.repeat != 0) return;
+                game->keys[event.key.scancode] = 1;
             } break;
 
             case SDL_EVENT_MOUSE_MOTION:
@@ -69,6 +62,52 @@ void ProcessInput(Game *game)
                 game->projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
             } break;
 
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            {
+                game->mouseButtons[event.button.button - 1] = 1;
+            } break;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+            {
+                game->mouseButtons[event.button.button - 1] = 0;
+            } break;
         }
+    }
+}
+
+bool IsFirstPress(Game *game, SDL_Scancode key)
+{
+    return game->keys[key] && !game->prevKeys[key];
+}
+
+bool IsFirstClick(Game *game, int button)
+{
+    Assert(button < MOUSE_BUTTONS_COUNT);
+    return game->mouseButtons[button] && !game->prevMouseButtons[button];
+}
+
+char *GetMouseButtonName(int button)
+{
+    Assert(button < MOUSE_BUTTONS_COUNT);
+
+    if(button == MOUSE_LEFT)
+    {
+        return "MOUSE_LEFT";
+    }
+    else if(button == MOUSE_RIGHT)
+    {
+        return "MOUSE_RIGHT";
+    }
+    else if(button == MOUSE_MIDDLE)
+    {
+        return "MOUSE_MIDDLE";
+    }
+    else if(button == MOUSE_SIDE1)
+    {
+        return "MOUSE_SIDE1";
+    }
+    else
+    {
+        return "MOUSE_SIDE2";
     }
 }
