@@ -12,6 +12,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <vector>
+#include <unordered_set>
 
 #ifdef WINDOW_TRANSPARENT
     #define WINDOW_WIDTH 1920.0f
@@ -34,7 +35,6 @@ struct Game
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
 
-    uint32 selectedID;
 
     Camera camera;
     mat4 view, projection;
@@ -48,7 +48,8 @@ struct Game
     Uint64 perfFreq;
     Uint64 lastFrame;
 
-    std::vector<Entity *> sceneEntities; //TODO: Change std::vector to a custom data structure
+    std::vector<Entity *> sceneEntities;
+    std::unordered_set<uint32> selectedIDs;
     Entity *testEntity;
 
     Audio audio;
