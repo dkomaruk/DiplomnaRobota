@@ -283,11 +283,21 @@ int main(int argc, char *argv[])
             uint8 pixels[3];
             glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
             uint32 pickedID = pixels[0];
+
             if(!pickedID || !game->keys[SDL_SCANCODE_LSHIFT])
             {
                 game->selectedIDs.clear();
             }
-            game->selectedIDs.insert(pickedID);
+
+            bool isAlreadyPicked = game->selectedIDs.count(pickedID);
+            if(isAlreadyPicked && game->keys[SDL_SCANCODE_LSHIFT])
+            {
+                game->selectedIDs.erase(pickedID);
+            }
+            else
+            {
+                game->selectedIDs.insert(pickedID);
+            }
         }
 
         game->outlinePass = true;
