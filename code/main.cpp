@@ -31,6 +31,8 @@ using namespace glm;
 #include <SDL3/SDL_thread.h>
 #include <SDL3/SDL.h>
 
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include "AL/al.h"
 #include "AL/alext.h"
 
@@ -149,13 +151,13 @@ int main(int argc, char *argv[])
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     float quadVertices[] = {
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 0.0f,
+        1.0f, -1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 0.0f,
 
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        1.0f, -1.0f,  1.0f, 0.0f,
-        1.0f,  1.0f,  1.0f, 1.0f
+        -1.0f,  1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 1.0f,
+        1.0f, -1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 0.0f,
+        1.0f,  1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 1.0f
     };
 
     GLuint vao;
@@ -168,11 +170,31 @@ int main(int argc, char *argv[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(0 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(0 * sizeof(float)));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
 
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+
+    //Mesh quad = CreateQuad(vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), vec2(100.0f, 50.0f), game->uiShader);
+    std::vector<Mesh> quads = {
+        CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
+    };
+
+    float lastQuadX = 150.0f;
+    float lastQuadY = 0.0f;
+
+    GLuint faceTexture = CreateTexture("../data/imgs/face.png");
+    for(int i = 0; i < quads.size(); i++)
+    {
+        quads[i].material.diffuseTexture = faceTexture;
+    }
+    ShaderSetInt(game->uiShader, "u_texture", 0);
 
     while(game->isRunning)
     {
@@ -246,6 +268,25 @@ int main(int argc, char *argv[])
             }
 
             game->isCursorHidden = !game->isCursorHidden;
+        }
+
+        //if(IsFirstPress(game, SDL_SCANCODE_UP))
+        if(game->keys[SDL_SCANCODE_UP])
+        {
+            float newQuadX = lastQuadX + 50.0f;
+            float newQuadY = lastQuadY;
+            if(newQuadX >= WINDOW_WIDTH)
+            {
+                newQuadX = 0.0f;
+                newQuadY += 50.0f;
+            }
+
+            Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), vec2(50.0f, 50.0f), game->uiShader);
+            newQuad.material.diffuseTexture = faceTexture;
+            quads.push_back(newQuad);
+
+            lastQuadX = newQuadX;
+            lastQuadY = newQuadY;
         }
 
         for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
@@ -325,6 +366,14 @@ int main(int argc, char *argv[])
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        for(int i = 0; i < quads.size(); i++)
+        {
+            RenderMesh(game, &quads[i], mat4(1.0f));
+        }
+        glDisable(GL_BLEND);
+
         SDL_GL_SwapWindow(game->window);
 
         Uint64 thisFrame = SDL_GetPerformanceCounter();
@@ -342,6 +391,11 @@ int main(int argc, char *argv[])
         }
 
         game->deltaTime = (thisFrame - game->lastFrame) / (float)game->perfFreq;
+
+        float ms = game->deltaTime * 1000.0f;
+        float fps = 1000.0f / ms;
+        SDL_Log("%f", fps);
+
         game->lastFrame = thisFrame;
     }
 

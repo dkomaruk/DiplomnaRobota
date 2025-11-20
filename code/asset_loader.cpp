@@ -1,12 +1,28 @@
 #include "asset_loader.h"
 
 #include "game.h"
+
 #include "graphics/texture.h"
+#include "graphics/shader.h"
 
 void LoadAssets(Game *game)
 {
+    game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
+    if(!game->font)
+    {
+        SDL_Log("Failed to load arial.ttf font. Error: %s", SDL_GetError());
+    }
+    else
+    {
+        if(!TTF_SetFontSDF(game->font, true))
+        {
+            SDL_Log("Failed to enable SDF for arial.ttf font. Error: %s", SDL_GetError());
+        }
+    }
+
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment2.frag"));
+    GLuint uiShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"), LoadShader("../data/shaders/ui.frag"));
     GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"), LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"), LoadShader("../data/shaders/fragment3.frag"));
 
@@ -29,6 +45,7 @@ void LoadAssets(Game *game)
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
     game->pickingShader = pickingShader;
+    game->uiShader = uiShader;
 
     Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);

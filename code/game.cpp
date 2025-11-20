@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include <stb_image.h>
 
 #include <GL/glew.h>
@@ -39,6 +41,12 @@ bool InitGame(Game *game)
     if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
+        return false;
+    }
+
+    if(!TTF_Init())
+    {
+        SDL_Log("Failed to initialize SDL_ttf library. Error: %s", SDL_GetError());
         return false;
     }
 

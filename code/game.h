@@ -7,6 +7,7 @@
 #include "graphics/camera.h"
 
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -30,7 +31,7 @@ struct Game
     SDL_Window *window;
 
     std::vector<GLuint> shaders;
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -53,6 +54,8 @@ struct Game
     Entity *testEntity;
 
     Audio audio;
+
+    TTF_Font *font;
 };
 
 bool InitGame(Game *game);

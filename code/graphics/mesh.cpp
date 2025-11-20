@@ -205,6 +205,28 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
     return mesh;
 }
 
+Mesh CreateQuad(vec2 position, vec2 size, GLuint shader)
+{
+    vec2 window = vec2(WINDOW_WIDTH, WINDOW_HEIGHT);
+    vec3 p = vec3(vec2((position.x / window.x) * 2.0f - 1.0f, 1.0f - (position.y / window.y) * 2.0f), 0.0f);
+    vec3 s = vec3((size / window) * 2.0f, 0.0f);
+
+    //vec3 p = vec3(position, 0.0f);
+    //vec3 s = vec3(size, 0.0f);
+    vec3 n = vec3(0.0f, 0.0f, 1.0f);
+
+    Vertex v1 = {p, n, vec2(0.0f, 1.0f)};
+    Vertex v2 = {vec3(p.x, p.y - s.y, p.z), n, vec2(0.0f, 0.0f)};
+    Vertex v3 = {vec3(p.x + s.x, p.y - s.y, p.z), n, vec2(1.0f, 0.0f)};
+    Vertex v4 = {vec3(p.x + s.x, p.y, p.z), n, vec2(1.0f, 1.0f)};
+
+    std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
+
+    Mesh quad = CreateMesh(vertices, shader);
+
+    return quad;
+}
+
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
 {
     mat4 model = mat4(1.0f);
