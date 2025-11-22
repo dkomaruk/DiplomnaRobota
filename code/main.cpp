@@ -179,17 +179,25 @@ int main(int argc, char *argv[])
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
 
     //Mesh quad = CreateQuad(vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), vec2(100.0f, 50.0f), game->uiShader);
-    std::vector<Mesh> quads = {
-        CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
-    };
 
     float lastQuadX = 150.0f;
     float lastQuadY = 0.0f;
 
-    GLuint faceTexture = CreateTexture("../data/imgs/face.png");
+    //GLuint faceTexture = CreateTexture("../data/imgs/face.png");
+    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
+    SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
+
+    vec2 textSize = vec2(textSurface->w, textSurface->h) * 2.0f;
+
+    GLuint faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h, true, true);
+    std::vector<Mesh> quads = {
+        //CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        //CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        //CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        //CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
+        CreateQuad(vec2(100.0f, 100.0f), textSize, game->uiShader)
+    };
+
     for(int i = 0; i < quads.size(); i++)
     {
         quads[i].material.diffuseTexture = faceTexture;
@@ -273,15 +281,15 @@ int main(int argc, char *argv[])
         //if(IsFirstPress(game, SDL_SCANCODE_UP))
         if(game->keys[SDL_SCANCODE_UP])
         {
-            float newQuadX = lastQuadX + 50.0f;
+            float newQuadX = lastQuadX + textSize.x;
             float newQuadY = lastQuadY;
             if(newQuadX >= WINDOW_WIDTH)
             {
                 newQuadX = 0.0f;
-                newQuadY += 50.0f;
+                newQuadY += textSize.y + 10.0f;
             }
 
-            Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), vec2(50.0f, 50.0f), game->uiShader);
+            Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), textSize, game->uiShader);
             newQuad.material.diffuseTexture = faceTexture;
             quads.push_back(newQuad);
 

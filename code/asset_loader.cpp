@@ -7,18 +7,18 @@
 
 void LoadAssets(Game *game)
 {
-    game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
+    game->font = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
     if(!game->font)
     {
         SDL_Log("Failed to load arial.ttf font. Error: %s", SDL_GetError());
     }
-    else
-    {
-        if(!TTF_SetFontSDF(game->font, true))
-        {
-            SDL_Log("Failed to enable SDF for arial.ttf font. Error: %s", SDL_GetError());
-        }
-    }
+    //else
+    //{
+        //if(!TTF_SetFontSDF(game->font, true))
+        //{
+        //    SDL_Log("Failed to enable SDF for arial.ttf font. Error: %s", SDL_GetError());
+        //}
+    //}
 
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment2.frag"));

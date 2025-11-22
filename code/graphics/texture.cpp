@@ -2,15 +2,15 @@
 
 #include <stb_image.h>
 
-GLuint CreateGLTexture(uint8 *image, int width, int height, bool repeat)
+GLuint CreateGLTexture(uint8 *image, int width, int height, bool nearest, bool repeat)
 {
     GLuint texture;
     glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR);
 
     GLfloat maxAniso;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
@@ -20,13 +20,13 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, bool repeat)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *)image);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     return texture;
 }
 
-GLuint CreateTexture(char *imagePath, bool flipY, bool repeat)
+GLuint CreateTexture(char *imagePath, bool flipY, bool nearest, bool repeat)
 {
     int width, height, channels;
     int desiredChannels = 4;
@@ -35,7 +35,7 @@ GLuint CreateTexture(char *imagePath, bool flipY, bool repeat)
 
     if(!image) return 0;
 
-    GLuint texture = CreateGLTexture(image, width, height, repeat);
+    GLuint texture = CreateGLTexture(image, width, height, nearest, repeat);
 
     stbi_image_free(image);
 
