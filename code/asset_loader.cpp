@@ -5,9 +5,122 @@
 #include "graphics/texture.h"
 #include "graphics/shader.h"
 
+#include "AL/al.h"
+#include "AL/alext.h"
+
+#include "stb_vorbis.c"
+
+void LoadAudio(Game *game)
+{
+    int channels, sampleRate;
+    int bytesPerStereoSample = 4;
+    short *output, *output2;
+    int samplesLoaded = stb_vorbis_decode_filename("../data/audio/test_sample.ogg", &channels, &sampleRate, &output);
+
+    if (channels != 1)
+    {
+        int monoSamples = samplesLoaded;
+        short* mono = (short*)malloc(monoSamples * sizeof(short));
+        for (int i = 0; i < monoSamples; i++) {
+            int left  = output[2*i];
+            int right = output[2*i + 1];
+            mono[i] = (short)((left + right) / 2);
+        }
+        free(output);
+        output = mono;
+        channels = 1;
+        samplesLoaded = monoSamples;
+    }
+
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+
+    ALuint buffer = 0;
+    alGenBuffers(1, &buffer);
+    alBufferData(buffer, AL_FORMAT_MONO16, output, samplesLoaded * channels * sizeof(short), sampleRate);
+
+    alGenSources(1, &game->source);
+    alSourcei(game->source, AL_BUFFER, buffer);
+    alSourcef(game->source, AL_GAIN, 0.5f);
+
+    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};
+    alSourcefv(game->source, AL_POSITION, srcPos);
+    alSourcef(game->source, AL_MAX_DISTANCE, 20.0f);
+
+    //alSourcePlay(game->source);
+}
+
+//TODO: Move this somewhere else (doesn't belong in the asset loader)
+void SetupFramebuffers(Game *game)
+{
+    //Framebuffer
+    //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
+
+    glGenFramebuffers(1, &game->pickingFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+
+    glGenTextures(1, &game->pickingTexture);
+    glBindTexture(GL_TEXTURE_2D, game->pickingTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->pickingTexture, 0);
+
+    GLuint pickingRbo;
+    glGenRenderbuffers(1, &pickingRbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, pickingRbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pickingRbo);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        SDL_Log("Picking framebuffer is complete");
+    }
+
+    //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
+    glGenFramebuffers(1, &game->outlineFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
+
+    glGenTextures(1, &game->outlineTexture);
+    glBindTexture(GL_TEXTURE_2D, game->outlineTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
+
+    glGenTextures(1, &game->fullSceneTexture);
+    glBindTexture(GL_TEXTURE_2D, game->fullSceneTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        SDL_Log("Outline/scene framebuffer is complete");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void LoadAssets(Game *game)
 {
+<<<<<<< HEAD
     game->font = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
+=======
+    LoadAudio(game);
+    SetupFramebuffers(game);
+
+    game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
+>>>>>>> 9560b859e2fae1f8419d6782c05f6707a5c2b532
     if(!game->font)
     {
         SDL_Log("Failed to load arial.ttf font. Error: %s", SDL_GetError());
@@ -39,6 +152,12 @@ void LoadAssets(Game *game)
     game->shaders.push_back(lightSourceShader);
     game->shaders.push_back(pickingShader);
     game->shaders.push_back(postProcessShader);
+    game->shaders.push_back(uiShader);
+
+    for(int i = 0; i < game->shaders.size(); i++)
+    {
+        ShaderSetMatrix4(game->shaders[i], "u_projection", game->projection);
+    }
 
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
@@ -188,4 +307,19 @@ void LoadAssets(Game *game)
     {
         game->sceneEntities[i]->id = i + 1;
     }
+
+    //Temp "game" stuff for testing
+    game->quads = {
+        CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
+        CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
+    };
+
+    game->faceTexture = CreateTexture("../data/imgs/face.png");
+    for(int i = 0; i < game->quads.size(); i++)
+    {
+        game->quads[i].material.diffuseTexture = game->faceTexture;
+    }
+    ShaderSetInt(game->uiShader, "u_texture", 0);
 }

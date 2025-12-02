@@ -12,8 +12,8 @@ using namespace glm;
 
 #include "infantry.cpp"
 #include "entity.cpp"
-#include "game.cpp"
 #include "input.cpp"
+#include "game.cpp"
 #include "audio.cpp"
 #include "asset_loader.cpp"
 
@@ -33,11 +33,6 @@ using namespace glm;
 
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include "AL/al.h"
-#include "AL/alext.h"
-
-#include "stb_vorbis.c"
-
 #include <stdio.h>
 #include <vector>
 
@@ -49,106 +44,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    int channels, sampleRate;
-    int bytesPerStereoSample = 4;
-    short *output, *output2;
-    int samplesLoaded = stb_vorbis_decode_filename("../data/audio/test_sample.ogg", &channels, &sampleRate, &output);
-
-    if (channels != 1)
-    {
-        int monoSamples = samplesLoaded;
-        short* mono = (short*)malloc(monoSamples * sizeof(short));
-        for (int i = 0; i < monoSamples; i++) {
-            int left  = output[2*i];
-            int right = output[2*i + 1];
-            mono[i] = (short)((left + right) / 2);
-        }
-        free(output);
-        output = mono;
-        channels = 1;
-        samplesLoaded = monoSamples;
-    }
-
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-
-    ALuint buffer = 0;
-    alGenBuffers(1, &buffer);
-    alBufferData(buffer, AL_FORMAT_MONO16, output, samplesLoaded * channels * sizeof(short), sampleRate);
-
-    ALuint source;
-    alGenSources(1, &source);
-    alSourcei(source, AL_BUFFER, buffer);
-    alSourcef(source, AL_GAIN, 0.5f);
-
-    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};
-    alSourcefv(source, AL_POSITION, srcPos);
-    alSourcef(source, AL_MAX_DISTANCE, 20.0f);
-
-    //alSourcePlay(source);
-
     LoadAssets(game);
-
-    //Framebuffer
-    //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
-    GLuint pickingFbo;
-    glGenFramebuffers(1, &pickingFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
-
-    GLuint pickingTexture;
-    glGenTextures(1, &pickingTexture);
-    glBindTexture(GL_TEXTURE_2D, pickingTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTexture, 0);
-
-    GLuint pickingRbo;
-    glGenRenderbuffers(1, &pickingRbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, pickingRbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pickingRbo);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-    {
-        SDL_Log("Picking framebuffer is complete");
-    }
-
-    //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
-    GLuint outlineFbo;
-    glGenFramebuffers(1, &outlineFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, outlineFbo);
-
-    GLuint outlineTexture;
-    glGenTextures(1, &outlineTexture);
-    glBindTexture(GL_TEXTURE_2D, outlineTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outlineTexture, 0);
-
-    GLuint fullSceneTexture;
-    glGenTextures(1, &fullSceneTexture);
-    glBindTexture(GL_TEXTURE_2D, fullSceneTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fullSceneTexture, 0);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-    {
-        SDL_Log("Outline/scene framebuffer is complete");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     float quadVertices[] = {
         -1.0f,  1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 1.0f,
@@ -311,7 +207,7 @@ int main(int argc, char *argv[])
         glEnable(GL_DEPTH_TEST);
 
         game->pickingPass = true;
-        glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
         RenderScene(game);
         game->pickingPass = false;
 
@@ -350,12 +246,12 @@ int main(int argc, char *argv[])
         }
 
         game->outlinePass = true;
-        glBindFramebuffer(GL_FRAMEBUFFER, outlineFbo);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outlineTexture, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
         RenderScene(game);
         game->outlinePass = false;
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fullSceneTexture, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
         RenderScene(game);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -366,9 +262,9 @@ int main(int argc, char *argv[])
         glUseProgram(game->postProcessShader);
         ShaderSetFloat(game->postProcessShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
 
-        SetTexture(outlineTexture, 0);
+        SetTexture(game->outlineTexture, 0);
         ShaderSetInt(game->postProcessShader, "u_outline", 0);
-        SetTexture(fullSceneTexture, 1);
+        SetTexture(game->fullSceneTexture, 1);
         ShaderSetInt(game->postProcessShader, "u_scene", 1);
 
         glBindVertexArray(vao);
@@ -376,9 +272,9 @@ int main(int argc, char *argv[])
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        for(int i = 0; i < quads.size(); i++)
+        for(int i = 0; i < game->quads.size(); i++)
         {
-            RenderMesh(game, &quads[i], mat4(1.0f));
+            RenderMesh(game, &game->quads[i], mat4(1.0f));
         }
         glDisable(GL_BLEND);
 
