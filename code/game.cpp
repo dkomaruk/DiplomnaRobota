@@ -89,7 +89,7 @@ bool InitGame(Game *game)
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(1); //VSync
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -116,16 +116,6 @@ void RenderScene(Game *game)
 {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    for(int i = 0; i < game->shaders.size(); i++)
-    {
-        GLuint shader = game->shaders[i];
-        ShaderSetVec3(shader, "u_viewPos", game->camera.position);
-        ShaderSetVec3(shader, "u_viewDir", game->camera.direction);
-        ShaderSetFloat(shader, "u_time", SDL_GetTicks() / 1000.0f);
-        ShaderSetMatrix4(shader, "u_view", game->view);
-        ShaderSetMatrix4(shader, "u_projection", game->projection);
-    }
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
@@ -200,5 +190,116 @@ void UpdateGame(Game *game)
                 *(int *)0 = 0; //Invalid entity type
             } break;
         }
+
     }
+
+
+    Camera *camera = &game->camera;
+    vec3 forward = normalize(camera->direction);
+
+    vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
+    vec3 right = normalize(cross(forward, worldUp));
+    vec3 up = normalize(cross(right, forward));
+
+    ALfloat listenerOri[6] = {
+        camera->direction.x, camera->direction.y, camera->direction.z,
+        up.x, up.y, up.z
+    };
+    alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
+    alListenerfv(AL_ORIENTATION, listenerOri);
+
+    if(game->keys[SDL_SCANCODE_DOWN])
+    {
+        game->outlineThickness -= 5.0f * game->deltaTime;
+        ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
+    }
+    if(game->keys[SDL_SCANCODE_UP])
+    {
+        game->outlineThickness += 5.0f * game->deltaTime;
+        ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
+    }
+
+    if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+    {
+        int sourceState;
+        alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
+        if(sourceState == AL_PLAYING)
+        {
+            alSourcePause(game->source);
+        }
+        else
+        {
+            alSourcePlay(game->source);
+        }
+    }
+    if(IsFirstPress(game, SDL_SCANCODE_U))
+    {
+        int w = (int)WINDOW_WIDTH;
+        int h = (int)WINDOW_HEIGHT;
+        int bytesPerPixel = 3;
+
+        uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
+        free(pixels);
+    }
+    if(IsFirstPress(game, SDL_SCANCODE_P))
+    {
+        if(game->isCursorHidden)
+        {
+            SDL_ShowCursor();
+            SDL_SetWindowRelativeMouseMode(game->window, false);
+        }
+        else
+        {
+            SDL_HideCursor();
+            SDL_SetWindowRelativeMouseMode(game->window, true);
+        }
+
+        game->isCursorHidden = !game->isCursorHidden;
+    }
+
+    //if(IsFirstPress(game, SDL_SCANCODE_UP))
+    if(game->keys[SDL_SCANCODE_UP])
+    {
+        float newQuadX = game->lastQuadX + 50.0f;
+        float newQuadY = game->lastQuadY;
+        if(newQuadX >= WINDOW_WIDTH)
+        {
+            newQuadX = 0.0f;
+            newQuadY += 50.0f;
+        }
+
+        Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), vec2(50.0f, 50.0f), game->uiShader);
+        newQuad.material.diffuseTexture = game->faceTexture;
+        game->quads.push_back(newQuad);
+
+        game->lastQuadX = newQuadX;
+        game->lastQuadY = newQuadY;
+    }
+
+    for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
+    {
+        if(IsFirstClick(game, i))
+        {
+            SDL_Log("%s", GetMouseButtonName(i));
+        }
+    }
+
+    game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
+
+    //Update shaders
+    ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);
+    ShaderSetVec3(game->mainShader, "u_viewDir", game->camera.direction);
+
+    float time = SDL_GetTicks() / 1000.0f;
+    ShaderSetFloat(game->mainShader, "u_time", time);
+    ShaderSetFloat(game->postProcessShader, "u_time", time);
+
+    ShaderSetMatrix4(game->mainShader, "u_view", game->view);
+    ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
+    ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
+
+    //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
 }
