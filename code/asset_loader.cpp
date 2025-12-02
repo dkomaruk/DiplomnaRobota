@@ -113,14 +113,12 @@ void SetupFramebuffers(Game *game)
 
 void LoadAssets(Game *game)
 {
-<<<<<<< HEAD
-    game->font = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
-=======
     LoadAudio(game);
     SetupFramebuffers(game);
 
-    game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
->>>>>>> 9560b859e2fae1f8419d6782c05f6707a5c2b532
+    game->font = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
+    //game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
+
     if(!game->font)
     {
         SDL_Log("Failed to load arial.ttf font. Error: %s", SDL_GetError());
@@ -309,17 +307,19 @@ void LoadAssets(Game *game)
     }
 
     //Temp "game" stuff for testing
-    game->quads = {
-        CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
+    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
+    SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
+
+    game->textSize = vec2(textSurface->w, textSurface->h) * 2.0f;
+
+    game->faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h, true, true);
+    std::vector<Mesh> quads = {
+        CreateQuad(vec2(100.0f, 100.0f), game->textSize, game->uiShader)
     };
 
-    game->faceTexture = CreateTexture("../data/imgs/face.png");
-    for(int i = 0; i < game->quads.size(); i++)
+    for(int i = 0; i < quads.size(); i++)
     {
-        game->quads[i].material.diffuseTexture = game->faceTexture;
+        quads[i].material.diffuseTexture = game->faceTexture;
     }
     ShaderSetInt(game->uiShader, "u_texture", 0);
 }

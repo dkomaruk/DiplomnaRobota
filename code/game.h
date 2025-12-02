@@ -76,6 +76,7 @@ struct Game
     //Game temp stuff
     GLuint faceTexture;
     std::vector<Mesh> quads;
+    vec2 textSize;
     float lastQuadX = 150.0f;
     float lastQuadY = 0.0f;
 };

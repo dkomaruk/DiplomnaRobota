@@ -74,31 +74,6 @@ int main(int argc, char *argv[])
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
 
-    //Mesh quad = CreateQuad(vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f), vec2(100.0f, 50.0f), game->uiShader);
-
-    float lastQuadX = 150.0f;
-    float lastQuadY = 0.0f;
-
-    //GLuint faceTexture = CreateTexture("../data/imgs/face.png");
-    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
-    SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
-
-    vec2 textSize = vec2(textSurface->w, textSurface->h) * 2.0f;
-
-    GLuint faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h, true, true);
-    std::vector<Mesh> quads = {
-        //CreateQuad(vec2(0.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        //CreateQuad(vec2(50.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        //CreateQuad(vec2(100.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader),
-        //CreateQuad(vec2(150.0f, 0.0f), vec2(50.0f, 50.0f), game->uiShader)
-        CreateQuad(vec2(100.0f, 100.0f), textSize, game->uiShader)
-    };
-
-    for(int i = 0; i < quads.size(); i++)
-    {
-        quads[i].material.diffuseTexture = faceTexture;
-    }
-    ShaderSetInt(game->uiShader, "u_texture", 0);
 
     while(game->isRunning)
     {
@@ -107,101 +82,6 @@ int main(int argc, char *argv[])
 
         //Update
         UpdateGame(game);
-
-        Camera *camera = &game->camera;
-        vec3 forward = normalize(camera->direction);
-
-        vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
-        vec3 right = normalize(cross(forward, worldUp));
-        vec3 up = normalize(cross(right, forward));
-
-        ALfloat listenerOri[6] = {
-            camera->direction.x, camera->direction.y, camera->direction.z,
-            up.x, up.y, up.z
-        };
-        alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
-        alListenerfv(AL_ORIENTATION, listenerOri);
-
-        if(game->keys[SDL_SCANCODE_DOWN])
-        {
-            game->outlineThickness -= 5.0f * game->deltaTime;
-            ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
-        }
-        if(game->keys[SDL_SCANCODE_UP])
-        {
-            game->outlineThickness += 5.0f * game->deltaTime;
-            ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
-        }
-
-        if(IsFirstPress(game, SDL_SCANCODE_SPACE))
-        {
-            int sourceState;
-            alGetSourcei(source, AL_SOURCE_STATE, &sourceState);
-            if(sourceState == AL_PLAYING)
-            {
-                alSourcePause(source);
-            }
-            else
-            {
-                alSourcePlay(source);
-            }
-        }
-        if(IsFirstPress(game, SDL_SCANCODE_U))
-        {
-            int w = (int)WINDOW_WIDTH;
-            int h = (int)WINDOW_HEIGHT;
-            int bytesPerPixel = 3;
-
-            uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-            glBindFramebuffer(GL_FRAMEBUFFER, pickingFbo);
-            glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-            stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
-            free(pixels);
-        }
-        if(IsFirstPress(game, SDL_SCANCODE_P))
-        {
-            if(game->isCursorHidden)
-            {
-                SDL_ShowCursor();
-                SDL_SetWindowRelativeMouseMode(game->window, false);
-            }
-            else
-            {
-                SDL_HideCursor();
-                SDL_SetWindowRelativeMouseMode(game->window, true);
-            }
-
-            game->isCursorHidden = !game->isCursorHidden;
-        }
-
-        //if(IsFirstPress(game, SDL_SCANCODE_UP))
-        if(game->keys[SDL_SCANCODE_UP])
-        {
-            float newQuadX = lastQuadX + textSize.x;
-            float newQuadY = lastQuadY;
-            if(newQuadX >= WINDOW_WIDTH)
-            {
-                newQuadX = 0.0f;
-                newQuadY += textSize.y + 10.0f;
-            }
-
-            Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), textSize, game->uiShader);
-            newQuad.material.diffuseTexture = faceTexture;
-            quads.push_back(newQuad);
-
-            lastQuadX = newQuadX;
-            lastQuadY = newQuadY;
-        }
-
-        for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
-        {
-            if(IsFirstClick(game, i))
-            {
-                SDL_Log("%s", GetMouseButtonName(i));
-            }
-        }
-
-        game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
 
         //Rendering
         glEnable(GL_DEPTH_TEST);
@@ -258,9 +138,6 @@ int main(int argc, char *argv[])
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
-
-        glUseProgram(game->postProcessShader);
-        ShaderSetFloat(game->postProcessShader, "u_time", (float)SDL_GetTicks() / 1000.0f);
 
         SetTexture(game->outlineTexture, 0);
         ShaderSetInt(game->postProcessShader, "u_outline", 0);

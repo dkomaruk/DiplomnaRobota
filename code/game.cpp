@@ -263,15 +263,15 @@ void UpdateGame(Game *game)
     //if(IsFirstPress(game, SDL_SCANCODE_UP))
     if(game->keys[SDL_SCANCODE_UP])
     {
-        float newQuadX = game->lastQuadX + 50.0f;
+        float newQuadX = game->lastQuadX + game->textSize.x;
         float newQuadY = game->lastQuadY;
         if(newQuadX >= WINDOW_WIDTH)
         {
             newQuadX = 0.0f;
-            newQuadY += 50.0f;
+            newQuadY += game->textSize.y + 10.0f;
         }
 
-        Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), vec2(50.0f, 50.0f), game->uiShader);
+        Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), game->textSize, game->uiShader);
         newQuad.material.diffuseTexture = game->faceTexture;
         game->quads.push_back(newQuad);
 
