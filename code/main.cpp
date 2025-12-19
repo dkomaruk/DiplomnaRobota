@@ -10,10 +10,12 @@ using namespace glm;
 #include "external/stb_image.cpp"
 #include "external/stb_image_write.cpp"
 
-#include "infantry.cpp"
-#include "entity.cpp"
 #include "input.cpp"
-#include "game.cpp"
+
+#include "game/infantry.cpp"
+#include "game/entity.cpp"
+#include "game/game.cpp"
+
 #include "audio.cpp"
 #include "asset_loader.cpp"
 

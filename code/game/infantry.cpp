@@ -1,6 +1,6 @@
 #include "infantry.h"
 
-#include "util_defines.h"
+#include "util/util_defines.h"
 #include "game.h"
 #include "graphics/shader.h"
 

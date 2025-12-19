@@ -1,6 +1,6 @@
 #include "asset_loader.h"
 
-#include "game.h"
+#include "game/game.h"
 
 #include "graphics/texture.h"
 #include "graphics/shader.h"
