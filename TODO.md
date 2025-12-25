@@ -1,13 +1,17 @@
 # Current
 
-<!--## 2025-12-24 S1 Text Rendering-->
+## 2025-12-25 S1 Text Rendering
+- [ ] Text rendering utilities
+  - [ ] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
+  - [ ] Create OpenGL textures with text
+    - [ ] Create SDL_Surface with TTF_RenderText_Blended or others
+    - [ ] Use SDL_Surface pixels to make an OpenGL texture
+  - [ ] Display textures with text on a quad using OpenGL
+    - [ ] Make a simple quad mesh that has a diffuse texture and a shader to display that texture
 
 # Next
 
 # Upcoming
-- [ ] Text rendering utilities
-  - [ ] Use SDL3_ttf to load fonts and create textures with text
-  - [ ] Display textures with text using OpenGL
 - [ ] Skeletal animations
 - [ ] Heightmaps for terrain rendering
   - [ ] Check how WARNO/Total War snaps unites to terrain/rotates them on slopes and hills
@@ -41,7 +45,8 @@
     - [ ] Synchronize connecting players
       - Research:
         - <https://www.reddit.com/r/factorio/comments/1nittpg/multiplayer_experience/>
-      - In Factorio server owners can setup "Pause when player joins" so that the player can receive the latest game state and load it without the simulation going further while other players wait for them to load in.
+        - <https://www.reddit.com/r/factorio/comments/adhck1/joining_online_game_taking_a_long_time/>
+      - In Factorio server owners can setup "Pause when player joins" so that the player can receive the latest game state and load it without the simulation going further while other players wait for them to load in. This is required for long playthroughs because when the map gets large, it can be hard or impossible for some machines to fast forward the simulation.
       - Alt: use 'fast-forward' mechanism. Player receives latest snapshot, other players still continue the game while connecting one is loading in. Once the outdated game state snapshot is loaded, the server sends all user inputs that happened from that moment and the connecting machine has to fast-forward the simulation by going faster than the main simulation between joined players. In Factorio players usually see 'Catching Up' progress bar. Once the simulation is caught up, newly joined player can now make their own inputs and play the game normally. If the connecting player computer is too slow, they can never catch up in which case "Pause when player joins" is necessary
   - Alt: state sync
   - Alt: send state snapshot

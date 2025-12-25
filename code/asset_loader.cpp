@@ -121,7 +121,7 @@ void LoadAssets(Game *game)
 
     if(!game->font)
     {
-        SDL_Log("Failed to load arial.ttf font. Error: %s", SDL_GetError());
+        SDL_Log("Failed to load Roboto-Regular.ttf font. Error: %s", SDL_GetError());
     }
     //else
     //{
@@ -312,7 +312,7 @@ void LoadAssets(Game *game)
 
     game->textSize = vec2(textSurface->w, textSurface->h) * 2.0f;
 
-    game->faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h, true, true);
+    game->faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
     std::vector<Mesh> quads = {
         CreateQuad(vec2(100.0f, 100.0f), game->textSize, game->uiShader)
     };
