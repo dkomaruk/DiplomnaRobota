@@ -1,8 +1,8 @@
 #include "input.h"
 
-#include "util/util_defines.h"
+#include "util_defines.h"
 
-#include "game/game.h"
+#include "game.h"
 
 #include <GL/glew.h>
 

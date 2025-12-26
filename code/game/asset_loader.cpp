@@ -1,9 +1,8 @@
 #include "asset_loader.h"
 
-#include "game/game.h"
-
-#include "graphics/texture.h"
-#include "graphics/shader.h"
+#include "game.h"
+#include "texture.h"
+#include "shader.h"
 
 #include "AL/al.h"
 #include "AL/alext.h"
@@ -116,10 +115,12 @@ void LoadAssets(Game *game)
     LoadAudio(game);
     SetupFramebuffers(game);
 
-    game->font = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
+    game->font18 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
+    game->font24 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 24);
+    game->font36 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 36);
     //game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
 
-    if(!game->font)
+    if(!game->font18 || !game->font24 || !game->font36)
     {
         SDL_Log("Failed to load Roboto-Regular.ttf font. Error: %s", SDL_GetError());
     }
@@ -307,19 +308,22 @@ void LoadAssets(Game *game)
     }
 
     //Temp "game" stuff for testing
-    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
+    //game->texts.push_back(CreateText(game->font18, "Hello, world!", 18, SDL_Color{255, 255, 255, 255}));
+    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font36, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
     SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
 
-    game->textSize = vec2(textSurface->w, textSurface->h) * 2.0f;
+    //NOTE: Increasing texture makes text quality worse because resolution is too low -> (vec2(w, h) * 2.0f)
+    //It's better to load font with different sizes and use them when needed
+    game->textSize = vec2(textSurface->w, textSurface->h);
 
-    game->faceTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
+    game->textTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
     std::vector<Mesh> quads = {
         CreateQuad(vec2(100.0f, 100.0f), game->textSize, game->uiShader)
     };
 
     for(int i = 0; i < quads.size(); i++)
     {
-        quads[i].material.diffuseTexture = game->faceTexture;
+        quads[i].material.diffuseTexture = game->textTexture;
     }
     ShaderSetInt(game->uiShader, "u_texture", 0);
 }

@@ -114,13 +114,15 @@ bool InitGame(Game *game)
 
 void RenderScene(Game *game)
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    vec4 bgColor = game->outlinePass ? vec4(0.0f) : vec4(0.1f, 0.0f, 0.0f, 0.0f);
+
+    glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
-        if((game->outlinePass && (game->selectedIDs.find(game->sceneEntities[i]->id) != game->selectedIDs.end())) ||
-           !game->outlinePass)
+        bool isSelected = (game->selectedIDs.find(game->sceneEntities[i]->id) != game->selectedIDs.end());
+        if((game->outlinePass && isSelected) || !game->outlinePass)
         {
             Entity *e = game->sceneEntities[i];
             e->Render(e, game);
@@ -272,7 +274,7 @@ void UpdateGame(Game *game)
         }
 
         Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), game->textSize, game->uiShader);
-        newQuad.material.diffuseTexture = game->faceTexture;
+        newQuad.material.diffuseTexture = game->textTexture;
         game->quads.push_back(newQuad);
 
         game->lastQuadX = newQuadX;

@@ -1,15 +1,28 @@
 # Current
 
-## 2025-12-25 S1 Text Rendering
+## 2025-12-25/26 S1 Text Rendering
 - [ ] Text rendering utilities
-  - [ ] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
+  - [x] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
   - [ ] Create OpenGL textures with text
     - [ ] Create SDL_Surface with TTF_RenderText_Blended or others
     - [ ] Use SDL_Surface pixels to make an OpenGL texture
   - [ ] Display textures with text on a quad using OpenGL
     - [ ] Make a simple quad mesh that has a diffuse texture and a shader to display that texture
+  - [ ] Make a Text struct that contains:
+        - String with text
+        - Width, height, font size, font reference
+        - Whether or not it has an alpha channel
+        - Whether or not it uses SDF
+        - Texture and shader IDs
+  - [ ] Formalize the API using Text struct
+  - [ ] Render text using SDF
+    - [ ] Enable SDF using TTF_SetFontSDF
+      - Surfaces, created with TTF_RenderText_Blended, will contain signed distance value in their alpha channel
+    - [ ] Need a custom shader to use this signed distance value
+      - <https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf>
 
 # Next
+- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 
 # Upcoming
 - [ ] Skeletal animations
@@ -18,7 +31,7 @@
   - [ ] Make a grid system where units have their Y coordinate set to the Y coordinate of the terrain in the position they are located.
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
-
+- [ ] Audio utils
 - [ ] User interface
   - Use Dear Imgui
   - Alt: build custom UI (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)

@@ -2,8 +2,8 @@
 
 #include "game.h"
 
-#include "graphics/shader.h"
-#include "graphics/texture.h"
+#include "shader.h"
+#include "texture.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>

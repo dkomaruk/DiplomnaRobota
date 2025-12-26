@@ -1,7 +1,7 @@
 #include "mesh.h"
 
 #include "texture.h"
-#include "game/game.h"
+#include "game.h"
 
 #include <string>
 

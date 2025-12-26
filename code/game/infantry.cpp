@@ -1,8 +1,8 @@
 #include "infantry.h"
 
-#include "util/util_defines.h"
+#include "util_defines.h"
 #include "game.h"
-#include "graphics/shader.h"
+#include "shader.h"
 
 void RenderInfantry(Entity *e, Game *game)
 {

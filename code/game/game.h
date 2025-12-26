@@ -4,7 +4,7 @@
 #include "audio.h"
 #include "input.h"
 
-#include "graphics/camera.h"
+#include "camera.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -70,11 +70,11 @@ struct Game
     Audio audio; //TODO: Audio API
     ALuint source;
 
-    //Text & Fonts
-    TTF_Font *font;
+    //Fonts
+    TTF_Font *font18, *font24, *font36;
 
     //Game temp stuff
-    GLuint faceTexture;
+    GLuint textTexture;
     std::vector<Mesh> quads;
     vec2 textSize;
     float lastQuadX = 150.0f;

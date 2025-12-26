@@ -1,6 +1,6 @@
 #ifndef ENTITY_H
 
-#include "graphics/mesh.h"
+#include "mesh.h"
 
 #include <glm/vec3.hpp>
 

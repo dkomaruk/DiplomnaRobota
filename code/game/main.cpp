@@ -7,25 +7,26 @@
 
 using namespace glm;
 
-#include "external/stb_image.cpp"
-#include "external/stb_image_write.cpp"
+#include "stb_image.cpp"
+#include "stb_image_write.cpp"
 
 #include "input.cpp"
 
-#include "game/infantry.cpp"
-#include "game/entity.cpp"
-#include "game/game.cpp"
+#include "infantry.cpp"
+#include "entity.cpp"
+#include "game.cpp"
 
 #include "audio.cpp"
 #include "asset_loader.cpp"
 
-#include "util/timer.cpp"
+#include "timer.cpp"
+#include "text.cpp"
 
-#include "graphics/light.cpp"
-#include "graphics/camera.cpp"
-#include "graphics/shader.cpp"
-#include "graphics/texture.cpp"
-#include "graphics/mesh.cpp"
+#include "light.cpp"
+#include "camera.cpp"
+#include "shader.cpp"
+#include "texture.cpp"
+#include "mesh.cpp"
 
 #include <GL/glew.h>
 
