@@ -49,34 +49,7 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    float quadVertices[] = {
-        -1.0f,  1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 0.0f,
-        1.0f, -1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 0.0f,
-
-        -1.0f,  1.0f, 0.0f,     0.0f, 0.0f, 0.0f,     0.0f, 1.0f,
-        1.0f, -1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 0.0f,
-        1.0f,  1.0f,  0.0f,     0.0f, 0.0f, 0.0f,    1.0f, 1.0f
-    };
-
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(0 * sizeof(float)));
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
-
+    game->textCounter = CreateText(game, "0", vec2(20, 20), game->uiShader, 36);
 
     while(game->isRunning)
     {
@@ -147,11 +120,12 @@ int main(int argc, char *argv[])
         SetTexture(game->fullSceneTexture, 1);
         ShaderSetInt(game->postProcessShader, "u_scene", 1);
 
-        glBindVertexArray(vao);
+        glBindVertexArray(game->fullscreenQuad.vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        RenderText(game, &game->textCounter);
         for(int i = 0; i < game->texts.size(); i++)
         {
             RenderText(game, &game->texts[i]);
@@ -178,7 +152,7 @@ int main(int argc, char *argv[])
 
         float ms = game->deltaTime * 1000.0f;
         float fps = 1000.0f / ms;
-        SDL_Log("%f", fps);
+        //SDL_Log("%f", fps);
 
         game->lastFrame = thisFrame;
     }

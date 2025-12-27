@@ -205,7 +205,7 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
     return mesh;
 }
 
-Mesh CreateQuad(vec2 position, vec2 size)
+Mesh CreateQuadNDC(vec2 position, vec2 size)
 {
     vec2 window = vec2(WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -226,6 +226,32 @@ Mesh CreateQuad(vec2 position, vec2 size)
     Mesh quad = CreateMesh(vertices);
 
     return quad;
+}
+
+Mesh *unitQuad;
+void CreateUnitQuad()
+{
+    unitQuad = (Mesh *)malloc(sizeof(Mesh));
+
+    vec3 n = vec3(0.0f, 0.0f, 1.0f);
+
+    Vertex v1 = {vec3(0.0f, 1.0f, 0.0f), n, vec2(0.0f, 0.0f)};
+    Vertex v2 = {vec3(0.0f, 0.0f, 0.0f), n, vec2(0.0f, 1.0f)};
+    Vertex v3 = {vec3(1.0f, 0.0f, 0.0f), n, vec2(1.0f, 1.0f)};
+    Vertex v4 = {vec3(1.0f, 1.0f, 0.0f), n, vec2(1.0f, 0.0f)};
+    std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
+
+    *unitQuad = CreateMesh(vertices);
+}
+
+Mesh GetUnitQuad()
+{
+    if(!unitQuad)
+    {
+        CreateUnitQuad();
+    }
+
+    return *unitQuad;
 }
 
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)

@@ -118,6 +118,10 @@ void LoadAssets(Game *game)
     game->font18 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
     game->font24 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 24);
     game->font36 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 36);
+
+    game->fonts[18] = game->font18;
+    game->fonts[24] = game->font24;
+    game->fonts[36] = game->font36;
     //game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
 
     if(!game->font18 || !game->font24 || !game->font36)
@@ -134,7 +138,7 @@ void LoadAssets(Game *game)
 
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment2.frag"));
-    GLuint uiShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"), LoadShader("../data/shaders/ui.frag"));
+    GLuint uiShader = CreateShaderProgram(LoadShader("../data/shaders/ui.vert"), LoadShader("../data/shaders/ui.frag"));
     GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"), LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"), LoadShader("../data/shaders/fragment3.frag"));
 
@@ -151,12 +155,14 @@ void LoadAssets(Game *game)
     game->shaders.push_back(lightSourceShader);
     game->shaders.push_back(pickingShader);
     game->shaders.push_back(postProcessShader);
-    game->shaders.push_back(uiShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
-        ShaderSetMatrix4(game->shaders[i], "u_projection", game->projection);
+        ShaderSetMatrix4(game->shaders[i], "u_projection", game->perspectiveProjection);
     }
+
+    game->shaders.push_back(uiShader);
+    ShaderSetMatrix4(uiShader, "u_projection", game->orthoProjection);
 
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
@@ -316,15 +322,5 @@ void LoadAssets(Game *game)
         game->sceneEntities[i]->id = i + 1;
     }
 
-    //Temp "game" stuff for testing
-    //game->texts.push_back(CreateText(game->font18, "Hello, world!", 18, SDL_Color{255, 255, 255, 255}));
-    SDL_Surface *textSurface = TTF_RenderText_Blended(game->font36, "Hello, world!", 0, SDL_Color{255, 255, 255, 255});
-    SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
-
-    //NOTE: Increasing texture makes text quality worse because resolution is too low -> (vec2(w, h) * 2.0f)
-    //It's better to load font with different sizes and use them when needed
-    game->textSize = vec2(textSurface->w, textSurface->h);
-
-    game->textTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
-    ShaderSetInt(game->uiShader, "u_texture", 0);
+    game->fullscreenQuad = CreateQuadNDC(vec2(0.0f), vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

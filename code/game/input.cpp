@@ -61,7 +61,7 @@ void ProcessInput(Game *game)
                 camera.fov -= wheel.y;
                 camera.fov = SDL_clamp(camera.fov, 1.0f, 45.0f);
 
-                game->projection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+                game->perspectiveProjection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
             } break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:

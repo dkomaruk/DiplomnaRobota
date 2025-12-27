@@ -7,15 +7,16 @@
 
 struct Text
 {
-    Mesh quad;
-
     GLuint texture;
     GLuint shader;
 
-    vec2 offset;
+    vec2 position;
+    vec2 size;
 };
 
-Text CreateText(vec2 position, vec2 size, GLuint texture, GLuint shader);
+Text CreateText(Game *game, char *text, vec2 position, GLuint shader, int fontSize = 18);
+void DeleteText(Text *text);
+
 void RenderText(Game *game, Text *text);
 
 #define TEXT_H

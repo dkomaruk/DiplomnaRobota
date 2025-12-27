@@ -48,7 +48,9 @@ struct Model
 Mesh CreateMesh(std::vector<Vertex> vertices);
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
-Mesh CreateQuad(vec2 position, vec2 size);
+/**Creates a quad mesh in NDC coordinates from pixel coordinates*/
+Mesh CreateQuadNDC(vec2 position, vec2 size);
+Mesh GetUnitQuad();
 
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
 
