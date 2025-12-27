@@ -228,11 +228,8 @@ Mesh CreateQuadNDC(vec2 position, vec2 size)
     return quad;
 }
 
-Mesh *unitQuad;
-void CreateUnitQuad()
+Mesh CreateUnitQuad()
 {
-    unitQuad = (Mesh *)malloc(sizeof(Mesh));
-
     vec3 n = vec3(0.0f, 0.0f, 1.0f);
 
     Vertex v1 = {vec3(0.0f, 1.0f, 0.0f), n, vec2(0.0f, 0.0f)};
@@ -241,17 +238,13 @@ void CreateUnitQuad()
     Vertex v4 = {vec3(1.0f, 1.0f, 0.0f), n, vec2(1.0f, 0.0f)};
     std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
 
-    *unitQuad = CreateMesh(vertices);
+    return CreateMesh(vertices);
 }
 
 Mesh GetUnitQuad()
 {
-    if(!unitQuad)
-    {
-        CreateUnitQuad();
-    }
-
-    return *unitQuad;
+    static Mesh unitQuad = CreateUnitQuad();
+    return unitQuad;
 }
 
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
