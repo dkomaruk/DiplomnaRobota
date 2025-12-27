@@ -26,7 +26,7 @@ Entity CreateEntity(Mesh *meshes, int numOfMeshes)
 
     entity.models = (Model *)malloc(sizeof(Model));
     entity.models->numOfMeshes = numOfMeshes;
-    entity.models->meshes = meshes;
+    entity.models->mesh = meshes;
     entity.numOfModels = 1;
 
     entity.Render = RenderEntity;

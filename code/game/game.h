@@ -3,6 +3,7 @@
 #include "entity.h"
 #include "audio.h"
 #include "input.h"
+#include "text.h"
 
 #include "camera.h"
 
@@ -75,10 +76,10 @@ struct Game
 
     //Game temp stuff
     GLuint textTexture;
-    std::vector<Mesh> quads;
+    std::vector<Text> texts;
     vec2 textSize;
-    float lastQuadX = 150.0f;
-    float lastQuadY = 0.0f;
+    float lastTextX = 150.0f;
+    float lastTextY = 0.0f;
 };
 
 bool InitGame(Game *game);

@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include "text.h"
+
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <stb_image.h>
@@ -265,20 +267,19 @@ void UpdateGame(Game *game)
     //if(IsFirstPress(game, SDL_SCANCODE_UP))
     if(game->keys[SDL_SCANCODE_UP])
     {
-        float newQuadX = game->lastQuadX + game->textSize.x;
-        float newQuadY = game->lastQuadY;
-        if(newQuadX >= WINDOW_WIDTH)
+        float newTextX = game->lastTextX + game->textSize.x;
+        float newTextY = game->lastTextY;
+        if(newTextX >= WINDOW_WIDTH)
         {
-            newQuadX = 0.0f;
-            newQuadY += game->textSize.y + 10.0f;
+            newTextX = 0.0f;
+            newTextY += game->textSize.y + 10.0f;
         }
 
-        Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), game->textSize, game->uiShader);
-        newQuad.material.diffuseTexture = game->textTexture;
-        game->quads.push_back(newQuad);
+        Text newText = CreateText(vec2(newTextX, newTextY), game->textSize, game->textTexture, game->uiShader);
+        game->texts.push_back(newText);
 
-        game->lastQuadX = newQuadX;
-        game->lastQuadY = newQuadY;
+        game->lastTextX = newTextX;
+        game->lastTextY = newTextY;
     }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)

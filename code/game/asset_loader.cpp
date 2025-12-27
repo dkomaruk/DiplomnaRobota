@@ -171,6 +171,7 @@ void LoadAssets(Game *game)
     {
         Entity *soldierEntity = (Entity *)malloc(sizeof(Entity));
         *soldierEntity = CreateEntity(soldier);
+        strcpy(soldierEntity->textId, "soldier");
         soldierEntity->position.y += 0.5f;
         game->sceneEntities.push_back(soldierEntity);
     }
@@ -180,6 +181,7 @@ void LoadAssets(Game *game)
 
     Entity *testEntity = (Entity *)malloc(sizeof(Entity));
     *testEntity = CreateEntity(test);
+    strcpy(testEntity->textId, "backpack");
     testEntity->position = vec3(0.0f, 0.0f, 3.0f);
     testEntity->rotation = vec3(0.0f, 180.0f, 0.0f);
     testEntity->scale = vec3(0.2f);
@@ -187,20 +189,22 @@ void LoadAssets(Game *game)
     game->testEntity = testEntity;
 
     Model *sphere = ImportModel("../data/models/sphere.obj", game->mainShader, aiProcess_Triangulate);
-    sphere->meshes->material.diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
+    sphere->material->diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
 
     Entity *sphereEntity = (Entity *)malloc(sizeof(Entity));
     *sphereEntity = CreateEntity(sphere);
+    strcpy(sphereEntity->textId, "sphere");
     sphereEntity->position = vec3(-1.0f, 0.0f, 3.0f);
     sphereEntity->rotation = vec3(0.0f, -90.0f, 0.0f);
     sphereEntity->scale = vec3(0.2f);
     game->sceneEntities.push_back(sphereEntity);
 
     Model *sphere2 = ImportModel("../data/models/sphere2.obj", game->mainShader, aiProcess_Triangulate);
-    sphere2->meshes->material.diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
+    sphere2->material->diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
 
     Entity *sphereEntity2 = (Entity *)malloc(sizeof(Entity));
     *sphereEntity2 = CreateEntity(sphere2);
+    strcpy(sphereEntity2->textId, "sphere2");
     sphereEntity2->position = vec3(0.0f, 1.0f, 3.0f);
     sphereEntity2->rotation = vec3(0.0f, -90.0f, 0.0f);
     sphereEntity2->scale = vec3(0.2f);
@@ -210,17 +214,19 @@ void LoadAssets(Game *game)
     GLuint carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
     for(int i = 0; i < car->numOfMeshes; i++)
     {
-        car->meshes[i].material.diffuseTexture = carDiffuseTexture;
+        car->material[i].diffuseTexture = carDiffuseTexture;
     }
 
     Entity *carEntity = (Entity *)malloc(sizeof(Entity));
     *carEntity = CreateEntity(car);
+    strcpy(carEntity->textId, "car");
     carEntity->position = vec3(0.0f, 1.0f, -3.0f);
     carEntity->rotation = vec3(0.0f, -90.0f, 0.0f);
     //carEntity.scale = vec3(0.2f);
     game->sceneEntities.push_back(carEntity);
 
     MaterialPhong containerMaterial = {};
+    containerMaterial.shader = game->mainShader;
     containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png");
     containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png");
     //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png");
@@ -228,10 +234,11 @@ void LoadAssets(Game *game)
     containerMaterial.shininess = 256.0f;
 
     Model *cubeMesh = ImportModel("../data/models/cube.obj", game->mainShader, aiProcess_Triangulate);
-    cubeMesh->meshes[0].material = containerMaterial;
+    cubeMesh->material[0] = containerMaterial;
 
     Entity *cubeEntity = (Entity *)malloc(sizeof(Entity));
     *cubeEntity = CreateEntity(cubeMesh);
+    strcpy(cubeEntity->textId, "cubeContainer");
     cubeEntity->position.x -= 3.0f;
     cubeEntity->position.z += 3.0f;
     cubeEntity->position.y -= 0.5f;
@@ -240,6 +247,7 @@ void LoadAssets(Game *game)
 
     Entity *cubeEntity2 = (Entity *)malloc(sizeof(Entity));
     *cubeEntity2 = CreateEntity(cubeMesh);
+    strcpy(cubeEntity2->textId, "cubeContainer2");
     cubeEntity2->position = vec3(1.0f, 0.0f, 3.0f);
     cubeEntity2->rotation = vec3(0.0f, 180.0f, 0.0f);
     cubeEntity2->scale = vec3(0.2f);
@@ -256,6 +264,7 @@ void LoadAssets(Game *game)
     //ShaderSetInt(game->mainShader, "u_dirLightCount", 0);
     Entity *dirLightMesh = (Entity *)malloc(sizeof(Entity));
     *dirLightMesh = CreateEntity(lightMesh);
+    strcpy(dirLightMesh->textId, "dirLightCube");
     dirLightMesh->scale = vec3(50.0f);
     dirLightMesh->position = -dirLight.direction * 200.0f;
 
@@ -317,13 +326,5 @@ void LoadAssets(Game *game)
     game->textSize = vec2(textSurface->w, textSurface->h);
 
     game->textTexture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
-    std::vector<Mesh> quads = {
-        CreateQuad(vec2(100.0f, 100.0f), game->textSize, game->uiShader)
-    };
-
-    for(int i = 0; i < quads.size(); i++)
-    {
-        quads[i].material.diffuseTexture = game->textTexture;
-    }
     ShaderSetInt(game->uiShader, "u_texture", 0);
 }

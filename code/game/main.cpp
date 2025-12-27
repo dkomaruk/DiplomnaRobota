@@ -152,9 +152,9 @@ int main(int argc, char *argv[])
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        for(int i = 0; i < game->quads.size(); i++)
+        for(int i = 0; i < game->texts.size(); i++)
         {
-            RenderMesh(game, &game->quads[i], mat4(1.0f));
+            RenderText(game, &game->texts[i]);
         }
         glDisable(GL_BLEND);
 

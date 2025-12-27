@@ -20,6 +20,7 @@ struct Entity
 {
     uint16 id;
     uint16 type;
+    char textId[25];
 
     Model *models;
     int numOfModels;
@@ -28,7 +29,6 @@ struct Entity
     vec3 rotation;
     vec3 scale = vec3(1.0f);
 
-    //void (* Render)(Entity *self, Game *game);
     RenderEntityFunc *Render;
 };
 

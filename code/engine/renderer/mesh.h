@@ -16,6 +16,8 @@ struct Game;
 
 struct MaterialPhong
 {
+    GLuint shader;
+
     GLuint diffuseTexture; //GL_TEXTURE0
     GLuint specularTexture; //GL_TEXTURE1
     GLuint emissionTexture; //GL_TEXTURE2
@@ -33,28 +35,25 @@ struct Vertex
 struct Mesh
 {
     GLuint vao, vbo;
-
-    GLuint shader;
-    MaterialPhong material;
-
     int indicesCount, verticesCount;
 };
 
 struct Model
 {
-    Mesh *meshes;
+    Mesh *mesh;
+    MaterialPhong *material;
     int numOfMeshes;
 };
 
-Mesh CreateMesh(std::vector<Vertex> vertices, GLuint shader);
-Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, GLuint shader);
+Mesh CreateMesh(std::vector<Vertex> vertices);
+Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
-Mesh CreateQuad(vec2 position, vec2 size, GLuint shader);
+Mesh CreateQuad(vec2 position, vec2 size);
 
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
 
 mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 scale);
-void RenderMesh(Game *game, Mesh *mesh, mat4 model);
+void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, mat4 model);
 void RenderModel(Game *game, Model *model, mat4 modelMat);
 
 #define MESH_H

@@ -1,6 +1,6 @@
 # Current
 
-## 2025-12-25/26 S1 Text Rendering
+## 2025-12-25/27 S1 Text Rendering
 - [ ] Text rendering utilities
   - [x] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
   - [ ] Create OpenGL textures with text
