@@ -4,6 +4,8 @@
 #include "texture.h"
 #include "shader.h"
 
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include "AL/al.h"
 #include "AL/alext.h"
 
@@ -115,10 +117,12 @@ void LoadAssets(Game *game)
     LoadAudio(game);
     SetupFramebuffers(game);
 
+    game->font4 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 4);
     game->font18 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
     game->font24 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 24);
     game->font36 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 36);
 
+    game->fonts[4] = game->font4;
     game->fonts[18] = game->font18;
     game->fonts[24] = game->font24;
     game->fonts[36] = game->font36;

@@ -1,6 +1,6 @@
 #include "text.h"
 
-#include "mesh.h"
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>

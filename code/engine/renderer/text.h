@@ -16,7 +16,6 @@ struct Text
 
 Text CreateText(Game *game, char *text, vec2 position, GLuint shader, int fontSize = 18);
 void DeleteText(Text *text);
-
 void RenderText(Game *game, Text *text);
 
 #define TEXT_H

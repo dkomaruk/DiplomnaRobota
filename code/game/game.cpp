@@ -173,6 +173,7 @@ void UpdateGame(Game *game)
     if(keyboardState[SDL_SCANCODE_ESCAPE])
     {
         game->isRunning = false;
+        return;
     }
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
@@ -274,16 +275,16 @@ void UpdateGame(Game *game)
         Text newText = {};
         if(game->texts.size() == 0)
         {
-            newText = CreateText(game, "Hello, world!", newPos, game->uiShader, 36);
+            newText = CreateText(game, "Hello, world!", newPos, game->uiShader, 4);
         }
         else
         {
             newText = game->texts.back();
-            newPos += vec2(newText.size.x + 10.0f, 0.0f);
+            newPos += vec2(newText.size.x, 0.0f);
 
             if(newPos.x >= WINDOW_WIDTH)
             {
-                newPos = vec2(0.0f, newPos.y + newText.size.y + 10.0f);
+                newPos = vec2(0.0f, newPos.y + newText.size.y);
             }
         }
 
