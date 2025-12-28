@@ -1,9 +1,9 @@
 # Current
 
 # Next
-- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 
 # Upcoming
+- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 - [ ] Improve text rendering
       - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
       - This is bad because it means mutliple draw calls for all texts on the screen. Also, if you want to change this text then you have to create another texture and send it to the GPU.
