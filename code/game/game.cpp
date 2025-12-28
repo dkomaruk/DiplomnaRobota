@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include "text.h"
+
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <stb_image.h>
@@ -84,7 +86,9 @@ bool InitGame(Game *game)
     camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    game->projection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
+    game->perspectiveProjection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
+    game->orthoProjection = ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+
     game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
 
     game->perfFreq = SDL_GetPerformanceFrequency();
@@ -169,6 +173,7 @@ void UpdateGame(Game *game)
     if(keyboardState[SDL_SCANCODE_ESCAPE])
     {
         game->isRunning = false;
+        return;
     }
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
@@ -265,20 +270,63 @@ void UpdateGame(Game *game)
     //if(IsFirstPress(game, SDL_SCANCODE_UP))
     if(game->keys[SDL_SCANCODE_UP])
     {
-        float newQuadX = game->lastQuadX + game->textSize.x;
-        float newQuadY = game->lastQuadY;
-        if(newQuadX >= WINDOW_WIDTH)
+        vec2 newPos = vec2(game->lastTextX, game->lastTextY);
+
+        Text newText = {};
+        if(game->texts.size() == 0)
         {
-            newQuadX = 0.0f;
-            newQuadY += game->textSize.y + 10.0f;
+            newText = CreateText(game, "Hello, world!", newPos, game->uiShader, 4);
+        }
+        else
+        {
+            newText = game->texts.back();
+            newPos += vec2(newText.size.x, 0.0f);
+
+            if(newPos.x >= WINDOW_WIDTH)
+            {
+                newPos = vec2(0.0f, newPos.y + newText.size.y);
+            }
         }
 
-        Mesh newQuad = CreateQuad(vec2(newQuadX, newQuadY), game->textSize, game->uiShader);
-        newQuad.material.diffuseTexture = game->textTexture;
-        game->quads.push_back(newQuad);
+        newText.position = newPos;
+        game->texts.push_back(newText);
 
-        game->lastQuadX = newQuadX;
-        game->lastQuadY = newQuadY;
+        game->lastTextX = newPos.x;
+        game->lastTextY = newPos.y;
+
+        char buffer[20];
+        sprintf(buffer, "%d", (int)game->texts.size());
+        DeleteText(&game->textCounter);
+        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
+    }
+    if(game->keys[SDL_SCANCODE_DOWN])
+    //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
+    {
+        int textsCount = (int)game->texts.size();
+        if(textsCount)
+        {
+            Text lastText = game->texts.back();
+
+            game->texts.pop_back();
+
+            if(textsCount == 1)
+            {
+                DeleteText(&lastText);
+                game->lastTextX = 150.0f;
+                game->lastTextY = 150.0f;
+            }
+            else
+            {
+                Text currentLast = game->texts.back();
+                game->lastTextX = currentLast.position.x;
+                game->lastTextY = currentLast.position.y;
+            }
+        }
+
+        char buffer[20];
+        sprintf(buffer, "%d", (int)game->texts.size());
+        DeleteText(&game->textCounter);
+        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
     }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)

@@ -1,30 +1,23 @@
 # Current
 
-## 2025-12-25/26 S1 Text Rendering
-- [ ] Text rendering utilities
-  - [x] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
-  - [ ] Create OpenGL textures with text
-    - [ ] Create SDL_Surface with TTF_RenderText_Blended or others
-    - [ ] Use SDL_Surface pixels to make an OpenGL texture
-  - [ ] Display textures with text on a quad using OpenGL
-    - [ ] Make a simple quad mesh that has a diffuse texture and a shader to display that texture
-  - [ ] Make a Text struct that contains:
-        - String with text
-        - Width, height, font size, font reference
-        - Whether or not it has an alpha channel
-        - Whether or not it uses SDF
-        - Texture and shader IDs
-  - [ ] Formalize the API using Text struct
-  - [ ] Render text using SDF
-    - [ ] Enable SDF using TTF_SetFontSDF
-      - Surfaces, created with TTF_RenderText_Blended, will contain signed distance value in their alpha channel
-    - [ ] Need a custom shader to use this signed distance value
-      - <https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf>
-
 # Next
 - [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 
 # Upcoming
+- [ ] Improve text rendering
+      - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
+      - This is bad because it means mutliple draw calls for all texts on the screen. Also, if you want to change this text then you have to create another texture and send it to the GPU.
+      - It would be better to create a texture atlas with all needed glyphs. Each character would contain its font metrics and uv coordinates into that atlas. When a string of text is needed, a new mesh is created from multiple quads for each letter. Position of each vertex in those quads is calculated based on the position of the text + different offsets based on glyph metrics (bearing, width/height, advance), each vertex also has uv coordinates into text atlas for its glyph.
+      - With this approach it's not needed to create a texture for new text all the time. You can also combine all visible text into a single mesh and have a single draw call (harder to manage the memory of this mesh when text changes).
+      - Here are some helpful references:
+        - <https://www.reddit.com/r/opengl/comments/15s4h0d/strategies_for_efficient_text_rendering/>
+        - <https://learnopengl.com/In-Practice/Text-Rendering>
+        - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
+  - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
+    - [ ] Enable SDF using TTF_SetFontSDF
+      - Surfaces, created with TTF_RenderText_Blended, will contain signed distance value in their alpha channel
+    - [ ] Need a custom shader to use this signed distance value
+      - <https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf>
 - [ ] Skeletal animations
 - [ ] Heightmaps for terrain rendering
   - [ ] Check how WARNO/Total War snaps unites to terrain/rotates them on slopes and hills
@@ -65,6 +58,18 @@
   - Alt: send state snapshot
 
 # Log
+
+## 2025-12-25/28 S1 Text Rendering
+- [x] Static text rendering utilities
+  - [x] Initialize SDL3_ttf and use it to load TTF_Font (with TTF_OpenFont)
+  - [x] Create OpenGL textures with text
+    - [x] Create SDL_Surface with TTF_RenderText_Blended
+    - [x] Use SDL_Surface pixels to make an OpenGL texture
+  - [x] Display textures with text on a quad using OpenGL
+    - [x] Make a simple quad mesh that has a texture and a shader to display that texture
+  - [x] Make a Text struct that contains:
+        - Position, size
+        - Texture and shader IDs
 
 ## 2025-12-19 S0 SessionTaskExample
 - [x] High level task1

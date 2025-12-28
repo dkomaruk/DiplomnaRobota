@@ -3,6 +3,7 @@
 #include "entity.h"
 #include "audio.h"
 #include "input.h"
+#include "text.h"
 
 #include "camera.h"
 
@@ -13,6 +14,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <vector>
+#include <map>
 #include <unordered_set>
 
 #ifdef WINDOW_TRANSPARENT
@@ -46,9 +48,12 @@ struct Game
     GLuint outlineFbo;
     GLuint outlineTexture, fullSceneTexture;
 
+    //Post-processing
+    Mesh fullscreenQuad;
+
     //Camera
     Camera camera;
-    mat4 view, projection;
+    mat4 view, perspectiveProjection, orthoProjection;
 
     //Input
     int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
@@ -71,14 +76,14 @@ struct Game
     ALuint source;
 
     //Fonts
-    TTF_Font *font18, *font24, *font36;
+    TTF_Font *font4, *font18, *font24, *font36;
+    std::map<int, TTF_Font *> fonts;
 
     //Game temp stuff
-    GLuint textTexture;
-    std::vector<Mesh> quads;
-    vec2 textSize;
-    float lastQuadX = 150.0f;
-    float lastQuadY = 0.0f;
+    Text textCounter;
+    std::vector<Text> texts;
+    float lastTextX = 150.0f;
+    float lastTextY = 150.0f;
 };
 
 bool InitGame(Game *game);
