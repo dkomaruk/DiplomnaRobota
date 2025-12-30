@@ -1,22 +1,59 @@
 #ifndef TEXT_H
 
+#include "mesh.h"
+
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include <GL/glew.h>
 #include <glm/vec2.hpp>
 
-#include "mesh.h"
+#include <map>
 
-struct Text
+struct Character
 {
-    GLuint texture;
+    vec2 uvMin, uvMax;
+    vec2 bearing, size;
+    vec2 textureSize;
+    uint32 advance;
+};
+
+struct Font
+{
+    GLuint atlas;
+    TTF_Font *ttfFont;
+    std::map<char, Character> characters;
+};
+
+struct DynamicText
+{
+    Font *font;
+
+    Mesh quads;
     GLuint shader;
 
     vec2 position;
-    vec2 size;
+
+    //Size & capacity in characters (6 vertices per one character)
+    int size;
+    int capacity;
 };
 
-Text CreateText(Game *game, char *text, vec2 position, GLuint shader, int fontSize = 18);
-void DeleteText(Text *text);
-void RenderText(Game *game, Text *text);
+struct StaticText
+{
+    GLuint texture, shader;
+    vec2 position, size;
+};
+
+Font PrepareFont(char *filepath, int fontSize);
+
+DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader);
+void UpdateDynamicText(DynamicText *text, char *newText);
+void DeleteDynamicText(DynamicText *text);
+void RenderDynamicText(DynamicText *text);
+
+StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize = 18);
+void DeleteStaticText(StaticText *text);
+void RenderStaticText(StaticText *text);
 
 #define TEXT_H
 #endif

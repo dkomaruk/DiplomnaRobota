@@ -1,23 +1,27 @@
 # Current
-
-# Next
-- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
-
-# Upcoming
+## 2025-12-29/30 S2 Improved Text Rendering
 - [ ] Improve text rendering
-      - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
-      - This is bad because it means mutliple draw calls for all texts on the screen. Also, if you want to change this text then you have to create another texture and send it to the GPU.
-      - It would be better to create a texture atlas with all needed glyphs. Each character would contain its font metrics and uv coordinates into that atlas. When a string of text is needed, a new mesh is created from multiple quads for each letter. Position of each vertex in those quads is calculated based on the position of the text + different offsets based on glyph metrics (bearing, width/height, advance), each vertex also has uv coordinates into text atlas for its glyph.
-      - With this approach it's not needed to create a texture for new text all the time. You can also combine all visible text into a single mesh and have a single draw call (harder to manage the memory of this mesh when text changes).
-      - Here are some helpful references:
-        - <https://www.reddit.com/r/opengl/comments/15s4h0d/strategies_for_efficient_text_rendering/>
-        - <https://learnopengl.com/In-Practice/Text-Rendering>
-        - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
+  - [x] Add dynamic text rendering using quads for each glyph instead of making a texture for the whole string of text
+        - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
+        - This is bad because it means mutliple draw calls for all texts on the screen. Also, if you want to change this text then you have to create another texture and send it to the GPU.
+        - It would be better to create a texture atlas with all needed glyphs. Each character would contain its font metrics and uv coordinates into that atlas. When a string of text is needed, a new mesh is created from multiple quads for each letter. Position of each vertex in those quads is calculated based on the position of the text + different offsets based on glyph metrics (bearing, width/height, advance), each vertex also has uv coordinates into text atlas for its glyph.
+        - With this approach it's not needed to create a texture for new text all the time. You can also combine all visible text into a single mesh and have a single draw call (harder to manage the memory of this mesh when text changes).
+        - Here are some helpful references:
+          - <https://www.reddit.com/r/opengl/comments/15s4h0d/strategies_for_efficient_text_rendering/>
+          - <https://learnopengl.com/In-Practice/Text-Rendering>
+          - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
+  - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
+  - [ ] Don't bake in glyph positions into vertex data. Instead store offset from text origin in the vertex position and pass model matrix that translates glyph to the correct position with offset
   - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
     - [ ] Enable SDF using TTF_SetFontSDF
       - Surfaces, created with TTF_RenderText_Blended, will contain signed distance value in their alpha channel
     - [ ] Need a custom shader to use this signed distance value
       - <https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf>
+
+# Next
+
+# Upcoming
+- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 - [ ] Skeletal animations
 - [ ] Heightmaps for terrain rendering
   - [ ] Check how WARNO/Total War snaps unites to terrain/rotates them on slopes and hills

@@ -1,10 +1,161 @@
 #include "text.h"
 
+#include "texture.h"
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
+
+#define VERTICES_PER_CHARACTER 6
+
+Font PrepareFont(char *filepath, int fontSize)
+{
+    Font font = {};
+
+    font.ttfFont = TTF_OpenFont(filepath, (float)fontSize);
+
+    int atlasWidth = 1024;
+    int atlasHeight = 1024;
+
+    SDL_Surface *atlas = SDL_CreateSurface(atlasWidth, atlasHeight, SDL_PIXELFORMAT_ARGB32);
+
+    ivec2 pos = ivec2(0);
+    int rowHeight = 0;
+
+    for(char c = 0; c < 127; c++)
+    {
+        SDL_Surface *glyph = TTF_RenderGlyph_Blended(font.ttfFont, c, SDL_Color{255, 255, 255, 255});
+        if(!glyph) continue;
+
+        if(pos.x + glyph->w > atlasWidth)
+        {
+            pos.x = 0;
+            pos.y += rowHeight + 1;
+
+            rowHeight = 0;
+        }
+
+        int minX, minY, maxX, maxY, advance;
+        TTF_GetGlyphMetrics(font.ttfFont, c, &minX, &maxX, &minY, &maxY, &advance);
+
+        Character ch = {};
+        ch.textureSize = vec2(glyph->w, glyph->h);
+        ch.bearing = vec2(minX, maxY);
+        ch.size = vec2(maxX - minX, maxY - minY);
+        ch.advance = advance;
+
+        ch.uvMin = vec2((float)pos.x / atlasWidth, (float)pos.y / atlasHeight);
+        ch.uvMax = vec2((float)(pos.x + glyph->w) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
+
+        font.characters[c] = ch;
+
+        SDL_Rect destRect = {pos.x, pos.y, glyph->w, glyph->h};
+        SDL_BlitSurface(glyph, 0, atlas, &destRect);
+
+        pos.x += glyph->w + 1;
+        if(glyph->h > rowHeight)
+        {
+            rowHeight = glyph->h;
+        }
+    }
+
+    font.atlas = CreateGLTexture((uint8 *)atlas->pixels, atlasWidth, atlasHeight);
+
+    return font;
+}
+
+std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 position)
+{
+    std::vector<VertexText> vertices;
+
+    vec2 nextPos = position;
+
+    char c;
+    int i = 0;
+    while((c = text[i]) != '\0')
+    {
+        Character ch = font->characters[c];
+
+        vec2 chPos = vec2(nextPos.x + ch.bearing.x, nextPos.y);
+
+        VertexText v1 = {chPos, ch.uvMin};
+        VertexText v2 = {vec2(chPos.x, chPos.y + ch.textureSize.y), vec2(ch.uvMin.x, ch.uvMax.y)};
+        VertexText v3 = {chPos + ch.textureSize, ch.uvMax};
+        VertexText v4 = {vec2(chPos.x + ch.textureSize.x, chPos.y), vec2(ch.uvMax.x, ch.uvMin.y)};
+
+        vertices.insert(vertices.end(), {v1, v2, v3, v3, v4, v1});
+
+        nextPos.x += ch.advance;
+        i++;
+    }
+
+    return vertices;
+}
+
+DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader)
+{
+    DynamicText result = {};
+
+    result.shader = shader;
+    result.font = font;
+    result.position = position;
+
+    std::vector<VertexText> vertices =  PrepareTextVertices(font, text, position);
+    result.quads = CreateTextMesh(vertices);
+
+    result.size = result.capacity = (int)vertices.size() / VERTICES_PER_CHARACTER;
+
+    return result;
+}
+
+void DeleteDynamicText(DynamicText *text)
+{
+    glDeleteBuffers(1, &text->quads.vbo);
+    glDeleteVertexArrays(1, &text->quads.vao);
+}
+
+void UpdateDynamicText(DynamicText *text, char *newText)
+{
+    std::vector<VertexText> vertices = PrepareTextVertices(text->font, newText, text->position);
+    int verticesSize = (int)(vertices.size() * sizeof(VertexText));
+
+    glBindBuffer(GL_ARRAY_BUFFER, text->quads.vbo);
+
+    int newSize = (int)vertices.size() / VERTICES_PER_CHARACTER;
+    if(newSize > text->capacity)
+    {
+        text->capacity = newSize * 2;
+        glBufferData(GL_ARRAY_BUFFER, verticesSize * 2, &vertices[0], GL_DYNAMIC_DRAW);
+    }
+    else
+    {
+        glBufferSubData(GL_ARRAY_BUFFER, 0, verticesSize, &vertices[0]);
+    }
+
+    text->size = newSize;
+    text->quads.verticesCount = (int)vertices.size();
+}
+
+void RenderDynamicText(DynamicText *text)
+{
+    glUseProgram(text->shader);
+
+    mat4 model = mat4(1.0f);
+    //model = translate(model, vec3(text->position, 0.0f));
+    //model = scale(model, vec3(text->scale, 0.0f));
+    ShaderSetMatrix4(text->shader, "u_model", model);
+
+    ShaderSetInt(text->shader, "u_texture", 0);
+    SetTexture(text->font->atlas, 0);
+    glBindVertexArray(text->quads.vao);
+
+    //TODO: Make a single draw call for all visible dynamic text
+    glDrawArrays(GL_TRIANGLES, 0, text->quads.verticesCount);
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *size = 0)
 {
@@ -31,9 +182,9 @@ GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *si
     return texture;
 }
 
-Text CreateText(Game *game, char *text, vec2 position, GLuint shader, int fontSize)
+StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize)
 {
-    Text result = {};
+    StaticText result = {};
 
     result.shader = shader;
     result.position = position;
@@ -42,12 +193,12 @@ Text CreateText(Game *game, char *text, vec2 position, GLuint shader, int fontSi
     return result;
 }
 
-void DeleteText(Text *text)
+void DeleteStaticText(StaticText *text)
 {
     glDeleteTextures(1, &text->texture);
 }
 
-void RenderText(Game *game, Text *text)
+void RenderStaticText(StaticText *text)
 {
     Mesh unitQuad = GetUnitQuad();
 

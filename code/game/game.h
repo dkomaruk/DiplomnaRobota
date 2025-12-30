@@ -31,11 +31,12 @@ struct Game
 
     //Application flags
     bool isRunning = true;
-    bool lockFPS;
+    bool lockFPS = false;
 
     //Shaders and their uniforms
-    std::vector<GLuint> shaders;
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiShader;
+    std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader,
+           postProcessShader, uiStaticTextShader, uiDynamicTextShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -80,10 +81,12 @@ struct Game
     std::map<int, TTF_Font *> fonts;
 
     //Game temp stuff
-    Text textCounter;
-    std::vector<Text> texts;
-    float lastTextX = 150.0f;
-    float lastTextY = 150.0f;
+    StaticText staticTextCounter;
+    DynamicText dynamicTextCounter;
+
+    std::vector<StaticText> texts;
+    float lastTextX = 0.0f;
+    float lastTextY = 400.0f;
 };
 
 bool InitGame(Game *game);

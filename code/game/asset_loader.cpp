@@ -140,11 +140,18 @@ void LoadAssets(Game *game)
         //}
     //}
 
-    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment.frag"));
-    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"), LoadShader("../data/shaders/fragment2.frag"));
-    GLuint uiShader = CreateShaderProgram(LoadShader("../data/shaders/ui.vert"), LoadShader("../data/shaders/ui.frag"));
-    GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"), LoadShader("../data/shaders/picking.frag"));
-    GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"), LoadShader("../data/shaders/fragment3.frag"));
+    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
+                                        LoadShader("../data/shaders/fragment.frag"));
+    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
+                                                   LoadShader("../data/shaders/fragment2.frag"));
+    GLuint uiStaticTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiStaticText.vert"),
+                                                    LoadShader("../data/shaders/uiText.frag"));
+    GLuint uiDynamicTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiDynamicText.vert"),
+                                                     LoadShader("../data/shaders/uiText.frag"));
+    GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
+                                               LoadShader("../data/shaders/picking.frag"));
+    GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
+                                                   LoadShader("../data/shaders/fragment3.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -165,15 +172,18 @@ void LoadAssets(Game *game)
         ShaderSetMatrix4(game->shaders[i], "u_projection", game->perspectiveProjection);
     }
 
-    game->shaders.push_back(uiShader);
-    ShaderSetMatrix4(uiShader, "u_projection", game->orthoProjection);
+    game->shaders.push_back(uiStaticTextShader);
+    ShaderSetMatrix4(uiStaticTextShader, "u_projection", game->orthoProjection);
+    game->shaders.push_back(uiDynamicTextShader);
+    ShaderSetMatrix4(uiDynamicTextShader, "u_projection", game->orthoProjection);
 
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
     game->pickingShader = pickingShader;
-    game->uiShader = uiShader;
+    game->uiStaticTextShader = uiStaticTextShader;
+    game->uiDynamicTextShader = uiDynamicTextShader;
 
     Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);

@@ -187,6 +187,38 @@ Mesh CreateMesh(std::vector<Vertex> vertices)
     return mesh;
 }
 
+Mesh CreateTextVBO(std::vector<VertexText> vertices, GLenum usage = GL_DYNAMIC_DRAW)
+{
+    Mesh mesh = {};
+
+    mesh.verticesCount = (uint32)vertices.size();
+
+    glGenVertexArrays(1, &mesh.vao);
+    glBindVertexArray(mesh.vao);
+
+    glGenBuffers(1, &mesh.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexText), &vertices[0], usage);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(VertexText), (void *)offsetof(VertexText, position));
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(VertexText), (void *)offsetof(VertexText, uv));
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    return mesh;
+}
+
+Mesh CreateTextMesh(std::vector<VertexText> vertices)
+{
+    Mesh mesh = CreateTextVBO(vertices);
+    return mesh;
+}
+
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
 {
     Mesh mesh = CreateMesh(vertices);

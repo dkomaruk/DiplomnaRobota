@@ -218,6 +218,8 @@ void UpdateGame(Game *game)
     if(game->keys[SDL_SCANCODE_DOWN])
     {
         game->outlineThickness -= 5.0f * game->deltaTime;
+        game->outlineThickness = SDL_max(game->outlineThickness, 0.0f);
+
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
     if(game->keys[SDL_SCANCODE_UP])
@@ -272,17 +274,17 @@ void UpdateGame(Game *game)
     {
         vec2 newPos = vec2(game->lastTextX, game->lastTextY);
 
-        Text newText = {};
+        StaticText newText = {};
         if(game->texts.size() == 0)
         {
-            newText = CreateText(game, "Hello, world!", newPos, game->uiShader, 4);
+            newText = CreateStaticText(game, "Hello, world!", newPos, game->uiStaticTextShader, 36);
         }
         else
         {
             newText = game->texts.back();
             newPos += vec2(newText.size.x, 0.0f);
 
-            if(newPos.x >= WINDOW_WIDTH)
+            if(newPos.x + newText.size.x >= WINDOW_WIDTH)
             {
                 newPos = vec2(0.0f, newPos.y + newText.size.y);
             }
@@ -294,10 +296,16 @@ void UpdateGame(Game *game)
         game->lastTextX = newPos.x;
         game->lastTextY = newPos.y;
 
-        char buffer[20];
-        sprintf(buffer, "%d", (int)game->texts.size());
-        DeleteText(&game->textCounter);
-        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
+        char staticBuffer[20];
+        sprintf(staticBuffer, "%d (static)", (int)game->texts.size());
+
+        DeleteStaticText(&game->staticTextCounter);
+        game->staticTextCounter = CreateStaticText(game, staticBuffer, vec2(20, 36), game->uiStaticTextShader, 36);
+
+        char dynamicBuffer[20];
+        sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
+
+        UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
     }
     if(game->keys[SDL_SCANCODE_DOWN])
     //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
@@ -305,28 +313,34 @@ void UpdateGame(Game *game)
         int textsCount = (int)game->texts.size();
         if(textsCount)
         {
-            Text lastText = game->texts.back();
+            StaticText lastText = game->texts.back();
 
             game->texts.pop_back();
 
             if(textsCount == 1)
             {
-                DeleteText(&lastText);
-                game->lastTextX = 150.0f;
-                game->lastTextY = 150.0f;
+                DeleteStaticText(&lastText);
+                game->lastTextX = 0.0f;
+                game->lastTextY = 400.0f;
             }
             else
             {
-                Text currentLast = game->texts.back();
+                StaticText currentLast = game->texts.back();
                 game->lastTextX = currentLast.position.x;
                 game->lastTextY = currentLast.position.y;
             }
         }
 
-        char buffer[20];
-        sprintf(buffer, "%d", (int)game->texts.size());
-        DeleteText(&game->textCounter);
-        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
+        char staticBuffer[20];
+        sprintf(staticBuffer, "%d (static)", (int)game->texts.size());
+
+        DeleteStaticText(&game->staticTextCounter);
+        game->staticTextCounter = CreateStaticText(game, staticBuffer, vec2(20, 36), game->uiStaticTextShader, 36);
+
+        char dynamicBuffer[20];
+        sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
+
+        UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
     }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)

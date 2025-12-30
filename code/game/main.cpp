@@ -47,7 +47,15 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    game->textCounter = CreateText(game, "0", vec2(20, 20), game->uiShader, 36);
+
+    //Font font = PrepareFont("../data/fonts/arial.ttf", 36);
+    Font font = PrepareFont("../data/fonts/Roboto-Regular.ttf", 36);
+
+    DynamicText dynTextTest = CreateDynamicText(&font, "Dynamic: AAAaqApAPA aaaap BBBb )(", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
+    StaticText staticTextTest = CreateStaticText(game, "Static: AAAaqApAPA aaaap BBBb )(", vec2(0, 300), game->uiStaticTextShader, 36);
+
+    game->staticTextCounter = CreateStaticText(game, "0 (static)", vec2(20, 36), game->uiStaticTextShader, 36);
+    game->dynamicTextCounter = CreateDynamicText(&font, "0 (dynamic)", vec2(250.0f, 36.0f), game->uiDynamicTextShader);
 
     while(game->isRunning)
     {
@@ -123,11 +131,18 @@ int main(int argc, char *argv[])
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        RenderText(game, &game->textCounter);
+
+        RenderStaticText(&game->staticTextCounter);
+        RenderDynamicText(&game->dynamicTextCounter);
+
         for(int i = 0; i < game->texts.size(); i++)
         {
-            RenderText(game, &game->texts[i]);
+            RenderStaticText(&game->texts[i]);
         }
+
+        RenderDynamicText(&dynTextTest);
+        RenderStaticText(&staticTextTest);
+
         glDisable(GL_BLEND);
 
         SDL_GL_SwapWindow(game->window);

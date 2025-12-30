@@ -32,6 +32,12 @@ struct Vertex
     vec2 uv;
 };
 
+struct VertexText
+{
+    vec2 position;
+    vec2 uv;
+};
+
 struct Mesh
 {
     GLuint vao, vbo;
@@ -46,6 +52,8 @@ struct Model
 };
 
 Mesh CreateMesh(std::vector<Vertex> vertices);
+Mesh CreateTextMesh(std::vector<VertexText> vertices);
+
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
