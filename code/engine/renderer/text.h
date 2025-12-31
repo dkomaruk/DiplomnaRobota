@@ -12,21 +12,26 @@
 struct Character
 {
     vec2 uvMin, uvMax;
-    vec2 bearing, size;
-    vec2 textureSize;
+    ivec2 bearing, size;
+    ivec2 textureSize;
     uint32 advance;
 };
 
 struct Font
 {
     GLuint atlas;
+
     TTF_Font *ttfFont;
+    int ascent, descent;
+
     std::map<char, Character> characters;
 };
 
 struct DynamicText
 {
     Font *font;
+
+    vec3 color;
 
     Mesh quads;
     GLuint shader;
@@ -42,6 +47,8 @@ struct StaticText
 {
     GLuint texture, shader;
     vec2 position, size;
+
+    vec3 color;
 };
 
 Font PrepareFont(char *filepath, int fontSize);

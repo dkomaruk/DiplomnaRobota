@@ -118,7 +118,7 @@ bool InitGame(Game *game)
 
 void RenderScene(Game *game)
 {
-    vec4 bgColor = game->outlinePass ? vec4(0.0f) : vec4(0.1f, 0.0f, 0.0f, 0.0f);
+    vec4 bgColor = game->outlinePass ? vec4(0.0f) : vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

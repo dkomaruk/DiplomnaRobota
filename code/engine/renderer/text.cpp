@@ -15,7 +15,8 @@ Font PrepareFont(char *filepath, int fontSize)
 
     font.ttfFont = TTF_OpenFont(filepath, (float)fontSize);
 
-    SDL_Log("Font ascent: %d, font descent", TTF_GetFontAscent(font.ttfFont), TTF_GetFontDescent(font.ttfFont));
+    font.ascent = TTF_GetFontAscent(font.ttfFont);
+    font.descent = TTF_GetFontDescent(font.ttfFont);
 
     int atlasWidth = 1024;
     int atlasHeight = 1024;
@@ -25,12 +26,21 @@ Font PrepareFont(char *filepath, int fontSize)
     ivec2 pos = ivec2(0);
     int rowHeight = 0;
 
-    for(char c = 0; c < 127; c++)
+    for(char c = 32; c < 127; c++)
     {
         SDL_Surface *glyph = TTF_RenderGlyph_Blended(font.ttfFont, c, SDL_Color{255, 255, 255, 255});
         if(!glyph) continue;
 
-        if(pos.x + glyph->w > atlasWidth)
+        int minX, minY, maxX, maxY, advance;
+        TTF_GetGlyphMetrics(font.ttfFont, c, &minX, &maxX, &minY, &maxY, &advance);
+
+        Character ch = {};
+        ch.textureSize = ivec2(glyph->w, glyph->h);
+        ch.bearing = ivec2(minX, maxY);
+        ch.size = ivec2(maxX - minX, maxY - minY);
+        ch.advance = advance;
+
+        if(int(pos.x + ch.textureSize.x) > atlasWidth)
         {
             pos.x = 0;
             pos.y += rowHeight + 1;
@@ -38,24 +48,24 @@ Font PrepareFont(char *filepath, int fontSize)
             rowHeight = 0;
         }
 
-        int minX, minY, maxX, maxY, advance;
-        TTF_GetGlyphMetrics(font.ttfFont, c, &minX, &maxX, &minY, &maxY, &advance);
-
-        Character ch = {};
-        ch.textureSize = vec2(glyph->w, glyph->h);
-        ch.bearing = vec2(minX, maxY);
-        ch.size = vec2(maxX - minX, maxY - minY);
-        ch.advance = advance;
-
         ch.uvMin = vec2((float)pos.x / atlasWidth, (float)pos.y / atlasHeight);
-        ch.uvMax = vec2((float)(pos.x + glyph->w) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
+        ch.uvMax = vec2((float)(pos.x + ch.textureSize.x) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
+
+        //if(c == 'A' || c == 'S' || c == 'p' || c == 'P' || c == 'j' || c == 'a' || c == 'I' || c == 's' || c == ' ' || c == 'u')
+        if(c == 'T' || c == 'h' || c == 'P' || c == 'A' || c == 'j')
+        {
+            SDL_Log("%c. Glyph: (%d, %d), ch.size: (%d %d)\n", c, glyph->w, glyph->h, ch.size.x, ch.size.y);
+            SDL_Log("   MinX: %d, MaxX: %d, MinY: %d, MaxY: %d, Advance: %d\n", minX, maxX, minY, maxY, ch.advance);
+        }
 
         font.characters[c] = ch;
 
-        SDL_Rect destRect = {pos.x, pos.y, glyph->w, glyph->h};
-        SDL_BlitSurface(glyph, 0, atlas, &destRect);
+        SDL_Rect srcRect = {0, 0, (int)ch.textureSize.x, glyph->h};
+        SDL_Rect destRect = {pos.x, pos.y, (int)ch.textureSize.x, glyph->h};
+        SDL_BlitSurface(glyph, &srcRect, atlas, &destRect);
 
-        pos.x += glyph->w + 1;
+        pos.x += ch.textureSize.x + 1;
+
         if(glyph->h > rowHeight)
         {
             rowHeight = glyph->h;
@@ -64,6 +74,17 @@ Font PrepareFont(char *filepath, int fontSize)
 
     font.atlas = CreateGLTexture((uint8 *)atlas->pixels, atlasWidth, atlasHeight);
 
+    stbi_flip_vertically_on_write(false);
+    stbi_write_png("atlas.png", 1024, 1024, 4, atlas->pixels, 4 * 1024);
+    stbi_flip_vertically_on_write(true);
+
+    bool isKerningEnabled = TTF_GetFontKerning(font.ttfFont);
+
+    int kerning;
+    TTF_GetGlyphKerning(font.ttfFont, ' ', ')', &kerning);
+
+    SDL_Log("Kearning: %d, 'A':'P' - %d\n", isKerningEnabled, kerning);
+
     return font;
 }
 
@@ -71,7 +92,7 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
 {
     std::vector<VertexText> vertices;
 
-    vec2 nextPos = position;
+    ivec2 nextPos = position;
 
     char c;
     int i = 0;
@@ -79,12 +100,13 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
     {
         Character ch = font->characters[c];
 
-        vec2 chPos = vec2(nextPos.x + ch.bearing.x, nextPos.y);
+        int xOffset = (ch.bearing.x < 0) ? ch.bearing.x : 0; //This is needed for negative bearing (minX)
+        ivec2 chPos = ivec2(nextPos.x + xOffset, nextPos.y);
 
         VertexText v1 = {chPos, ch.uvMin};
-        VertexText v2 = {vec2(chPos.x, chPos.y + ch.textureSize.y), vec2(ch.uvMin.x, ch.uvMax.y)};
-        VertexText v3 = {chPos + ch.textureSize, ch.uvMax};
-        VertexText v4 = {vec2(chPos.x + ch.textureSize.x, chPos.y), vec2(ch.uvMax.x, ch.uvMin.y)};
+        VertexText v2 = {ivec2(chPos.x, chPos.y + ch.textureSize.y), vec2(ch.uvMin.x, ch.uvMax.y)};
+        VertexText v3 = {ivec2(chPos.x + ch.textureSize.x, chPos.y + ch.textureSize.y), ch.uvMax};
+        VertexText v4 = {ivec2(chPos.x + ch.textureSize.x, chPos.y), vec2(ch.uvMax.x, ch.uvMin.y)};
 
         vertices.insert(vertices.end(), {v1, v2, v3, v3, v4, v1});
 
@@ -143,6 +165,8 @@ void RenderDynamicText(DynamicText *text)
 {
     glUseProgram(text->shader);
 
+    ShaderSetVec3(text->shader, "u_textColor", text->color);
+
     mat4 model = mat4(1.0f);
     //model = translate(model, vec3(text->position, 0.0f));
     //model = scale(model, vec3(text->scale, 0.0f));
@@ -192,6 +216,8 @@ StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader
     result.position = position;
     result.texture = CreateTextureWithText(game, text, fontSize, &result.size);
 
+    result.color = vec3(1.0f, 1.0f, 1.0f);
+
     return result;
 }
 
@@ -205,6 +231,8 @@ void RenderStaticText(StaticText *text)
     Mesh unitQuad = GetUnitQuad();
 
     glUseProgram(text->shader);
+
+    ShaderSetVec3(text->shader, "u_textColor", text->color);
 
     mat4 model = mat4(1.0f);
     model = translate(model, vec3(text->position, 0.0f));

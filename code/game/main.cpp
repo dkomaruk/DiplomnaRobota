@@ -51,9 +51,15 @@ int main(int argc, char *argv[])
     //Font font = PrepareFont("../data/fonts/arial.ttf", 36);
     Font font = PrepareFont("../data/fonts/Roboto-Regular.ttf", 36);
 
-    DynamicText dynTextTest = CreateDynamicText(&font, "AAAaqApAPA aaaap BBBb )( (Dynamic)", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
-    StaticText staticTextTest = CreateStaticText(game, "AAAaqApAPA aaaap BBBb )( (Static)", vec2(0, 250), game->uiStaticTextShader, 36);
+    DynamicText dynTextTest = CreateDynamicText(&font, "AAAaqApAPA aaapaIp I BBBb )(", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
+    dynTextTest.color = vec3(1.0f, 0.0f, 0.0f);
 
+    StaticText staticTextTest = CreateStaticText(game, "AAAaqApAPA aaapaIp I BBBb )(", vec2(0, 236), game->uiStaticTextShader, 36);
+
+    DynamicText dynTextTest2 = CreateDynamicText(&font, "kerning This is just a bujnch of text here", vec2(0.0f, 400.0f), game->uiDynamicTextShader);
+    dynTextTest2.color = vec3(1.0f, 1.0f, 0.0f);
+
+    StaticText staticTextTest2 = CreateStaticText(game, "kerning This is just a bujnch of text here", vec2(0, 436), game->uiStaticTextShader, 36);
     game->staticTextCounter = CreateStaticText(game, "0 (static)", vec2(20, 36), game->uiStaticTextShader, 36);
     game->dynamicTextCounter = CreateDynamicText(&font, "0 (dynamic)", vec2(250.0f, 36.0f), game->uiDynamicTextShader);
 
@@ -132,8 +138,8 @@ int main(int argc, char *argv[])
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        RenderStaticText(&game->staticTextCounter);
         RenderDynamicText(&game->dynamicTextCounter);
+        RenderStaticText(&game->staticTextCounter);
 
         for(int i = 0; i < game->texts.size(); i++)
         {
@@ -142,6 +148,9 @@ int main(int argc, char *argv[])
 
         RenderDynamicText(&dynTextTest);
         RenderStaticText(&staticTextTest);
+
+        RenderStaticText(&staticTextTest2);
+        RenderDynamicText(&dynTextTest2);
 
         glDisable(GL_BLEND);
 

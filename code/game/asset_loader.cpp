@@ -121,6 +121,10 @@ void LoadAssets(Game *game)
     game->font18 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
     game->font24 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 24);
     game->font36 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 36);
+    //game->font4 = TTF_OpenFont("../data/fonts/arial.ttf", 4);
+    //game->font18 = TTF_OpenFont("../data/fonts/arial.ttf", 18);
+    //game->font24 = TTF_OpenFont("../data/fonts/arial.ttf", 24);
+    //game->font36 = TTF_OpenFont("../data/fonts/arial.ttf", 36);
 
     game->fonts[4] = game->font4;
     game->fonts[18] = game->font18;
