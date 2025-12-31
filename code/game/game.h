@@ -77,7 +77,7 @@ struct Game
     ALuint source;
 
     //Fonts
-    TTF_Font *font4, *font18, *font24, *font36;
+    TTF_Font *font4, *font18, *font24, *font36, *font48;
     std::map<int, TTF_Font *> fonts;
 
     //Game temp stuff

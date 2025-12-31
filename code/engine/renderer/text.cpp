@@ -40,7 +40,7 @@ Font PrepareFont(char *filepath, int fontSize)
         ch.size = ivec2(maxX - minX, maxY - minY);
         ch.advance = advance;
 
-        if(int(pos.x + ch.textureSize.x) > atlasWidth)
+        if(int(pos.x + ch.advance) > atlasWidth)
         {
             pos.x = 0;
             pos.y += rowHeight + 1;
@@ -49,7 +49,7 @@ Font PrepareFont(char *filepath, int fontSize)
         }
 
         ch.uvMin = vec2((float)pos.x / atlasWidth, (float)pos.y / atlasHeight);
-        ch.uvMax = vec2((float)(pos.x + ch.textureSize.x) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
+        ch.uvMax = vec2((float)(pos.x + ch.advance) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
 
         //if(c == 'A' || c == 'S' || c == 'p' || c == 'P' || c == 'j' || c == 'a' || c == 'I' || c == 's' || c == ' ' || c == 'u')
         if(c == 'T' || c == 'h' || c == 'P' || c == 'A' || c == 'j')
@@ -60,11 +60,11 @@ Font PrepareFont(char *filepath, int fontSize)
 
         font.characters[c] = ch;
 
-        SDL_Rect srcRect = {0, 0, (int)ch.textureSize.x, glyph->h};
-        SDL_Rect destRect = {pos.x, pos.y, (int)ch.textureSize.x, glyph->h};
+        SDL_Rect srcRect = {0, 0, (int)ch.advance, glyph->h};
+        SDL_Rect destRect = {pos.x, pos.y, (int)ch.advance, glyph->h};
         SDL_BlitSurface(glyph, &srcRect, atlas, &destRect);
 
-        pos.x += ch.textureSize.x + 1;
+        pos.x += ch.advance + 1;
 
         if(glyph->h > rowHeight)
         {
@@ -105,8 +105,8 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
 
         VertexText v1 = {chPos, ch.uvMin};
         VertexText v2 = {ivec2(chPos.x, chPos.y + ch.textureSize.y), vec2(ch.uvMin.x, ch.uvMax.y)};
-        VertexText v3 = {ivec2(chPos.x + ch.textureSize.x, chPos.y + ch.textureSize.y), ch.uvMax};
-        VertexText v4 = {ivec2(chPos.x + ch.textureSize.x, chPos.y), vec2(ch.uvMax.x, ch.uvMin.y)};
+        VertexText v3 = {ivec2(chPos.x + ch.advance, chPos.y + ch.textureSize.y), ch.uvMax};
+        VertexText v4 = {ivec2(chPos.x + ch.advance, chPos.y), vec2(ch.uvMax.x, ch.uvMin.y)};
 
         vertices.insert(vertices.end(), {v1, v2, v3, v3, v4, v1});
 

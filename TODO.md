@@ -10,6 +10,9 @@
           - <https://www.reddit.com/r/opengl/comments/15s4h0d/strategies_for_efficient_text_rendering/>
           - <https://learnopengl.com/In-Practice/Text-Rendering>
           - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
+  - [ ] Fix dynamic text glyph positioning being slightly different from static text (mosly fixed)
+        - The issue seems to be on the SDL3_ttf side. It's better to directly use FreeType library
+        - <https://forums.libsdl.org/viewtopic.php?p=37700>
   - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
   - [ ] Don't bake in glyph positions into vertex data. Instead store offset from text origin in the vertex position and pass model matrix that translates glyph to the correct position with offset
   - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
