@@ -12,6 +12,7 @@
           - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
   - [ ] Fix dynamic text glyph positioning being slightly different from static text (mosly fixed)
         - The issue seems to be on the SDL3_ttf side. It's better to directly use FreeType library
+        - !!! Seems like it's just the problem with TTF_RenderText_Blended. When rendered with blending turned off, the texture quad is taking the same amount of space as dynamic text, but static text has some empty space at the end.
         - <https://forums.libsdl.org/viewtopic.php?p=37700>
   - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
   - [ ] Don't bake in glyph positions into vertex data. Instead store offset from text origin in the vertex position and pass model matrix that translates glyph to the correct position with offset

@@ -100,6 +100,12 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
     {
         Character ch = font->characters[c];
 
+        if(nextPos.x + ch.advance > WINDOW_WIDTH)
+        {
+            nextPos.x = 0;
+        nextPos.y += ch.textureSize.y;
+        }
+
         int xOffset = (ch.bearing.x < 0) ? ch.bearing.x : 0; //This is needed for negative bearing (minX)
         ivec2 chPos = ivec2(nextPos.x + xOffset, nextPos.y);
 
@@ -113,6 +119,8 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
         nextPos.x += ch.advance;
         i++;
     }
+
+    SDL_Log("Dynamic text width: %d\n", (int)nextPos.x);
 
     return vertices;
 }
