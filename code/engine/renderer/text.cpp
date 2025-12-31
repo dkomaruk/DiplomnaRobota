@@ -15,6 +15,8 @@ Font PrepareFont(char *filepath, int fontSize)
 
     font.ttfFont = TTF_OpenFont(filepath, (float)fontSize);
 
+    SDL_Log("Font ascent: %d, font descent", TTF_GetFontAscent(font.ttfFont), TTF_GetFontDescent(font.ttfFont));
+
     int atlasWidth = 1024;
     int atlasHeight = 1024;
 
@@ -170,7 +172,7 @@ GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *si
 
     if(size)
     {
-        //NOTE: Increasing texture makes text quality worse because resolution is too low -> (vec2(w, h) * 2.0f)
+        //NOTE: Increasing texture size makes text quality worse because resolution is too low -> (vec2(w, h) * 2.0f)
         //It's better to load fonts with different sizes and use them when needed or use SDF
         *size = vec2(textSurface->w, textSurface->h);
     }

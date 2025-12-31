@@ -351,7 +351,9 @@ void UpdateGame(Game *game)
         }
     }
 
+#ifdef LOAD_ASSETS
     game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
+#endif
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

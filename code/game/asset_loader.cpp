@@ -185,6 +185,7 @@ void LoadAssets(Game *game)
     game->uiStaticTextShader = uiStaticTextShader;
     game->uiDynamicTextShader = uiDynamicTextShader;
 
+#ifdef LOAD_ASSETS
     Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
@@ -335,6 +336,7 @@ void LoadAssets(Game *game)
     {
         game->sceneEntities[i]->id = i + 1;
     }
+#endif
 
     game->fullscreenQuad = CreateQuadNDC(vec2(0.0f), vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

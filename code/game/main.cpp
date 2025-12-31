@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
     //Font font = PrepareFont("../data/fonts/arial.ttf", 36);
     Font font = PrepareFont("../data/fonts/Roboto-Regular.ttf", 36);
 
-    DynamicText dynTextTest = CreateDynamicText(&font, "Dynamic: AAAaqApAPA aaaap BBBb )(", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
-    StaticText staticTextTest = CreateStaticText(game, "Static: AAAaqApAPA aaaap BBBb )(", vec2(0, 300), game->uiStaticTextShader, 36);
+    DynamicText dynTextTest = CreateDynamicText(&font, "AAAaqApAPA aaaap BBBb )( (Dynamic)", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
+    StaticText staticTextTest = CreateStaticText(game, "AAAaqApAPA aaaap BBBb )( (Static)", vec2(0, 250), game->uiStaticTextShader, 36);
 
     game->staticTextCounter = CreateStaticText(game, "0 (static)", vec2(20, 36), game->uiStaticTextShader, 36);
     game->dynamicTextCounter = CreateDynamicText(&font, "0 (dynamic)", vec2(250.0f, 36.0f), game->uiDynamicTextShader);
@@ -169,6 +169,8 @@ int main(int argc, char *argv[])
 
         game->lastFrame = thisFrame;
     }
+
+    SDL_Log("Exited the main loop\n");
 
 
     return 0;
