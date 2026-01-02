@@ -36,8 +36,20 @@ void ProcessInput(Game *game)
 
             case SDL_EVENT_KEY_DOWN:
             {
+                if(event.key.scancode == SDL_SCANCODE_BACKSPACE && game->typingText)
+                {
+                    game->textChanged = true;
+                    game->textInputBuffer.pop_back();
+                }
+
                 if(event.key.repeat != 0) return;
                 game->keys[event.key.scancode] = 1;
+            } break;
+
+            case SDL_EVENT_TEXT_INPUT:
+            {
+                game->textChanged = true;
+                game->textInputBuffer += (char *)event.text.text;
             } break;
 
             case SDL_EVENT_MOUSE_MOTION:

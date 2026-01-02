@@ -53,12 +53,13 @@ struct StaticText
 
 Font PrepareFont(char *filepath, int fontSize);
 
-DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader);
+DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader, vec3 color = vec3(1.0f));
 void UpdateDynamicText(DynamicText *text, char *newText);
 void DeleteDynamicText(DynamicText *text);
 void RenderDynamicText(DynamicText *text);
 
-StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize = 18);
+StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader,
+                            int fontSize = 18, vec3 color = vec3(1.0f));
 void DeleteStaticText(StaticText *text);
 void RenderStaticText(StaticText *text);
 

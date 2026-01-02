@@ -81,6 +81,13 @@ struct Game
     std::map<int, TTF_Font *> fonts;
 
     //Game temp stuff
+    bool typingText;
+    DynamicText textStatus;
+
+    bool textChanged;
+    std::string textInputBuffer = "Type here: ";
+    DynamicText textInput;
+
     StaticText staticTextCounter;
     DynamicText dynamicTextCounter;
 

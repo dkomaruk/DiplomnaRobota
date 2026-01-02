@@ -228,50 +228,75 @@ void UpdateGame(Game *game)
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
 
-    if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+    if(IsFirstPress(game, SDL_SCANCODE_F1))
     {
-        int sourceState;
-        alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
-        if(sourceState == AL_PLAYING)
+        game->typingText = !game->typingText;
+
+        char *status;
+        if(game->typingText)
         {
-            alSourcePause(game->source);
+            SDL_StartTextInput(game->window);
+            status = "Text input: enabled";
         }
         else
         {
-            alSourcePlay(game->source);
-        }
-    }
-    if(IsFirstPress(game, SDL_SCANCODE_U))
-    {
-        int w = (int)WINDOW_WIDTH;
-        int h = (int)WINDOW_HEIGHT;
-        int bytesPerPixel = 3;
-
-        uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
-        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
-        free(pixels);
-    }
-    if(IsFirstPress(game, SDL_SCANCODE_P))
-    {
-        if(game->isCursorHidden)
-        {
-            SDL_ShowCursor();
-            SDL_SetWindowRelativeMouseMode(game->window, false);
-        }
-        else
-        {
-            SDL_HideCursor();
-            SDL_SetWindowRelativeMouseMode(game->window, true);
+            SDL_StopTextInput(game->window);
+            status = "Text input: disabled";
         }
 
-        game->isCursorHidden = !game->isCursorHidden;
+        UpdateDynamicText(&game->textStatus, status);
+    }
+
+    if(!game->typingText)
+    {
+        if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+        {
+            int sourceState;
+            alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
+            if(sourceState == AL_PLAYING)
+            {
+                alSourcePause(game->source);
+            }
+            else
+            {
+                alSourcePlay(game->source);
+            }
+        }
+        if(IsFirstPress(game, SDL_SCANCODE_U))
+        {
+            int w = (int)WINDOW_WIDTH;
+            int h = (int)WINDOW_HEIGHT;
+            int bytesPerPixel = 3;
+
+            uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+            glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+            stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
+            free(pixels);
+        }
+        if(IsFirstPress(game, SDL_SCANCODE_P))
+        {
+            if(game->isCursorHidden)
+            {
+                SDL_ShowCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, false);
+            }
+            else
+            {
+                SDL_HideCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, true);
+            }
+
+            game->isCursorHidden = !game->isCursorHidden;
+        }
     }
 
     //if(IsFirstPress(game, SDL_SCANCODE_UP))
     if(game->keys[SDL_SCANCODE_UP])
     {
+        for(int i = 0; i < 100; i++)
+        {
+
         vec2 newPos = vec2(game->lastTextX, game->lastTextY);
 
         StaticText newText = {};
@@ -306,10 +331,14 @@ void UpdateGame(Game *game)
         sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
 
         UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
+        }
     }
     if(game->keys[SDL_SCANCODE_DOWN])
     //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
     {
+        for(int i = 0; i < 100; i++)
+        {
+
         int textsCount = (int)game->texts.size();
         if(textsCount)
         {
@@ -341,6 +370,7 @@ void UpdateGame(Game *game)
         sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
 
         UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
+        }
     }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)

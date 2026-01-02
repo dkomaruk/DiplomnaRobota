@@ -47,24 +47,31 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-
     //Font font = PrepareFont("../data/fonts/arial.ttf", 36);
     Font font = PrepareFont("../data/fonts/Roboto-Regular.ttf", 36);
 
-    StaticText staticTextTest3 = CreateStaticText(game, "AAAaqApAPA aaapaIp I BBBb )(", vec2(0, 200 - 43), game->uiStaticTextShader, 36);
+    char *text1 = "AAAaqApAPA aaapaIp I BBBb )(";
+    char *text2 = "AAAaqApAPA aaapaIp I BBBb )(   -   static text has empty space at the end";
+    char *text3 = "kerning This is just a bunch of text here";
 
-    DynamicText dynTextTest = CreateDynamicText(&font, "AAAaqApAPA aaapaIp I BBBb )(", vec2(0.0f, 200.0f), game->uiDynamicTextShader);
+    StaticText staticTextTest3 = CreateStaticText(game, text1, vec2(0, 200 - 43), game->uiStaticTextShader, 36);
+
+    DynamicText dynTextTest = CreateDynamicText(&font, text1, vec2(0.0f, 200.0f), game->uiDynamicTextShader);
     dynTextTest.color = vec3(1.0f, 0.0f, 0.0f);
 
-    StaticText staticTextTest = CreateStaticText(game, "AAAaqApAPA aaapaIp I BBBb )(   -   static text has empty space at the end", vec2(0, 236), game->uiStaticTextShader, 36);
-    SDL_Log("Static text width: %d\n", (int)staticTextTest.size.x);
+    StaticText staticTextTest = CreateStaticText(game, text2, vec2(0, 236), game->uiStaticTextShader, 36);
 
-    DynamicText dynTextTest2 = CreateDynamicText(&font, "kerning This is just a bunch of text here", vec2(0.0f, 400.0f), game->uiDynamicTextShader);
+    DynamicText dynTextTest2 = CreateDynamicText(&font, text3, vec2(0.0f, 280.0f), game->uiDynamicTextShader);
     dynTextTest2.color = vec3(1.0f, 1.0f, 1.0f);
 
-    StaticText staticTextTest2 = CreateStaticText(game, "kerning This is just a bunch of text here", vec2(0, 436), game->uiStaticTextShader, 36);
+    StaticText staticTextTest2 = CreateStaticText(game, text3, vec2(0, 316), game->uiStaticTextShader, 36, vec3(0.5f, 0.8f, 0.8f));
     game->staticTextCounter = CreateStaticText(game, "0 (static)", vec2(20, 36), game->uiStaticTextShader, 36);
     game->dynamicTextCounter = CreateDynamicText(&font, "0 (dynamic)", vec2(250.0f, 36.0f), game->uiDynamicTextShader);
+
+    game->textInput = CreateDynamicText(&font, (char *)game->textInputBuffer.c_str(), vec2(10.0f,  400.0f),
+                                        game->uiDynamicTextShader, vec3(1.0f));
+
+    game->textStatus = CreateDynamicText(&font, "Text input: disabled", vec2(WINDOW_WIDTH - 500.0f,  36.0f), game->uiDynamicTextShader, vec3(1.0f));
 
     while(game->isRunning)
     {
@@ -73,6 +80,18 @@ int main(int argc, char *argv[])
 
         //Update
         UpdateGame(game);
+
+        //if(IsFirstPress(game, SDL_SCANCODE_BACKSPACE) && game->typingText)
+        //{
+        //    game->textChanged = true;
+        //    game->textInputBuffer.pop_back();
+        //}
+
+        if(game->textChanged)
+        {
+            game->textChanged = false;
+            UpdateDynamicText(&game->textInput, (char *)game->textInputBuffer.c_str());
+        }
 
         //Rendering
         glEnable(GL_DEPTH_TEST);
@@ -156,6 +175,9 @@ int main(int argc, char *argv[])
 
         RenderDynamicText(&dynTextTest);
         RenderDynamicText(&dynTextTest2);
+
+        RenderDynamicText(&game->textStatus);
+        RenderDynamicText(&game->textInput);
 
         glDisable(GL_BLEND);
 

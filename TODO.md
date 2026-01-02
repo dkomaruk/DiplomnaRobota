@@ -1,5 +1,5 @@
 # Current
-## 2025-12-29/30 S2 Improved Text Rendering
+## 2025-12-29/2026-01-02 S2 Improved Text Rendering
 - [ ] Improve text rendering
   - [x] Add dynamic text rendering using quads for each glyph instead of making a texture for the whole string of text
         - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
@@ -10,7 +10,7 @@
           - <https://www.reddit.com/r/opengl/comments/15s4h0d/strategies_for_efficient_text_rendering/>
           - <https://learnopengl.com/In-Practice/Text-Rendering>
           - <https://www.youtube.com/watch?v=S0PyZKX4lyI>
-  - [ ] Fix dynamic text glyph positioning being slightly different from static text (mosly fixed)
+  - [x] Fix dynamic text glyph positioning being slightly different from static text (mosly fixed)
         - The issue seems to be on the SDL3_ttf side. It's better to directly use FreeType library
         - !!! Seems like it's just the problem with TTF_RenderText_Blended. When rendered with blending turned off, the texture quad is taking the same amount of space as dynamic text, but static text has some empty space at the end.
         - <https://forums.libsdl.org/viewtopic.php?p=37700>

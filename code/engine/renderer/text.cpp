@@ -18,8 +18,8 @@ Font PrepareFont(char *filepath, int fontSize)
     font.ascent = TTF_GetFontAscent(font.ttfFont);
     font.descent = TTF_GetFontDescent(font.ttfFont);
 
-    int atlasWidth = 1024;
-    int atlasHeight = 1024;
+    int atlasWidth = 512;
+    int atlasHeight = 512;
 
     SDL_Surface *atlas = SDL_CreateSurface(atlasWidth, atlasHeight, SDL_PIXELFORMAT_ARGB32);
 
@@ -51,11 +51,9 @@ Font PrepareFont(char *filepath, int fontSize)
         ch.uvMin = vec2((float)pos.x / atlasWidth, (float)pos.y / atlasHeight);
         ch.uvMax = vec2((float)(pos.x + ch.advance) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
 
-        //if(c == 'A' || c == 'S' || c == 'p' || c == 'P' || c == 'j' || c == 'a' || c == 'I' || c == 's' || c == ' ' || c == 'u')
-        if(c == 'T' || c == 'h' || c == 'P' || c == 'A' || c == 'j')
+        if(c == 'A' || c == 'u')
         {
-            SDL_Log("%c. Glyph: (%d, %d), ch.size: (%d %d)\n", c, glyph->w, glyph->h, ch.size.x, ch.size.y);
-            SDL_Log("   MinX: %d, MaxX: %d, MinY: %d, MaxY: %d, Advance: %d\n", minX, maxX, minY, maxY, ch.advance);
+            SDL_Log("%c. minX: %d, maxX: %d, ch.textureSize.x: %d, ch.advance: %d, uvMin: (%f %f), uvMax: (%f %f)\n", c, minX, maxX, (int)ch.textureSize.x, ch.advance, ch.uvMin.x, ch.uvMin.y, ch.uvMax.x, ch.uvMax.y);
         }
 
         font.characters[c] = ch;
@@ -75,15 +73,13 @@ Font PrepareFont(char *filepath, int fontSize)
     font.atlas = CreateGLTexture((uint8 *)atlas->pixels, atlasWidth, atlasHeight);
 
     stbi_flip_vertically_on_write(false);
-    stbi_write_png("atlas.png", 1024, 1024, 4, atlas->pixels, 4 * 1024);
+    stbi_write_png("atlas.png", 512, 512, 4, atlas->pixels, 4 * 512);
     stbi_flip_vertically_on_write(true);
 
     bool isKerningEnabled = TTF_GetFontKerning(font.ttfFont);
 
     int kerning;
     TTF_GetGlyphKerning(font.ttfFont, ' ', ')', &kerning);
-
-    SDL_Log("Kearning: %d, 'A':'P' - %d\n", isKerningEnabled, kerning);
 
     return font;
 }
@@ -120,16 +116,15 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
         i++;
     }
 
-    SDL_Log("Dynamic text width: %d\n", (int)nextPos.x);
-
     return vertices;
 }
 
-DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader)
+DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader, vec3 color)
 {
     DynamicText result = {};
 
     result.shader = shader;
+    result.color = color;
     result.font = font;
     result.position = position;
 
@@ -158,12 +153,11 @@ void UpdateDynamicText(DynamicText *text, char *newText)
     if(newSize > text->capacity)
     {
         text->capacity = newSize * 2;
-        glBufferData(GL_ARRAY_BUFFER, verticesSize * 2, &vertices[0], GL_DYNAMIC_DRAW);
+        //glBufferData(GL_ARRAY_BUFFER, verticesSize * 2, &vertices[0], GL_DYNAMIC_DRAW); -> crashes sometimes
+        glBufferData(GL_ARRAY_BUFFER, verticesSize * 2, NULL, GL_DYNAMIC_DRAW);
     }
-    else
-    {
-        glBufferSubData(GL_ARRAY_BUFFER, 0, verticesSize, &vertices[0]);
-    }
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, verticesSize, &vertices[0]);
 
     text->size = newSize;
     text->quads.verticesCount = (int)vertices.size();
@@ -191,7 +185,7 @@ void RenderDynamicText(DynamicText *text)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *size = 0)
+GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec3 color = vec3(1.0f), vec2 *size = 0)
 {
     if(!game->fonts.count(fontSize))
     {
@@ -199,7 +193,11 @@ GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *si
         return 0;
     }
 
-    SDL_Surface *textSurface = TTF_RenderText_Blended(game->fonts[fontSize], text, 0, SDL_Color{255, 255, 255, 255});
+    uint8_t r = (uint8_t)(color.r * 255);
+    uint8_t g = (uint8_t)(color.g * 255);
+    uint8_t b = (uint8_t)(color.b * 255);
+
+    SDL_Surface *textSurface = TTF_RenderText_Blended(game->fonts[fontSize], text, 0, SDL_Color{b, g, r, 255});
     SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
 
     if(size)
@@ -216,15 +214,14 @@ GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec2 *si
     return texture;
 }
 
-StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize)
+StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize, vec3 color)
 {
     StaticText result = {};
 
     result.shader = shader;
+    result.color = color;
     result.position = position;
-    result.texture = CreateTextureWithText(game, text, fontSize, &result.size);
-
-    result.color = vec3(1.0f, 1.0f, 1.0f);
+    result.texture = CreateTextureWithText(game, text, fontSize, color, &result.size);
 
     return result;
 }
@@ -240,7 +237,7 @@ void RenderStaticText(StaticText *text)
 
     glUseProgram(text->shader);
 
-    ShaderSetVec3(text->shader, "u_textColor", text->color);
+    ShaderSetVec3(text->shader, "u_textColor", vec3(1.0f));
 
     mat4 model = mat4(1.0f);
     model = translate(model, vec3(text->position, 0.0f));
