@@ -1,6 +1,8 @@
 #include "text.h"
 
 #include "texture.h"
+#include "image.h"
+
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <glm/vec3.hpp>
@@ -15,13 +17,14 @@ Font PrepareFont(char *filepath, int fontSize)
 
     font.ttfFont = TTF_OpenFont(filepath, (float)fontSize);
 
-    font.ascent = TTF_GetFontAscent(font.ttfFont);
-    font.descent = TTF_GetFontDescent(font.ttfFont);
+    font.ttfFontSDF = TTF_OpenFont(filepath, (float)fontSize);
+    TTF_SetFontSDF(font.ttfFontSDF, true);
 
     int atlasWidth = 512;
     int atlasHeight = 512;
 
     SDL_Surface *atlas = SDL_CreateSurface(atlasWidth, atlasHeight, SDL_PIXELFORMAT_ARGB32);
+    SDL_Surface *atlasSDF = SDL_CreateSurface(atlasWidth, atlasHeight, SDL_PIXELFORMAT_ARGB32);
 
     ivec2 pos = ivec2(0);
     int rowHeight = 0;
@@ -29,7 +32,9 @@ Font PrepareFont(char *filepath, int fontSize)
     for(char c = 32; c < 127; c++)
     {
         SDL_Surface *glyph = TTF_RenderGlyph_Blended(font.ttfFont, c, SDL_Color{255, 255, 255, 255});
-        if(!glyph) continue;
+        SDL_Surface *glyphSDF = TTF_RenderGlyph_Blended(font.ttfFontSDF, c, SDL_Color{255, 255, 255, 255});
+
+        if(!glyph || !glyphSDF) continue;
 
         int minX, minY, maxX, maxY, advance;
         TTF_GetGlyphMetrics(font.ttfFont, c, &minX, &maxX, &minY, &maxY, &advance);
@@ -51,16 +56,13 @@ Font PrepareFont(char *filepath, int fontSize)
         ch.uvMin = vec2((float)pos.x / atlasWidth, (float)pos.y / atlasHeight);
         ch.uvMax = vec2((float)(pos.x + ch.advance) / atlasWidth, (float)(pos.y + glyph->h) / atlasHeight);
 
-        if(c == 'A' || c == 'u')
-        {
-            SDL_Log("%c. minX: %d, maxX: %d, ch.textureSize.x: %d, ch.advance: %d, uvMin: (%f %f), uvMax: (%f %f)\n", c, minX, maxX, (int)ch.textureSize.x, ch.advance, ch.uvMin.x, ch.uvMin.y, ch.uvMax.x, ch.uvMax.y);
-        }
-
         font.characters[c] = ch;
 
         SDL_Rect srcRect = {0, 0, (int)ch.advance, glyph->h};
         SDL_Rect destRect = {pos.x, pos.y, (int)ch.advance, glyph->h};
+
         SDL_BlitSurface(glyph, &srcRect, atlas, &destRect);
+        SDL_BlitSurface(glyphSDF, &srcRect, atlasSDF, &destRect);
 
         pos.x += ch.advance + 1;
 
@@ -71,24 +73,18 @@ Font PrepareFont(char *filepath, int fontSize)
     }
 
     font.atlas = CreateGLTexture((uint8 *)atlas->pixels, atlasWidth, atlasHeight);
+    font.atlasSDF = CreateGLTexture((uint8 *)atlasSDF->pixels, atlasWidth, atlasHeight);
 
-    stbi_flip_vertically_on_write(false);
-    stbi_write_png("atlas.png", 512, 512, 4, atlas->pixels, 4 * 512);
-    stbi_flip_vertically_on_write(true);
-
-    bool isKerningEnabled = TTF_GetFontKerning(font.ttfFont);
-
-    int kerning;
-    TTF_GetGlyphKerning(font.ttfFont, ' ', ')', &kerning);
+    //SaveImage("atlas.jpg", atlas->pixels, 512, 512, 4, false);
 
     return font;
 }
 
-std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 position)
+std::vector<VertexText> PrepareTextVertices(Font *font, char *text, ivec2 *size = 0)
 {
     std::vector<VertexText> vertices;
 
-    ivec2 nextPos = position;
+    ivec2 nextPos = ivec2(0);
 
     char c;
     int i = 0;
@@ -99,10 +95,10 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
         if(nextPos.x + ch.advance > WINDOW_WIDTH)
         {
             nextPos.x = 0;
-        nextPos.y += ch.textureSize.y;
+            nextPos.y += ch.textureSize.y;
         }
 
-        int xOffset = (ch.bearing.x < 0) ? ch.bearing.x : 0; //This is needed for negative bearing (minX)
+        int xOffset = (ch.bearing.x < 0) ? ch.bearing.x : 0;
         ivec2 chPos = ivec2(nextPos.x + xOffset, nextPos.y);
 
         VertexText v1 = {chPos, ch.uvMin};
@@ -116,36 +112,53 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, vec2 positio
         i++;
     }
 
+    *size = nextPos;
+
     return vertices;
 }
 
-DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader, vec3 color)
+Text CreateText(Font *font, char *text, vec2 position, GLuint shader, vec3 color)
 {
-    DynamicText result = {};
+    Text result = {};
 
     result.shader = shader;
     result.color = color;
     result.font = font;
     result.position = position;
 
-    std::vector<VertexText> vertices =  PrepareTextVertices(font, text, position);
+    std::vector<VertexText> vertices =  PrepareTextVertices(font, text, &result.size);
     result.quads = CreateTextMesh(vertices);
 
-    result.size = result.capacity = (int)vertices.size() / VERTICES_PER_CHARACTER;
+    result.count = result.capacity = (int)vertices.size() / VERTICES_PER_CHARACTER;
 
     return result;
 }
 
-void DeleteDynamicText(DynamicText *text)
+void DeleteText(Text *text)
 {
     glDeleteBuffers(1, &text->quads.vbo);
     glDeleteVertexArrays(1, &text->quads.vao);
 }
 
-void UpdateDynamicText(DynamicText *text, char *newText)
+void UpdateText(Text *text, char *newText, int length)
 {
-    std::vector<VertexText> vertices = PrepareTextVertices(text->font, newText, text->position);
+    char *temp;
+    if(length)
+    {
+        temp = (char *)malloc(length + 1);
+        memcpy_s(temp, length, newText, length);
+        temp[length] = '\0';
+    }
+    else
+    {
+        temp = newText;
+    }
+
+    std::vector<VertexText> vertices = PrepareTextVertices(text->font, temp, &text->size);
     int verticesSize = (int)(vertices.size() * sizeof(VertexText));
+
+    if(length)
+        free(temp);
 
     glBindBuffer(GL_ARRAY_BUFFER, text->quads.vbo);
 
@@ -159,18 +172,18 @@ void UpdateDynamicText(DynamicText *text, char *newText)
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, verticesSize, &vertices[0]);
 
-    text->size = newSize;
+    text->count = newSize;
     text->quads.verticesCount = (int)vertices.size();
 }
 
-void RenderDynamicText(DynamicText *text)
+void RenderText(Text *text)
 {
     glUseProgram(text->shader);
 
     ShaderSetVec3(text->shader, "u_textColor", text->color);
 
     mat4 model = mat4(1.0f);
-    //model = translate(model, vec3(text->position, 0.0f));
+    model = translate(model, vec3(text->position, 0.0f));
     //model = scale(model, vec3(text->scale, 0.0f));
     ShaderSetMatrix4(text->shader, "u_model", model);
 
@@ -180,75 +193,6 @@ void RenderDynamicText(DynamicText *text)
 
     //TODO: Make a single draw call for all visible dynamic text
     glDrawArrays(GL_TRIANGLES, 0, text->quads.verticesCount);
-
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-GLuint CreateTextureWithText(Game *game, char *text, int fontSize = 18, vec3 color = vec3(1.0f), vec2 *size = 0)
-{
-    if(!game->fonts.count(fontSize))
-    {
-        SDL_Log("Failed to create text from string \"%s\". Incorrect font size %d\n", text, fontSize);
-        return 0;
-    }
-
-    uint8_t r = (uint8_t)(color.r * 255);
-    uint8_t g = (uint8_t)(color.g * 255);
-    uint8_t b = (uint8_t)(color.b * 255);
-
-    SDL_Surface *textSurface = TTF_RenderText_Blended(game->fonts[fontSize], text, 0, SDL_Color{b, g, r, 255});
-    SDL_FlipSurface(textSurface, SDL_FLIP_VERTICAL);
-
-    if(size)
-    {
-        //NOTE: Increasing texture size makes text quality worse because resolution is too low -> (vec2(w, h) * 2.0f)
-        //It's better to load fonts with different sizes and use them when needed or use SDF
-        *size = vec2(textSurface->w, textSurface->h);
-    }
-
-    GLuint texture = CreateGLTexture((uint8 *)textSurface->pixels, textSurface->pitch / 4, textSurface->h);
-
-    SDL_DestroySurface(textSurface);
-
-    return texture;
-}
-
-StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader, int fontSize, vec3 color)
-{
-    StaticText result = {};
-
-    result.shader = shader;
-    result.color = color;
-    result.position = position;
-    result.texture = CreateTextureWithText(game, text, fontSize, color, &result.size);
-
-    return result;
-}
-
-void DeleteStaticText(StaticText *text)
-{
-    glDeleteTextures(1, &text->texture);
-}
-
-void RenderStaticText(StaticText *text)
-{
-    Mesh unitQuad = GetUnitQuad();
-
-    glUseProgram(text->shader);
-
-    ShaderSetVec3(text->shader, "u_textColor", vec3(1.0f));
-
-    mat4 model = mat4(1.0f);
-    model = translate(model, vec3(text->position, 0.0f));
-    model = scale(model, vec3(text->size, 0.0f));
-    ShaderSetMatrix4(text->shader, "u_model", model);
-
-    ShaderSetInt(text->shader, "u_texture", 0);
-    SetTexture(text->texture, 0);
-    glBindVertexArray(unitQuad.vao);
-
-    glDrawArrays(GL_TRIANGLES, 0, unitQuad.verticesCount);
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);

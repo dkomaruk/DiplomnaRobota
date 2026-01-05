@@ -14,6 +14,8 @@
 
 bool InitGame(Game *game)
 {
+    SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
+
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
         SDL_Log("Failed to initialize SDL. Error: %s", SDL_GetError());
@@ -237,6 +239,8 @@ void UpdateGame(Game *game)
         {
             SDL_StartTextInput(game->window);
             status = "Text input: enabled";
+
+            game->textChanged = true;
         }
         else
         {
@@ -244,7 +248,7 @@ void UpdateGame(Game *game)
             status = "Text input: disabled";
         }
 
-        UpdateDynamicText(&game->textStatus, status);
+        UpdateText(&game->textStatus, status);
     }
 
     if(!game->typingText)
@@ -296,81 +300,45 @@ void UpdateGame(Game *game)
     {
         for(int i = 0; i < 100; i++)
         {
+            game->helloWorldsBuffer += "Hello, World! ";
 
-        vec2 newPos = vec2(game->lastTextX, game->lastTextY);
-
-        StaticText newText = {};
-        if(game->texts.size() == 0)
-        {
-            newText = CreateStaticText(game, "Hello, world!", newPos, game->uiStaticTextShader, 36);
-        }
-        else
-        {
-            newText = game->texts.back();
-            newPos += vec2(newText.size.x, 0.0f);
-
-            if(newPos.x + newText.size.x >= WINDOW_WIDTH)
+            if(game->helloWorldsCounter == 0)
             {
-                newPos = vec2(0.0f, newPos.y + newText.size.y);
+                game->helloWorlds = CreateText(&game->fonts[36], (char *)game->helloWorldsBuffer.c_str(),
+                                               vec2(0.0f, 400.0f), game->uiTextShader);
             }
+
+            game->helloWorldsCounter++;
+
         }
 
-        newText.position = newPos;
-        game->texts.push_back(newText);
+        UpdateText(&game->helloWorlds, (char *)game->helloWorldsBuffer.c_str());
 
-        game->lastTextX = newPos.x;
-        game->lastTextY = newPos.y;
-
-        char staticBuffer[20];
-        sprintf(staticBuffer, "%d (static)", (int)game->texts.size());
-
-        DeleteStaticText(&game->staticTextCounter);
-        game->staticTextCounter = CreateStaticText(game, staticBuffer, vec2(20, 36), game->uiStaticTextShader, 36);
-
-        char dynamicBuffer[20];
-        sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
-
-        UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
-        }
+        char buffer[20];
+        sprintf(buffer, "%d (hello worlds)", game->helloWorldsCounter);
+        UpdateText(&game->helloWorldsCounterDisplay, buffer);
     }
     if(game->keys[SDL_SCANCODE_DOWN])
     //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
     {
         for(int i = 0; i < 100; i++)
         {
-
-        int textsCount = (int)game->texts.size();
-        if(textsCount)
-        {
-            StaticText lastText = game->texts.back();
-
-            game->texts.pop_back();
-
-            if(textsCount == 1)
+            int textsCount = game->helloWorldsCounter;
+            if(textsCount)
             {
-                DeleteStaticText(&lastText);
-                game->lastTextX = 0.0f;
-                game->lastTextY = 400.0f;
+                game->helloWorldsCounter--;
+
+                std::string s = "Hello, World! ";
+                game->helloWorldsBuffer.erase(game->helloWorldsBuffer.length() - s.length());
             }
-            else
-            {
-                StaticText currentLast = game->texts.back();
-                game->lastTextX = currentLast.position.x;
-                game->lastTextY = currentLast.position.y;
-            }
+
         }
 
-        char staticBuffer[20];
-        sprintf(staticBuffer, "%d (static)", (int)game->texts.size());
+        UpdateText(&game->helloWorlds, (char *)game->helloWorldsBuffer.c_str());
 
-        DeleteStaticText(&game->staticTextCounter);
-        game->staticTextCounter = CreateStaticText(game, staticBuffer, vec2(20, 36), game->uiStaticTextShader, 36);
-
-        char dynamicBuffer[20];
-        sprintf(dynamicBuffer, "%d (dynamic)", (int)game->texts.size());
-
-        UpdateDynamicText(&game->dynamicTextCounter, dynamicBuffer);
-        }
+        char buffer[20];
+        sprintf(buffer, "%d (hello worlds)", game->helloWorldsCounter);
+        UpdateText(&game->helloWorldsCounterDisplay, buffer);
     }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)

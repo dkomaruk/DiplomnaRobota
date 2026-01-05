@@ -26,6 +26,7 @@ using namespace glm;
 #include "camera.cpp"
 #include "shader.cpp"
 #include "texture.cpp"
+#include "image.cpp"
 #include "mesh.cpp"
 
 #include <GL/glew.h>
@@ -47,31 +48,33 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    //Font font = PrepareFont("../data/fonts/arial.ttf", 36);
     Font font = PrepareFont("../data/fonts/Roboto-Regular.ttf", 36);
+    Font font2 = PrepareFont("../data/fonts/Roboto-Regular.ttf", 18);
 
     char *text1 = "AAAaqApAPA aaapaIp I BBBb )(";
-    char *text2 = "AAAaqApAPA aaapaIp I BBBb )(   -   static text has empty space at the end";
     char *text3 = "kerning This is just a bunch of text here";
 
-    StaticText staticTextTest3 = CreateStaticText(game, text1, vec2(0, 200 - 43), game->uiStaticTextShader, 36);
+    Text textTest = CreateText(&font, text1, vec2(0.0f, 200.0f), game->uiTextShader, vec3(1.0f, 0.0f, 0.0f));
+    Text textTest2 = CreateText(&font, text3, vec2(0.0f, 280.0f), game->uiTextShader, vec3(1.0f));
 
-    DynamicText dynTextTest = CreateDynamicText(&font, text1, vec2(0.0f, 200.0f), game->uiDynamicTextShader);
-    dynTextTest.color = vec3(1.0f, 0.0f, 0.0f);
+    game->fpsCounter = CreateText(&font2, "0 FPS", vec2(20.0f, 36.0f), game->uiTextShader);
+    game->helloWorldsCounterDisplay = CreateText(&font2, "0 (hello worlds)", vec2(300.0f, 36.0f), game->uiTextShader);
 
-    StaticText staticTextTest = CreateStaticText(game, text2, vec2(0, 236), game->uiStaticTextShader, 36);
+    game->textInput = CreateText(&font, (char *)game->textInputBuffer.c_str(), vec2(10.0f,  400.0f),
+                                        game->uiTextShader, vec3(1.0f));
 
-    DynamicText dynTextTest2 = CreateDynamicText(&font, text3, vec2(0.0f, 280.0f), game->uiDynamicTextShader);
-    dynTextTest2.color = vec3(1.0f, 1.0f, 1.0f);
+    game->textStatus = CreateText(&font, "Text input: disabled", vec2(WINDOW_WIDTH - 500.0f,  36.0f),
+                                  game->uiTextShader, vec3(1.0f));
 
-    StaticText staticTextTest2 = CreateStaticText(game, text3, vec2(0, 316), game->uiStaticTextShader, 36, vec3(0.5f, 0.8f, 0.8f));
-    game->staticTextCounter = CreateStaticText(game, "0 (static)", vec2(20, 36), game->uiStaticTextShader, 36);
-    game->dynamicTextCounter = CreateDynamicText(&font, "0 (dynamic)", vec2(250.0f, 36.0f), game->uiDynamicTextShader);
+    char text[] = "again place well so she change what out tell against know line stand it end like home hold develop while under tell such large move some it those mean many even school by can give keep seem out large such system have feel use keep here this know like";
 
-    game->textInput = CreateDynamicText(&font, (char *)game->textInputBuffer.c_str(), vec2(10.0f,  400.0f),
-                                        game->uiDynamicTextShader, vec3(1.0f));
+    Timer inputTimer = {};
+    Timer pauseTimer = {};
+    inputTimer = StartTimer(15);
 
-    game->textStatus = CreateDynamicText(&font, "Text input: disabled", vec2(WINDOW_WIDTH - 500.0f,  36.0f), game->uiDynamicTextShader, vec3(1.0f));
+    game->lastFrame = SDL_GetPerformanceCounter();
+
+    //game->lockFPS = true;
 
     while(game->isRunning)
     {
@@ -81,16 +84,37 @@ int main(int argc, char *argv[])
         //Update
         UpdateGame(game);
 
-        //if(IsFirstPress(game, SDL_SCANCODE_BACKSPACE) && game->typingText)
-        //{
-        //    game->textChanged = true;
-        //    game->textInputBuffer.pop_back();
-        //}
+        if(!game->typingText)
+        {
+            UpdateTimer(&inputTimer, game->deltaTime);
+            game->textChanged = true;
+        }
+
 
         if(game->textChanged)
         {
             game->textChanged = false;
-            UpdateDynamicText(&game->textInput, (char *)game->textInputBuffer.c_str());
+            if(game->typingText)
+            {
+                UpdateText(&game->textInput, (char *)game->textInputBuffer.c_str());
+            }
+            else
+            {
+                int lettersOut = (int)((sizeof(text) - 1) * (inputTimer.elapsed / inputTimer.duration));
+                UpdateText(&game->textInput, text, lettersOut);
+            }
+        }
+
+        if(inputTimer.isFinished)
+        {
+            if(pauseTimer.isFinished)
+                pauseTimer = StartTimer(3);
+            else
+                UpdateTimer(&pauseTimer, game->deltaTime);
+
+
+            if(pauseTimer.isFinished)
+                inputTimer = StartTimer(15);
         }
 
         //Rendering
@@ -157,27 +181,23 @@ int main(int argc, char *argv[])
         glBindVertexArray(game->fullscreenQuad.vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        RenderStaticText(&staticTextTest3);
-
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        RenderDynamicText(&game->dynamicTextCounter);
-        RenderStaticText(&game->staticTextCounter);
+        RenderText(&textTest);
+        RenderText(&textTest2);
 
-        for(int i = 0; i < game->texts.size(); i++)
+        RenderText(&game->fpsCounter);
+
+        RenderText(&game->helloWorldsCounterDisplay);
+
+        if(game->helloWorldsCounter)
         {
-            RenderStaticText(&game->texts[i]);
+            RenderText(&game->helloWorlds);
         }
 
-        RenderStaticText(&staticTextTest);
-        RenderStaticText(&staticTextTest2);
-
-        RenderDynamicText(&dynTextTest);
-        RenderDynamicText(&dynTextTest2);
-
-        RenderDynamicText(&game->textStatus);
-        RenderDynamicText(&game->textInput);
+        RenderText(&game->textStatus);
+        RenderText(&game->textInput);
 
         glDisable(GL_BLEND);
 
@@ -186,7 +206,7 @@ int main(int argc, char *argv[])
         Uint64 thisFrame = SDL_GetPerformanceCounter();
         if(game->lockFPS)
         {
-            int targetFrames = 60;
+            int targetFrames = 20;
             float targetTime = 1.0f / targetFrames;
             float elapsedWhileWaiting = 0.0f;
             while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)game->perfFreq) < targetTime)
@@ -202,6 +222,10 @@ int main(int argc, char *argv[])
         float ms = game->deltaTime * 1000.0f;
         float fps = 1000.0f / ms;
         //SDL_Log("%f", fps);
+
+        char dynamicBuffer[20];
+        sprintf(dynamicBuffer, "%.5f FPS", fps);
+        UpdateText(&game->fpsCounter, dynamicBuffer);
 
         game->lastFrame = thisFrame;
     }

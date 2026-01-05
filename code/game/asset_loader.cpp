@@ -114,46 +114,33 @@ void SetupFramebuffers(Game *game)
 
 void LoadAssets(Game *game)
 {
+    //AUDIO
     LoadAudio(game);
+
+    //TODO: Remove from asset loader
     SetupFramebuffers(game);
 
-    game->font4 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 4);
-    game->font18 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 18);
-    game->font24 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 24);
-    game->font36 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 36);
-    game->font48 = TTF_OpenFont("../data/fonts/Roboto-Regular.ttf", 48);
-    //game->font4 = TTF_OpenFont("../data/fonts/arial.ttf", 4);
-    //game->font18 = TTF_OpenFont("../data/fonts/arial.ttf", 18);
-    //game->font24 = TTF_OpenFont("../data/fonts/arial.ttf", 24);
-    //game->font36 = TTF_OpenFont("../data/fonts/arial.ttf", 36);
+    //FONTS
+    int fontSizes[] = {4, 12, 18, 24, 36, 48};
+    int numOfFonts = sizeof(fontSizes) / sizeof(int);
 
-    game->fonts[4] = game->font4;
-    game->fonts[18] = game->font18;
-    game->fonts[24] = game->font24;
-    game->fonts[36] = game->font36;
-    game->fonts[48] = game->font48;
-    //game->font = TTF_OpenFont("../data/fonts/arial.ttf", 18);
-
-    if(!game->font18 || !game->font24 || !game->font36)
+    for(int i = 0; i < numOfFonts; i++)
     {
-        SDL_Log("Failed to load Roboto-Regular.ttf font. Error: %s", SDL_GetError());
+        int fontSize = fontSizes[i];
+        game->fonts[fontSize] = PrepareFont("../data/fonts/Roboto-Regular.ttf", fontSize);
+        if(!game->fonts[fontSize].ttfFont || !game->fonts[fontSize].ttfFontSDF)
+        {
+            SDL_Log("Failed to load Roboto-Regular.ttf font%d. Error: %s", fontSize, SDL_GetError());
+        }
     }
-    //else
-    //{
-        //if(!TTF_SetFontSDF(game->font, true))
-        //{
-        //    SDL_Log("Failed to enable SDF for arial.ttf font. Error: %s", SDL_GetError());
-        //}
-    //}
 
+    //SHADERS
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                         LoadShader("../data/shaders/fragment.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
-    GLuint uiStaticTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiStaticText.vert"),
-                                                    LoadShader("../data/shaders/uiText.frag"));
-    GLuint uiDynamicTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiDynamicText.vert"),
-                                                     LoadShader("../data/shaders/uiText.frag"));
+    GLuint uiTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
+                                              LoadShader("../data/shaders/uiText.frag"));
     GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
                                                LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
@@ -178,19 +165,17 @@ void LoadAssets(Game *game)
         ShaderSetMatrix4(game->shaders[i], "u_projection", game->perspectiveProjection);
     }
 
-    game->shaders.push_back(uiStaticTextShader);
-    ShaderSetMatrix4(uiStaticTextShader, "u_projection", game->orthoProjection);
-    game->shaders.push_back(uiDynamicTextShader);
-    ShaderSetMatrix4(uiDynamicTextShader, "u_projection", game->orthoProjection);
+    game->shaders.push_back(uiTextShader);
+    ShaderSetMatrix4(uiTextShader, "u_projection", game->orthoProjection);
 
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
     game->pickingShader = pickingShader;
-    game->uiStaticTextShader = uiStaticTextShader;
-    game->uiDynamicTextShader = uiDynamicTextShader;
+    game->uiTextShader = uiTextShader;
 
+    //MESHES
 #ifdef LOAD_ASSETS
     Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);

@@ -35,8 +35,7 @@ struct Game
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader,
-           postProcessShader, uiStaticTextShader, uiDynamicTextShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -77,23 +76,22 @@ struct Game
     ALuint source;
 
     //Fonts
-    TTF_Font *font4, *font18, *font24, *font36, *font48;
-    std::map<int, TTF_Font *> fonts;
+    std::map<int, Font> fonts;
 
     //Game temp stuff
     bool typingText;
-    DynamicText textStatus;
+    Text textStatus;
 
     bool textChanged;
     std::string textInputBuffer = "Type here: ";
-    DynamicText textInput;
+    Text textInput;
 
-    StaticText staticTextCounter;
-    DynamicText dynamicTextCounter;
+    Text helloWorldsCounterDisplay;
+    Text fpsCounter;
 
-    std::vector<StaticText> texts;
-    float lastTextX = 0.0f;
-    float lastTextY = 400.0f;
+    int helloWorldsCounter = 0;
+    std::string helloWorldsBuffer = "";
+    Text helloWorlds;
 };
 
 bool InitGame(Game *game);

@@ -14,6 +14,7 @@
         - The issue seems to be on the SDL3_ttf side. It's better to directly use FreeType library
         - !!! Seems like it's just the problem with TTF_RenderText_Blended. When rendered with blending turned off, the texture quad is taking the same amount of space as dynamic text, but static text has some empty space at the end.
         - <https://forums.libsdl.org/viewtopic.php?p=37700>
+  - [ ] Add the ability to append text without erasing/rebuilding the the whole previous buffer
   - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
   - [ ] Don't bake in glyph positions into vertex data. Instead store offset from text origin in the vertex position and pass model matrix that translates glyph to the correct position with offset
   - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
@@ -64,6 +65,7 @@
       - Alt: use 'fast-forward' mechanism. Player receives latest snapshot, other players still continue the game while connecting one is loading in. Once the outdated game state snapshot is loaded, the server sends all user inputs that happened from that moment and the connecting machine has to fast-forward the simulation by going faster than the main simulation between joined players. In Factorio players usually see 'Catching Up' progress bar. Once the simulation is caught up, newly joined player can now make their own inputs and play the game normally. If the connecting player computer is too slow, they can never catch up in which case "Pause when player joins" is necessary
   - Alt: state sync
   - Alt: send state snapshot
+  - [ ] Research smoke/clouds/explosions rendering (billboards probably)
 
 # Log
 

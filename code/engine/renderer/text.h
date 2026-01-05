@@ -20,14 +20,15 @@ struct Character
 struct Font
 {
     GLuint atlas;
-
     TTF_Font *ttfFont;
-    int ascent, descent;
+
+    GLuint atlasSDF;
+    TTF_Font *ttfFontSDF;
 
     std::map<char, Character> characters;
 };
 
-struct DynamicText
+struct Text
 {
     Font *font;
 
@@ -37,31 +38,19 @@ struct DynamicText
     GLuint shader;
 
     vec2 position;
+    ivec2 size;
 
     //Size & capacity in characters (6 vertices per one character)
-    int size;
+    int count;
     int capacity;
-};
-
-struct StaticText
-{
-    GLuint texture, shader;
-    vec2 position, size;
-
-    vec3 color;
 };
 
 Font PrepareFont(char *filepath, int fontSize);
 
-DynamicText CreateDynamicText(Font *font, char *text, vec2 position, GLuint shader, vec3 color = vec3(1.0f));
-void UpdateDynamicText(DynamicText *text, char *newText);
-void DeleteDynamicText(DynamicText *text);
-void RenderDynamicText(DynamicText *text);
-
-StaticText CreateStaticText(Game *game, char *text, vec2 position, GLuint shader,
-                            int fontSize = 18, vec3 color = vec3(1.0f));
-void DeleteStaticText(StaticText *text);
-void RenderStaticText(StaticText *text);
+Text CreateText(Font *font, char *text, vec2 position, GLuint shader, vec3 color = vec3(1.0f));
+void UpdateText(Text *text, char *newText, int length = 0);
+void DeleteText(Text *text);
+void RenderText(Text *text);
 
 #define TEXT_H
 #endif
