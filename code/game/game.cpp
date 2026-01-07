@@ -1,10 +1,13 @@
 #include "game.h"
 
 #include "text.h"
+#include "infantry.h"
+#include "shader.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include <GL/glew.h>
 
@@ -81,17 +84,17 @@ bool InitGame(Game *game)
 
     Camera *camera = &game->camera;
 
-    camera->position = vec3(0.0f, 0.0f, 5.0f);
-    camera->direction = vec3(0.0f, 0.0f, -1.0f);
-    camera->up = vec3(0.0f, 1.0f, 0.0f);
+    camera->position = glm::vec3(0.0f, 0.0f, 5.0f);
+    camera->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
     //camera->speed = 2.5f;
     camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    game->perspectiveProjection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
-    game->orthoProjection = ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
+    game->orthoProjection = glm::ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
 
-    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
@@ -120,7 +123,7 @@ bool InitGame(Game *game)
 
 void RenderScene(Game *game)
 {
-    vec4 bgColor = game->outlinePass ? vec4(0.0f) : vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    glm::vec4 bgColor = game->outlinePass ? glm::vec4(0.0f) : glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -147,7 +150,7 @@ void UpdateCamera(Game *game)
     Camera *camera = &game->camera;
     int *keyboardState = game->keys;
 
-    vec3 dir = camera->direction;
+    glm::vec3 dir = camera->direction;
     //dir.y = 0.0f;
     dir = normalize(dir);
 
@@ -163,7 +166,7 @@ void UpdateCamera(Game *game)
 
     //camera->position.y = 1.0f;
 
-    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void UpdateGame(Game *game)
@@ -204,11 +207,11 @@ void UpdateGame(Game *game)
 
 
     Camera *camera = &game->camera;
-    vec3 forward = normalize(camera->direction);
+    glm::vec3 forward = normalize(camera->direction);
 
-    vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
-    vec3 right = normalize(cross(forward, worldUp));
-    vec3 up = normalize(cross(right, forward));
+    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 right = normalize(cross(forward, worldUp));
+    glm::vec3 up = normalize(cross(right, forward));
 
     ALfloat listenerOri[6] = {
         camera->direction.x, camera->direction.y, camera->direction.z,
@@ -230,28 +233,8 @@ void UpdateGame(Game *game)
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
 
-    if(IsFirstPress(game, SDL_SCANCODE_F1))
-    {
-        game->typingText = !game->typingText;
 
-        char *status;
-        if(game->typingText)
-        {
-            SDL_StartTextInput(game->window);
-            status = "Text input: enabled";
-
-            game->textChanged = true;
-        }
-        else
-        {
-            SDL_StopTextInput(game->window);
-            status = "Text input: disabled";
-        }
-
-        UpdateText(&game->textStatus, status);
-    }
-
-    if(!game->typingText)
+    if(!game->textDemoEnabled)
     {
         if(IsFirstPress(game, SDL_SCANCODE_SPACE))
         {
@@ -295,51 +278,6 @@ void UpdateGame(Game *game)
         }
     }
 
-    //if(IsFirstPress(game, SDL_SCANCODE_UP))
-    if(game->keys[SDL_SCANCODE_UP])
-    {
-        for(int i = 0; i < 100; i++)
-        {
-            game->helloWorldsBuffer += "Hello, World! ";
-
-            if(game->helloWorldsCounter == 0)
-            {
-                game->helloWorlds = CreateText(&game->fonts[36], (char *)game->helloWorldsBuffer.c_str(),
-                                               vec2(0.0f, 400.0f), game->uiTextShader);
-            }
-
-            game->helloWorldsCounter++;
-
-        }
-
-        UpdateText(&game->helloWorlds, (char *)game->helloWorldsBuffer.c_str());
-
-        char buffer[20];
-        sprintf(buffer, "%d (hello worlds)", game->helloWorldsCounter);
-        UpdateText(&game->helloWorldsCounterDisplay, buffer);
-    }
-    if(game->keys[SDL_SCANCODE_DOWN])
-    //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
-    {
-        for(int i = 0; i < 100; i++)
-        {
-            int textsCount = game->helloWorldsCounter;
-            if(textsCount)
-            {
-                game->helloWorldsCounter--;
-
-                std::string s = "Hello, World! ";
-                game->helloWorldsBuffer.erase(game->helloWorldsBuffer.length() - s.length());
-            }
-
-        }
-
-        UpdateText(&game->helloWorlds, (char *)game->helloWorldsBuffer.c_str());
-
-        char buffer[20];
-        sprintf(buffer, "%d (hello worlds)", game->helloWorldsCounter);
-        UpdateText(&game->helloWorldsCounterDisplay, buffer);
-    }
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
     {
@@ -352,6 +290,16 @@ void UpdateGame(Game *game)
 #ifdef LOAD_ASSETS
     game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
 #endif
+
+    if(IsFirstPress(game, SDL_SCANCODE_T))
+    {
+        game->textDemoEnabled = true;
+    }
+
+    if(game->textDemoEnabled)
+    {
+        UpdateTextDemo(game);
+    }
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

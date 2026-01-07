@@ -1,6 +1,6 @@
 #include "input.h"
 
-#include "util_defines.h"
+#include "defines.h"
 
 #include "game.h"
 
@@ -36,10 +36,10 @@ void ProcessInput(Game *game)
 
             case SDL_EVENT_KEY_DOWN:
             {
-                if(event.key.scancode == SDL_SCANCODE_BACKSPACE && game->typingText)
+                if(event.key.scancode == SDL_SCANCODE_BACKSPACE && game->textDemo.typingText)
                 {
-                    game->textChanged = true;
-                    game->textInputBuffer.pop_back();
+                    game->textDemo.textChanged = true;
+                    game->textDemo.textInputBuffer.pop_back();
                 }
 
                 if(event.key.repeat != 0) return;
@@ -48,8 +48,8 @@ void ProcessInput(Game *game)
 
             case SDL_EVENT_TEXT_INPUT:
             {
-                game->textChanged = true;
-                game->textInputBuffer += (char *)event.text.text;
+                game->textDemo.textChanged = true;
+                game->textDemo.textInputBuffer += (char *)event.text.text;
             } break;
 
             case SDL_EVENT_MOUSE_MOTION:
@@ -60,9 +60,9 @@ void ProcessInput(Game *game)
                 camera.pitch -= mouse.yrel * camera.sensitivity;
                 camera.pitch = SDL_clamp(camera.pitch, camera.maxPitch.x, camera.maxPitch.y);
 
-                camera.direction.x = cos(radians(camera.yaw)) * cos(radians(camera.pitch));
-                camera.direction.y = sin(radians(camera.pitch));
-                camera.direction.z = sin(radians(camera.yaw)) * cos(radians(camera.pitch));
+                camera.direction.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+                camera.direction.y = sin(glm::radians(camera.pitch));
+                camera.direction.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
                 camera.direction = normalize(camera.direction);
             } break;
 
@@ -73,7 +73,7 @@ void ProcessInput(Game *game)
                 camera.fov -= wheel.y;
                 camera.fov = SDL_clamp(camera.fov, 1.0f, 45.0f);
 
-                game->perspectiveProjection = perspective(radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+                game->perspectiveProjection = glm::perspective(glm::radians(camera.fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
             } break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:

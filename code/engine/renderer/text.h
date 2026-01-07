@@ -2,6 +2,8 @@
 
 #include "mesh.h"
 
+#include "defines.h"
+
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <GL/glew.h>
@@ -11,9 +13,12 @@
 
 struct Character
 {
-    vec2 uvMin, uvMax;
-    ivec2 bearing, size;
-    ivec2 textureSize;
+    glm::vec2 uvMin, uvMax;
+
+    glm::ivec2 bearing;
+    glm::ivec2 characterSize;
+    glm::ivec2 textureSize;
+
     uint32 advance;
 };
 
@@ -22,9 +27,6 @@ struct Font
     GLuint atlas;
     TTF_Font *ttfFont;
 
-    GLuint atlasSDF;
-    TTF_Font *ttfFontSDF;
-
     std::map<char, Character> characters;
 };
 
@@ -32,22 +34,20 @@ struct Text
 {
     Font *font;
 
-    vec3 color;
+    glm::vec3 color;
 
     Mesh quads;
     GLuint shader;
 
-    vec2 position;
-    ivec2 size;
+    glm::vec2 position;
+    glm::ivec2 size;
 
-    //Size & capacity in characters (6 vertices per one character)
-    int count;
-    int capacity;
+    int capacity; //How many characters text can hold without having to allocate more memory on GPU
 };
 
 Font PrepareFont(char *filepath, int fontSize);
 
-Text CreateText(Font *font, char *text, vec2 position, GLuint shader, vec3 color = vec3(1.0f));
+Text CreateText(Font *font, char *text, glm::vec2 position, GLuint shader, glm::vec3 color = glm::vec3(1.0f));
 void UpdateText(Text *text, char *newText, int length = 0);
 void DeleteText(Text *text);
 void RenderText(Text *text);

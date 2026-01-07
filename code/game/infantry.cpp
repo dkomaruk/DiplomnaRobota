@@ -1,6 +1,6 @@
 #include "infantry.h"
 
-#include "util_defines.h"
+#include "defines.h"
 #include "game.h"
 #include "shader.h"
 
@@ -16,8 +16,8 @@ void RenderInfantry(Entity *e, Game *game)
 
     for(int i = 0; i < squad->size; i++)
     {
-        vec3 offset = vec3(squad->soldierOffsets[i].x, 0.0f, squad->soldierOffsets[i].y);
-        mat4 modelMat = PrepareModelMatrix(squad->position + offset, squad->rotation, squad->scale);
+        glm::vec3 offset = glm::vec3(squad->soldierOffsets[i].x, 0.0f, squad->soldierOffsets[i].y);
+        glm::mat4 modelMat = PrepareModelMatrix(squad->position + offset, squad->rotation, squad->scale);
         RenderModel(game, &squad->models[squad->soldierModelsId[i]], modelMat);
     }
 }
@@ -33,11 +33,11 @@ InfantrySquad CreateInfantrySquad(Model *soldierModels, int numOfModels, int squ
     squad.Render = RenderInfantry;
 
     squad.soldierModelsId = (int *)malloc(sizeof(int) * squadSize);
-    squad.soldierOffsets = (vec2 *)malloc(sizeof(vec2) * squadSize);
+    squad.soldierOffsets = (glm::vec2 *)malloc(sizeof(glm::vec2) * squadSize);
     for(int i = 0; i < squadSize; i++)
     {
         squad.soldierModelsId[i] = i % numOfModels;
-        squad.soldierOffsets[i] = vec2(i, i);
+        squad.soldierOffsets[i] = glm::vec2(i, i);
     }
 
     return squad;

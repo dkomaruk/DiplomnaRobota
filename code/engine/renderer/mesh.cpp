@@ -1,7 +1,12 @@
 #include "mesh.h"
 
 #include "texture.h"
+#include "shader.h"
 #include "game.h"
+
+#include <stb_image.h>
+
+#include <glm/gtc/type_ptr.hpp>
 
 #include <string>
 
@@ -119,12 +124,12 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
             aiVector3D norm = mesh->mNormals[j];
 
             Vertex vertex = {};
-            vertex.position = vec3(pos.x, pos.y, pos.z);
-            vertex.normal = vec3(norm.x, norm.y, norm.z);
+            vertex.position = glm::vec3(pos.x, pos.y, pos.z);
+            vertex.normal = glm::vec3(norm.x, norm.y, norm.z);
             if(hasUVs)
             {
                 aiVector3D uv = mesh->mTextureCoords[0][j];
-                vertex.uv = vec2(uv.x, uv.y);
+                vertex.uv = glm::vec2(uv.x, uv.y);
             }
 
             vertices.push_back(vertex);
@@ -237,21 +242,21 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
     return mesh;
 }
 
-Mesh CreateQuadNDC(vec2 position, vec2 size)
+Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size)
 {
-    vec2 window = vec2(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glm::vec2 window = glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     //Position and size in NDC coordinates
-    vec3 p = vec3(vec2((position.x / window.x) * 2.0f - 1.0f, 1.0f - (position.y / window.y) * 2.0f), 0.0f);
-    vec3 s = vec3((size / window) * 2.0f, 0.0f);
+    glm::vec3 p = glm::vec3(glm::vec2((position.x / window.x) * 2.0f - 1.0f, 1.0f - (position.y / window.y) * 2.0f), 0.0f);
+    glm::vec3 s = glm::vec3((size / window) * 2.0f, 0.0f);
 
     //Normals
-    vec3 n = vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
 
-    Vertex v1 = {p, n, vec2(0.0f, 1.0f)};
-    Vertex v2 = {vec3(p.x, p.y - s.y, p.z), n, vec2(0.0f, 0.0f)};
-    Vertex v3 = {vec3(p.x + s.x, p.y - s.y, p.z), n, vec2(1.0f, 0.0f)};
-    Vertex v4 = {vec3(p.x + s.x, p.y, p.z), n, vec2(1.0f, 1.0f)};
+    Vertex v1 = {p, n, glm::vec2(0.0f, 1.0f)};
+    Vertex v2 = {glm::vec3(p.x, p.y - s.y, p.z), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v3 = {glm::vec3(p.x + s.x, p.y - s.y, p.z), n, glm::vec2(1.0f, 0.0f)};
+    Vertex v4 = {glm::vec3(p.x + s.x, p.y, p.z), n, glm::vec2(1.0f, 1.0f)};
 
     std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
 
@@ -262,12 +267,12 @@ Mesh CreateQuadNDC(vec2 position, vec2 size)
 
 Mesh CreateUnitQuad()
 {
-    vec3 n = vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
 
-    Vertex v1 = {vec3(0.0f, 1.0f, 0.0f), n, vec2(0.0f, 0.0f)};
-    Vertex v2 = {vec3(0.0f, 0.0f, 0.0f), n, vec2(0.0f, 1.0f)};
-    Vertex v3 = {vec3(1.0f, 0.0f, 0.0f), n, vec2(1.0f, 1.0f)};
-    Vertex v4 = {vec3(1.0f, 1.0f, 0.0f), n, vec2(1.0f, 0.0f)};
+    Vertex v1 = {glm::vec3(0.0f, 1.0f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v2 = {glm::vec3(0.0f, 0.0f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
+    Vertex v3 = {glm::vec3(1.0f, 0.0f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
+    Vertex v4 = {glm::vec3(1.0f, 1.0f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
     std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
 
     return CreateMesh(vertices);
@@ -279,21 +284,21 @@ Mesh GetUnitQuad()
     return unitQuad;
 }
 
-mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 _scale)
+glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _scale)
 {
-    mat4 model = mat4(1.0f);
+    glm::mat4 model = glm::mat4(1.0f);
     model = translate(model, position);
 
     //TODO: Rotation using quaternions
-    model = rotate(model, radians(rotation.x), vec3(1.0f, 0.0f, 0.0f));
-    model = rotate(model, radians(rotation.y), vec3(0.0f, 1.0f, 0.0f));
-    model = rotate(model, radians(rotation.z), vec3(0.0f, 0.0f, 1.0f));
+    model = rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
     model = scale(model, _scale);
     return model;
 }
 
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, mat4 model)
+void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model)
 {
     GLuint shader = material->shader;
     if(game->outlinePass)
@@ -310,8 +315,8 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, mat4 model)
 
     UseShader(shader);
 
-    mat3 normalMatrix = mat3(transpose(inverse(model)));
-    glUniformMatrix3fv(glGetUniformLocation(shader, "u_normalMatrix"), 1, GL_FALSE, value_ptr(normalMatrix));
+    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+    glUniformMatrix3fv(glGetUniformLocation(shader, "u_normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
     ShaderSetMatrix4(shader, "u_model", model);
 
@@ -333,7 +338,7 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, mat4 model)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void RenderModel(Game *game, Model *model, mat4 modelMat)
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat)
 {
     for(int i = 0; i < model->numOfMeshes; i++)
     {

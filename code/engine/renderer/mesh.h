@@ -1,5 +1,7 @@
 #ifndef MESH_H
 
+#include "defines.h"
+
 #include <GL/glew.h>
 
 #include <glm/vec3.hpp>
@@ -27,15 +29,15 @@ struct MaterialPhong
 
 struct Vertex
 {
-    vec3 position;
-    vec3 normal;
-    vec2 uv;
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 uv;
 };
 
 struct VertexText
 {
-    vec2 position;
-    vec2 uv;
+    glm::vec2 position;
+    glm::vec2 uv;
 };
 
 struct Mesh
@@ -57,14 +59,14 @@ Mesh CreateTextMesh(std::vector<VertexText> vertices);
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
-Mesh CreateQuadNDC(vec2 position, vec2 size);
+Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
 Mesh GetUnitQuad();
 
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
 
-mat4 PrepareModelMatrix(vec3 position, vec3 rotation, vec3 scale);
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, mat4 model);
-void RenderModel(Game *game, Model *model, mat4 modelMat);
+glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
+void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model);
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat);
 
 #define MESH_H
 #endif

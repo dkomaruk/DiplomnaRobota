@@ -4,6 +4,9 @@
 #include "audio.h"
 #include "input.h"
 #include "text.h"
+#include "text_demo.h"
+
+#include "defines.h"
 
 #include "camera.h"
 
@@ -16,14 +19,6 @@
 #include <vector>
 #include <map>
 #include <unordered_set>
-
-#ifdef WINDOW_TRANSPARENT
-    #define WINDOW_WIDTH 1920.0f
-    #define WINDOW_HEIGHT 1080.0f
-#else
-    #define WINDOW_WIDTH 1280.0f
-    #define WINDOW_HEIGHT 720.0f
-#endif
 
 struct Game
 {
@@ -53,7 +48,7 @@ struct Game
 
     //Camera
     Camera camera;
-    mat4 view, perspectiveProjection, orthoProjection;
+    glm::mat4 view, perspectiveProjection, orthoProjection;
 
     //Input
     int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
@@ -65,6 +60,8 @@ struct Game
     float deltaTime;
     Uint64 perfFreq;
     Uint64 lastFrame;
+
+    Text fpsCounter;
 
     //Scene
     std::vector<Entity *> sceneEntities;
@@ -79,19 +76,8 @@ struct Game
     std::map<int, Font> fonts;
 
     //Game temp stuff
-    bool typingText;
-    Text textStatus;
-
-    bool textChanged;
-    std::string textInputBuffer = "Type here: ";
-    Text textInput;
-
-    Text helloWorldsCounterDisplay;
-    Text fpsCounter;
-
-    int helloWorldsCounter = 0;
-    std::string helloWorldsBuffer = "";
-    Text helloWorlds;
+    bool textDemoEnabled;
+    TextDemo textDemo;
 };
 
 bool InitGame(Game *game);

@@ -3,6 +3,7 @@
 #include "game.h"
 #include "texture.h"
 #include "shader.h"
+#include "infantry.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -127,8 +128,9 @@ void LoadAssets(Game *game)
     for(int i = 0; i < numOfFonts; i++)
     {
         int fontSize = fontSizes[i];
+
         game->fonts[fontSize] = PrepareFont("../data/fonts/Roboto-Regular.ttf", fontSize);
-        if(!game->fonts[fontSize].ttfFont || !game->fonts[fontSize].ttfFontSDF)
+        if(!game->fonts[fontSize].ttfFont)
         {
             SDL_Log("Failed to load Roboto-Regular.ttf font%d. Error: %s", fontSize, SDL_GetError());
         }
@@ -148,7 +150,7 @@ void LoadAssets(Game *game)
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    ShaderSetVec3(lightSourceShader, "u_lightColor", vec3(1.0f));
+    ShaderSetVec3(lightSourceShader, "u_lightColor", glm::vec3(1.0f));
 
     ShaderSetInt(postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     ShaderSetInt(postProcessShader, "u_inverted", 0);
@@ -194,9 +196,9 @@ void LoadAssets(Game *game)
     Entity *testEntity = (Entity *)malloc(sizeof(Entity));
     *testEntity = CreateEntity(test);
     strcpy(testEntity->textId, "backpack");
-    testEntity->position = vec3(0.0f, 0.0f, 3.0f);
-    testEntity->rotation = vec3(0.0f, 180.0f, 0.0f);
-    testEntity->scale = vec3(0.2f);
+    testEntity->position = glm::vec3(0.0f, 0.0f, 3.0f);
+    testEntity->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+    testEntity->scale = glm::vec3(0.2f);
     game->sceneEntities.push_back(testEntity);
     game->testEntity = testEntity;
 
@@ -206,9 +208,9 @@ void LoadAssets(Game *game)
     Entity *sphereEntity = (Entity *)malloc(sizeof(Entity));
     *sphereEntity = CreateEntity(sphere);
     strcpy(sphereEntity->textId, "sphere");
-    sphereEntity->position = vec3(-1.0f, 0.0f, 3.0f);
-    sphereEntity->rotation = vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity->scale = vec3(0.2f);
+    sphereEntity->position = glm::vec3(-1.0f, 0.0f, 3.0f);
+    sphereEntity->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
+    sphereEntity->scale = glm::vec3(0.2f);
     game->sceneEntities.push_back(sphereEntity);
 
     Model *sphere2 = ImportModel("../data/models/sphere2.obj", game->mainShader, aiProcess_Triangulate);
@@ -217,9 +219,9 @@ void LoadAssets(Game *game)
     Entity *sphereEntity2 = (Entity *)malloc(sizeof(Entity));
     *sphereEntity2 = CreateEntity(sphere2);
     strcpy(sphereEntity2->textId, "sphere2");
-    sphereEntity2->position = vec3(0.0f, 1.0f, 3.0f);
-    sphereEntity2->rotation = vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity2->scale = vec3(0.2f);
+    sphereEntity2->position = glm::vec3(0.0f, 1.0f, 3.0f);
+    sphereEntity2->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
+    sphereEntity2->scale = glm::vec3(0.2f);
     game->sceneEntities.push_back(sphereEntity2);
 
     Model *car = ImportModel("../data/models/car_scene.obj", game->mainShader, aiProcess_Triangulate);
@@ -232,9 +234,9 @@ void LoadAssets(Game *game)
     Entity *carEntity = (Entity *)malloc(sizeof(Entity));
     *carEntity = CreateEntity(car);
     strcpy(carEntity->textId, "car");
-    carEntity->position = vec3(0.0f, 1.0f, -3.0f);
-    carEntity->rotation = vec3(0.0f, -90.0f, 0.0f);
-    //carEntity.scale = vec3(0.2f);
+    carEntity->position = glm::vec3(0.0f, 1.0f, -3.0f);
+    carEntity->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
+    //carEntity.scale = glm::vec3(0.2f);
     game->sceneEntities.push_back(carEntity);
 
     MaterialPhong containerMaterial = {};
@@ -254,30 +256,30 @@ void LoadAssets(Game *game)
     cubeEntity->position.x -= 3.0f;
     cubeEntity->position.z += 3.0f;
     cubeEntity->position.y -= 0.5f;
-    cubeEntity->scale -= vec3(0.5f);
+    cubeEntity->scale -= glm::vec3(0.5f);
     game->sceneEntities.push_back(cubeEntity);
 
     Entity *cubeEntity2 = (Entity *)malloc(sizeof(Entity));
     *cubeEntity2 = CreateEntity(cubeMesh);
     strcpy(cubeEntity2->textId, "cubeContainer2");
-    cubeEntity2->position = vec3(1.0f, 0.0f, 3.0f);
-    cubeEntity2->rotation = vec3(0.0f, 180.0f, 0.0f);
-    cubeEntity2->scale = vec3(0.2f);
+    cubeEntity2->position = glm::vec3(1.0f, 0.0f, 3.0f);
+    cubeEntity2->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
+    cubeEntity2->scale = glm::vec3(0.2f);
     game->sceneEntities.push_back(cubeEntity2);
 
     Model *lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
 
-    vec3 dirDiffuse = vec3(0.9f);
-    vec3 dirAmbient = vec3(0.05f);
-    vec3 dirSpecular = vec3(1.0f);
-    //vec3 dirSpecular = vec3(0.8f, 0.7f, 0.0f);
-    DirectionalLight dirLight = CreateDirLight(vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
+    glm::vec3 dirDiffuse = glm::vec3(0.9f);
+    glm::vec3 dirAmbient = glm::vec3(0.05f);
+    glm::vec3 dirSpecular = glm::vec3(1.0f);
+    //glm::vec3 dirSpecular = glm::vec3(0.8f, 0.7f, 0.0f);
+    DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, dirLight);
     //ShaderSetInt(game->mainShader, "u_dirLightCount", 0);
     Entity *dirLightMesh = (Entity *)malloc(sizeof(Entity));
     *dirLightMesh = CreateEntity(lightMesh);
     strcpy(dirLightMesh->textId, "dirLightCube");
-    dirLightMesh->scale = vec3(50.0f);
+    dirLightMesh->scale = glm::vec3(50.0f);
     dirLightMesh->position = -dirLight.direction * 200.0f;
 
     game->sceneEntities.push_back(dirLightMesh);
@@ -292,9 +294,9 @@ void LoadAssets(Game *game)
         pointLights[i].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
         pointLights[i].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
 
-        pointLights[i].diffuse = vec3(0.5f);
-        pointLights[i].ambient = vec3(0.05f);
-        pointLights[i].specular = vec3(0.1f);
+        pointLights[i].diffuse = glm::vec3(0.5f);
+        pointLights[i].ambient = glm::vec3(0.05f);
+        pointLights[i].specular = glm::vec3(0.1f);
 
         pointLights[i].constant = 1.0f;
         pointLights[i].linear = 0.027f;
@@ -303,7 +305,7 @@ void LoadAssets(Game *game)
         ShaderSetPointLight(game->mainShader, pointLights[i], i);
 
         pointLightsSources[i] = CreateEntity(lightMesh);
-        pointLightsSources[i].scale = vec3(0.15f);
+        pointLightsSources[i].scale = glm::vec3(0.15f);
         pointLightsSources[i].position = pointLights[i].position;
 
         game->sceneEntities.push_back(&pointLightsSources[i]);
@@ -315,7 +317,7 @@ void LoadAssets(Game *game)
     {
         InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
         *squad = CreateInfantrySquad(cubeMesh, 1, 10);
-        squad->scale = vec3(0.5f);
+        squad->scale = glm::vec3(0.5f);
         squad->position.z = -10.0f / 2.0f;
         squad->position.x = -10.0f / 2.0f;
         squad->position.y -= i;
@@ -329,5 +331,7 @@ void LoadAssets(Game *game)
     }
 #endif
 
-    game->fullscreenQuad = CreateQuadNDC(vec2(0.0f), vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+    game->fpsCounter = CreateText(&game->fonts[18], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader);
+
+    game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }
