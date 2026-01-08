@@ -2,14 +2,19 @@
 
 IF NOT EXIST build MKDIR build
 
-
 SET ENABLE_TRANSPARENCY=0
+SET LOAD_ASSETS=1
 
 SET DEFINES=-DGLEW_STATIC
 
 IF "%ENABLE_TRANSPARENCY%"=="1" (
     SET DEFINES=%DEFINES% -DWINDOW_TRANSPARENT
 )
+
+IF "%LOAD_ASSETS%"=="1" (
+    SET DEFINES=%DEFINES% -DLOAD_ASSETS
+)
+
 
 SET PROJECT_INCLUDES=-I"..\code\game" -I"..\code\external" -I"..\code\engine" -I"..\code\engine\renderer" -I"..\code\engine\audio"
 

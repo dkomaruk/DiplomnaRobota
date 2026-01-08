@@ -25,9 +25,9 @@ struct Entity
     Model *models;
     int numOfModels;
 
-    vec3 position;
-    vec3 rotation;
-    vec3 scale = vec3(1.0f);
+    glm::vec3 position;
+    glm::vec3 rotation;
+    glm::vec3 scale = glm::vec3(1.0f);
 
     RenderEntityFunc *Render;
 };

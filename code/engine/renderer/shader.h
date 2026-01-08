@@ -3,6 +3,8 @@
 #include "mesh.h"
 #include "light.h"
 
+#include "defines.h"
+
 #include <GL/glew.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -22,15 +24,15 @@ void ShaderSetUInt(GLuint shader, char *uniform, uint32 v);
 void ShaderSetFloat(GLuint shader, char *uniform, float v);
 
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1);
-void ShaderSetVec2(GLuint shader, char *uniform, vec2 vector);
+void ShaderSetVec2(GLuint shader, char *uniform, glm::vec2 vector);
 
 void ShaderSetVec3(GLuint shader, char *uniform, float v0, float v1, float v2);
-void ShaderSetVec3(GLuint shader, char *uniform, vec3 vector);
+void ShaderSetVec3(GLuint shader, char *uniform, glm::vec3 vector);
 
 void ShaderSetVec4(GLuint shader, char *uniform, float v0, float v1, float v2, float v3);
-void ShaderSetVec4(GLuint shader, char *uniform, vec4 vector);
+void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
 
-void ShaderSetMatrix4(GLuint shader, char *uniform, mat4 matrix);
+void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
 
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material);
 

@@ -1,10 +1,13 @@
 #include "game.h"
 
 #include "text.h"
+#include "infantry.h"
+#include "shader.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include <GL/glew.h>
 
@@ -14,6 +17,8 @@
 
 bool InitGame(Game *game)
 {
+    SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
+
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
         SDL_Log("Failed to initialize SDL. Error: %s", SDL_GetError());
@@ -79,17 +84,17 @@ bool InitGame(Game *game)
 
     Camera *camera = &game->camera;
 
-    camera->position = vec3(0.0f, 0.0f, 5.0f);
-    camera->direction = vec3(0.0f, 0.0f, -1.0f);
-    camera->up = vec3(0.0f, 1.0f, 0.0f);
+    camera->position = glm::vec3(0.0f, 0.0f, 5.0f);
+    camera->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
     //camera->speed = 2.5f;
     camera->speed = 5.0f;
     camera->sensitivity = 0.1f;
 
-    game->perspectiveProjection = perspective(radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
-    game->orthoProjection = ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
+    game->orthoProjection = glm::ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
 
-    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
@@ -118,7 +123,7 @@ bool InitGame(Game *game)
 
 void RenderScene(Game *game)
 {
-    vec4 bgColor = game->outlinePass ? vec4(0.0f) : vec4(0.1f, 0.0f, 0.0f, 0.0f);
+    glm::vec4 bgColor = game->outlinePass ? glm::vec4(0.0f) : glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -145,7 +150,7 @@ void UpdateCamera(Game *game)
     Camera *camera = &game->camera;
     int *keyboardState = game->keys;
 
-    vec3 dir = camera->direction;
+    glm::vec3 dir = camera->direction;
     //dir.y = 0.0f;
     dir = normalize(dir);
 
@@ -161,7 +166,7 @@ void UpdateCamera(Game *game)
 
     //camera->position.y = 1.0f;
 
-    game->view = lookAt(camera->position, camera->position + camera->direction, vec3(0.0f, 1.0f, 0.0f));
+    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void UpdateGame(Game *game)
@@ -202,11 +207,11 @@ void UpdateGame(Game *game)
 
 
     Camera *camera = &game->camera;
-    vec3 forward = normalize(camera->direction);
+    glm::vec3 forward = normalize(camera->direction);
 
-    vec3 worldUp = vec3(0.0f, 1.0f, 0.0f);
-    vec3 right = normalize(cross(forward, worldUp));
-    vec3 up = normalize(cross(right, forward));
+    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 right = normalize(cross(forward, worldUp));
+    glm::vec3 up = normalize(cross(right, forward));
 
     ALfloat listenerOri[6] = {
         camera->direction.x, camera->direction.y, camera->direction.z,
@@ -218,6 +223,8 @@ void UpdateGame(Game *game)
     if(game->keys[SDL_SCANCODE_DOWN])
     {
         game->outlineThickness -= 5.0f * game->deltaTime;
+        game->outlineThickness = SDL_max(game->outlineThickness, 0.0f);
+
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
     if(game->keys[SDL_SCANCODE_UP])
@@ -226,108 +233,51 @@ void UpdateGame(Game *game)
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
 
-    if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+
+    if(!game->textDemoEnabled)
     {
-        int sourceState;
-        alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
-        if(sourceState == AL_PLAYING)
+        if(IsFirstPress(game, SDL_SCANCODE_SPACE))
         {
-            alSourcePause(game->source);
-        }
-        else
-        {
-            alSourcePlay(game->source);
-        }
-    }
-    if(IsFirstPress(game, SDL_SCANCODE_U))
-    {
-        int w = (int)WINDOW_WIDTH;
-        int h = (int)WINDOW_HEIGHT;
-        int bytesPerPixel = 3;
-
-        uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
-        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
-        free(pixels);
-    }
-    if(IsFirstPress(game, SDL_SCANCODE_P))
-    {
-        if(game->isCursorHidden)
-        {
-            SDL_ShowCursor();
-            SDL_SetWindowRelativeMouseMode(game->window, false);
-        }
-        else
-        {
-            SDL_HideCursor();
-            SDL_SetWindowRelativeMouseMode(game->window, true);
-        }
-
-        game->isCursorHidden = !game->isCursorHidden;
-    }
-
-    //if(IsFirstPress(game, SDL_SCANCODE_UP))
-    if(game->keys[SDL_SCANCODE_UP])
-    {
-        vec2 newPos = vec2(game->lastTextX, game->lastTextY);
-
-        Text newText = {};
-        if(game->texts.size() == 0)
-        {
-            newText = CreateText(game, "Hello, world!", newPos, game->uiShader, 4);
-        }
-        else
-        {
-            newText = game->texts.back();
-            newPos += vec2(newText.size.x, 0.0f);
-
-            if(newPos.x >= WINDOW_WIDTH)
+            int sourceState;
+            alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
+            if(sourceState == AL_PLAYING)
             {
-                newPos = vec2(0.0f, newPos.y + newText.size.y);
-            }
-        }
-
-        newText.position = newPos;
-        game->texts.push_back(newText);
-
-        game->lastTextX = newPos.x;
-        game->lastTextY = newPos.y;
-
-        char buffer[20];
-        sprintf(buffer, "%d", (int)game->texts.size());
-        DeleteText(&game->textCounter);
-        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
-    }
-    if(game->keys[SDL_SCANCODE_DOWN])
-    //if(IsFirstPress(game, SDL_SCANCODE_DOWN))
-    {
-        int textsCount = (int)game->texts.size();
-        if(textsCount)
-        {
-            Text lastText = game->texts.back();
-
-            game->texts.pop_back();
-
-            if(textsCount == 1)
-            {
-                DeleteText(&lastText);
-                game->lastTextX = 150.0f;
-                game->lastTextY = 150.0f;
+                alSourcePause(game->source);
             }
             else
             {
-                Text currentLast = game->texts.back();
-                game->lastTextX = currentLast.position.x;
-                game->lastTextY = currentLast.position.y;
+                alSourcePlay(game->source);
             }
         }
+        if(IsFirstPress(game, SDL_SCANCODE_U))
+        {
+            int w = (int)WINDOW_WIDTH;
+            int h = (int)WINDOW_HEIGHT;
+            int bytesPerPixel = 3;
 
-        char buffer[20];
-        sprintf(buffer, "%d", (int)game->texts.size());
-        DeleteText(&game->textCounter);
-        game->textCounter = CreateText(game, buffer, vec2(20, 20), game->uiShader, 36);
+            uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+            glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+            stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
+            free(pixels);
+        }
+        if(IsFirstPress(game, SDL_SCANCODE_P))
+        {
+            if(game->isCursorHidden)
+            {
+                SDL_ShowCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, false);
+            }
+            else
+            {
+                SDL_HideCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, true);
+            }
+
+            game->isCursorHidden = !game->isCursorHidden;
+        }
     }
+
 
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
     {
@@ -337,7 +287,19 @@ void UpdateGame(Game *game)
         }
     }
 
+#ifdef LOAD_ASSETS
     game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
+#endif
+
+    if(IsFirstPress(game, SDL_SCANCODE_T))
+    {
+        game->textDemoEnabled = true;
+    }
+
+    if(game->textDemoEnabled)
+    {
+        UpdateTextDemo(game);
+    }
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

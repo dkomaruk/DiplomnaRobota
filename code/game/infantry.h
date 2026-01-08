@@ -9,7 +9,7 @@ struct InfantrySquad : public Entity
 {
     int size;
 
-    vec2 *soldierOffsets;
+    glm::vec2 *soldierOffsets;
 
     int *soldierModelsId;
 };

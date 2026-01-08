@@ -1,11 +1,3 @@
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-using namespace glm;
 
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
@@ -21,11 +13,13 @@ using namespace glm;
 
 #include "timer.cpp"
 #include "text.cpp"
+#include "text_demo.cpp"
 
 #include "light.cpp"
 #include "camera.cpp"
 #include "shader.cpp"
 #include "texture.cpp"
+#include "image.cpp"
 #include "mesh.cpp"
 
 #include <GL/glew.h>
@@ -33,6 +27,13 @@ using namespace glm;
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_thread.h>
 #include <SDL3/SDL.h>
+
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <stdio.h>
 #include <vector>
@@ -47,7 +48,8 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    game->textCounter = CreateText(game, "0", vec2(20, 20), game->uiShader, 36);
+    game->lastFrame = SDL_GetPerformanceCounter();
+    //game->lockFPS = true;
 
     while(game->isRunning)
     {
@@ -58,84 +60,89 @@ int main(int argc, char *argv[])
         UpdateGame(game);
 
         //Rendering
-        glEnable(GL_DEPTH_TEST);
-
-        game->pickingPass = true;
-        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
-        RenderScene(game);
-        game->pickingPass = false;
-
-        if(IsFirstClick(game, MOUSE_LEFT))
+        if(!game->textDemoEnabled)
         {
-            float x, y;
-            if(game->isCursorHidden)
+            glEnable(GL_DEPTH_TEST);
+
+            game->pickingPass = true;
+            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+            RenderScene(game);
+            game->pickingPass = false;
+
+            if(IsFirstClick(game, MOUSE_LEFT))
             {
-                x = WINDOW_WIDTH / 2.0f;
-                y = WINDOW_HEIGHT / 2.0f;
-            }
-            else
-            {
-                SDL_GetMouseState(&x, &y);
-                y = (int)WINDOW_HEIGHT - y;
+                float x, y;
+                if(game->isCursorHidden)
+                {
+                    x = WINDOW_WIDTH / 2.0f;
+                    y = WINDOW_HEIGHT / 2.0f;
+                }
+                else
+                {
+                    SDL_GetMouseState(&x, &y);
+                    y = (int)WINDOW_HEIGHT - y;
+                }
+
+                uint8 pixels[3];
+                glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+                uint32 pickedID = pixels[0];
+
+                if(!pickedID || !game->keys[SDL_SCANCODE_LSHIFT])
+                {
+                    game->selectedIDs.clear();
+                }
+
+                bool isAlreadyPicked = game->selectedIDs.count(pickedID);
+                if(isAlreadyPicked && game->keys[SDL_SCANCODE_LSHIFT])
+                {
+                    game->selectedIDs.erase(pickedID);
+                }
+                else
+                {
+                    game->selectedIDs.insert(pickedID);
+                }
             }
 
-            uint8 pixels[3];
-            glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-            uint32 pickedID = pixels[0];
+            game->outlinePass = true;
+            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
+            RenderScene(game);
+            game->outlinePass = false;
 
-            if(!pickedID || !game->keys[SDL_SCANCODE_LSHIFT])
-            {
-                game->selectedIDs.clear();
-            }
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
+            RenderScene(game);
 
-            bool isAlreadyPicked = game->selectedIDs.count(pickedID);
-            if(isAlreadyPicked && game->keys[SDL_SCANCODE_LSHIFT])
-            {
-                game->selectedIDs.erase(pickedID);
-            }
-            else
-            {
-                game->selectedIDs.insert(pickedID);
-            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
+
+            SetTexture(game->outlineTexture, 0);
+            ShaderSetInt(game->postProcessShader, "u_outline", 0);
+            SetTexture(game->fullSceneTexture, 1);
+            ShaderSetInt(game->postProcessShader, "u_scene", 1);
+
+            glBindVertexArray(game->fullscreenQuad.vao);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            RenderText(&game->fpsCounter);
+
+            glDisable(GL_BLEND);
         }
-
-        game->outlinePass = true;
-        glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
-        RenderScene(game);
-        game->outlinePass = false;
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
-        RenderScene(game);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
-
-        SetTexture(game->outlineTexture, 0);
-        ShaderSetInt(game->postProcessShader, "u_outline", 0);
-        SetTexture(game->fullSceneTexture, 1);
-        ShaderSetInt(game->postProcessShader, "u_scene", 1);
-
-        glBindVertexArray(game->fullscreenQuad.vao);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        RenderText(game, &game->textCounter);
-        for(int i = 0; i < game->texts.size(); i++)
+        else
         {
-            RenderText(game, &game->texts[i]);
+            RenderTextDemo(game);
         }
-        glDisable(GL_BLEND);
 
         SDL_GL_SwapWindow(game->window);
 
         Uint64 thisFrame = SDL_GetPerformanceCounter();
         if(game->lockFPS)
         {
-            int targetFrames = 60;
+            int targetFrames = 20;
             float targetTime = 1.0f / targetFrames;
             float elapsedWhileWaiting = 0.0f;
             while((elapsedWhileWaiting = (SDL_GetPerformanceCounter() - thisFrame) / (float)game->perfFreq) < targetTime)
@@ -152,8 +159,15 @@ int main(int argc, char *argv[])
         float fps = 1000.0f / ms;
         //SDL_Log("%f", fps);
 
+        char dynamicBuffer[20];
+        sprintf(dynamicBuffer, "%.5f FPS", fps);
+
+        UpdateText(&game->fpsCounter, dynamicBuffer);
+
         game->lastFrame = thisFrame;
     }
+
+    SDL_Log("Exited the main loop\n");
 
 
     return 0;
