@@ -21,6 +21,7 @@
 #include "texture.cpp"
 #include "image.cpp"
 #include "mesh.cpp"
+#include "particle.cpp"
 
 #include <GL/glew.h>
 
@@ -38,8 +39,53 @@
 #include <stdio.h>
 #include <vector>
 
+#include <random>
+#include <time.h>
+
+float RandomBetween(float min, float max)
+{
+    return min + (((float)rand() / RAND_MAX) * (max - min));
+}
+
+inline float Clamp(float min, float value, float max)
+{
+    float result = value;
+
+    if(result < min)
+    {
+        result = min;
+    }
+    else if(result > max)
+    {
+        result = max;
+    }
+
+    return(result);
+}
+
+inline float Clamp01(float value)
+{
+    float result = Clamp(0.0f, value, 1.0f);
+    return(result);
+}
+
+inline float Clamp01MapToRange(float min, float t, float max)
+{
+    float result = 0.0f;
+
+    float range = max - min;
+    if(range != 0.0f)
+    {
+        result = Clamp01((t - min) / range);
+    }
+
+    return(result);
+}
+
 int main(int argc, char *argv[])
 {
+    srand((uint32)time(0));
+
     Game *game = GetGame();
     if(!InitGame(game))
     {
@@ -51,6 +97,11 @@ int main(int argc, char *argv[])
     game->lastFrame = SDL_GetPerformanceCounter();
     //game->lockFPS = true;
 
+    Texture particleTexture = CreateTexture("../data/imgs/transparent_smoke_particle.png");
+
+    uint32 nextParticle = 0;
+    Particle particles[1024] = {};
+
     while(game->isRunning)
     {
         //Input
@@ -58,6 +109,48 @@ int main(int argc, char *argv[])
 
         //Update
         UpdateGame(game);
+
+        for(int i = 0; i < 2; ++i)
+        {
+            Particle *particle = particles + nextParticle++;
+
+            if(nextParticle == ArrayCount(particles))
+            {
+                nextParticle = 0;
+            }
+
+            float x = (WINDOW_WIDTH / 2.0f) - (particleTexture.x / 2.0f);
+            float y = WINDOW_HEIGHT - particleTexture.y * 0.3f;
+
+            particle->pos = glm::vec3(RandomBetween(x - 100.0f, x + 100.0f), RandomBetween(y - 10.0f, y + 10.0f), 0.0f);
+            particle->velocity = glm::vec3(RandomBetween(-50.0f, 50.0f), -RandomBetween(40.0f, 80.0f), 0.0f);
+
+            particle->rotation = RandomBetween(0.0f, 360.0f);
+            particle->rotationVelocity = RandomBetween(0.0f, 20.0f);
+
+            particle->color = glm::vec4(RandomBetween(0.75f, 1.0f), RandomBetween(0.75f, 1.0f),
+                                        RandomBetween(0.75f, 1.0f), 0.3f);
+
+            particle->colorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, RandomBetween(-0.04f, -0.08f));
+        }
+
+        for(int i = 0; i < ArrayCount(particles); ++i)
+        {
+            Particle *particle = particles + i;
+
+            particle->pos += particle->velocity * game->deltaTime;
+            particle->rotation += particle->rotationVelocity * game->deltaTime;
+            particle->color += particle->colorVelocity * game->deltaTime;
+
+            particle->colorOut = particle->color;
+            particle->colorOut.y = Clamp01(particle->colorOut.y);
+            particle->colorOut.a = Clamp01(particle->colorOut.a);
+
+            if(particle->colorOut.a > 0.2f)
+            {
+                particle->colorOut.a = 0.2f * Clamp01MapToRange(0.3f, particle->colorOut.a, 0.2f);
+            }
+        }
 
         //Rendering
         if(!game->textDemoEnabled)
@@ -105,11 +198,11 @@ int main(int argc, char *argv[])
 
             game->outlinePass = true;
             glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture.id, 0);
             RenderScene(game);
             game->outlinePass = false;
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -117,9 +210,9 @@ int main(int argc, char *argv[])
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
 
-            SetTexture(game->outlineTexture, 0);
+            SetTexture(&game->outlineTexture, 0);
             ShaderSetInt(game->postProcessShader, "u_outline", 0);
-            SetTexture(game->fullSceneTexture, 1);
+            SetTexture(&game->fullSceneTexture, 1);
             ShaderSetInt(game->postProcessShader, "u_scene", 1);
 
             glBindVertexArray(game->fullscreenQuad.vao);
@@ -129,6 +222,11 @@ int main(int argc, char *argv[])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             RenderText(&game->fpsCounter);
+
+            for(int i = 0; i < ArrayCount(particles); ++i)
+            {
+                RenderParticle(&particles[i], &particleTexture, game->particleShader, 0.3f);
+            }
 
             glDisable(GL_BLEND);
         }

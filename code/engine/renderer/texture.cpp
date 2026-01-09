@@ -1,12 +1,17 @@
 #include "texture.h"
 
+#include <glm/vec3.hpp>
+
 #include <stb_image.h>
 
-GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
+Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
 {
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    Texture texture = {};
+    texture.x = width;
+    texture.y = height;
+
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
 
     GLint minFilterFlags = flags & (TextureFlag_Filter_Min_Linear | TextureFlag_Filter_Min_Nearest |
                                     TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_NearNear |
@@ -15,12 +20,12 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     if(!minFilterFlags || (minFilterFlags & (minFilterFlags - 1)))
     {
         SDL_Log("Failed to create a texture. Multiple min filter flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
     if((flags & TextureFlag_Filter_Mag_Linear) && (flags & TextureFlag_Filter_Mag_Nearest))
     {
         SDL_Log("Failed to create a texture. Multiple mag filter flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
 
     GLint minFilter = GL_LINEAR_MIPMAP_LINEAR;
@@ -51,7 +56,7 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     if((flags & TextureFlag_RGBA) && (flags & TextureFlag_RGB))
     {
         SDL_Log("Failed to create a texture. Multiple color channels flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
 
     GLint colorChannels = (flags & TextureFlag_RGB) ? GL_RGB : GL_RGBA;
@@ -61,26 +66,28 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     return texture;
 }
 
-GLuint CreateTexture(char *imagePath, TextureFlags flags)
+Texture CreateTexture(char *imagePath, TextureFlags flags)
 {
+    Texture texture = {};
+
     int width, height, channels;
     int desiredChannels = 4;
 
     bool flipY = flags & TextureFlag_FlipY;
     stbi_set_flip_vertically_on_load(flipY);
-    unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
+    unsigned char *image = stbi_load(imagePath, &texture.x, &texture.y, &channels, desiredChannels);
 
-    if(!image) return 0;
+    if(!image) return texture; //TODO: Return a missing texture placeholder
 
-    GLuint texture = CreateGLTexture(image, width, height, flags);
+    texture = CreateGLTexture(image, texture.x, texture.y, flags);
 
     stbi_image_free(image);
 
     return texture;
 }
 
-void SetTexture(GLuint texture, GLuint textureSlot)
+void SetTexture(Texture *texture, GLuint textureSlot)
 {
     glActiveTexture(GL_TEXTURE0 + textureSlot);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture->id);
 }

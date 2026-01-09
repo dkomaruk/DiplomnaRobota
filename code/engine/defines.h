@@ -23,5 +23,7 @@ typedef uint64_t uint64;
 #define Assert(expression) \
         if(!(expression)) { *(int *)0 = 0; }
 
+#define ArrayCount(array) (sizeof(array) / sizeof((array)[0]))
+
 #define DEFINES_H
 #endif

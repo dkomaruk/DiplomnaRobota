@@ -1,5 +1,7 @@
 #ifndef MESH_H
 
+#include "texture.h"
+
 #include "defines.h"
 
 #include <GL/glew.h>
@@ -20,9 +22,9 @@ struct MaterialPhong
 {
     GLuint shader;
 
-    GLuint diffuseTexture; //GL_TEXTURE0
-    GLuint specularTexture; //GL_TEXTURE1
-    GLuint emissionTexture; //GL_TEXTURE2
+    Texture diffuseTexture; //GL_TEXTURE0
+    Texture specularTexture; //GL_TEXTURE1
+    Texture emissionTexture; //GL_TEXTURE2
 
     float shininess;
 };
@@ -60,12 +62,14 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
 Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
-Mesh GetUnitQuad();
+Mesh *GetUnitQuad();
 
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
 
-glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model);
+void RenderSurface(GLuint shader, Texture *texture, glm::mat4 model);
+
+glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat);
 
 #define MESH_H

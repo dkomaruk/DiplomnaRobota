@@ -24,10 +24,17 @@ enum TextureFlags
                                              TextureFlag_Repeat | TextureFlag_FlipY | TextureFlag_RGBA
 };
 
-GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);
-GLuint CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
+struct Texture
+{
+    GLuint id;
+    int x;
+    int y;
+};
 
-void SetTexture(GLuint texture, GLuint textureSlot);
+Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);
+Texture CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
+
+void SetTexture(Texture *texture, GLuint textureSlot);
 
 #define TEXTURE_H
 #endif

@@ -30,7 +30,7 @@ struct Game
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader, particleShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -38,10 +38,10 @@ struct Game
     //Framebuffers
     //TODO: Move these framebuffers out into a struct
     GLuint pickingFbo;
-    GLuint pickingTexture;
+    Texture pickingTexture;
 
     GLuint outlineFbo;
-    GLuint outlineTexture, fullSceneTexture;
+    Texture outlineTexture, fullSceneTexture;
 
     //Post-processing
     Mesh fullscreenQuad;

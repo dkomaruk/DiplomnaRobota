@@ -60,12 +60,12 @@ void SetupFramebuffers(Game *game)
     glGenFramebuffers(1, &game->pickingFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
 
-    glGenTextures(1, &game->pickingTexture);
-    glBindTexture(GL_TEXTURE_2D, game->pickingTexture);
+    glGenTextures(1, &game->pickingTexture.id);
+    glBindTexture(GL_TEXTURE_2D, game->pickingTexture.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->pickingTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->pickingTexture.id, 0);
 
     GLuint pickingRbo;
     glGenRenderbuffers(1, &pickingRbo);
@@ -83,19 +83,19 @@ void SetupFramebuffers(Game *game)
     glGenFramebuffers(1, &game->outlineFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
 
-    glGenTextures(1, &game->outlineTexture);
-    glBindTexture(GL_TEXTURE_2D, game->outlineTexture);
+    glGenTextures(1, &game->outlineTexture.id);
+    glBindTexture(GL_TEXTURE_2D, game->outlineTexture.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture.id, 0);
 
-    glGenTextures(1, &game->fullSceneTexture);
-    glBindTexture(GL_TEXTURE_2D, game->fullSceneTexture);
+    glGenTextures(1, &game->fullSceneTexture.id);
+    glBindTexture(GL_TEXTURE_2D, game->fullSceneTexture.id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -147,6 +147,8 @@ void LoadAssets(Game *game)
                                                LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                    LoadShader("../data/shaders/fragment3.frag"));
+    GLuint particleShader = CreateShaderProgram(LoadShader("../data/shaders/particle.vert"),
+                                                   LoadShader("../data/shaders/particle.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -170,12 +172,16 @@ void LoadAssets(Game *game)
     game->shaders.push_back(uiTextShader);
     ShaderSetMatrix4(uiTextShader, "u_projection", game->orthoProjection);
 
+    game->shaders.push_back(particleShader);
+    ShaderSetMatrix4(particleShader, "u_projection", game->orthoProjection);
+
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
     game->pickingShader = pickingShader;
     game->uiTextShader = uiTextShader;
+    game->particleShader = particleShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
@@ -225,7 +231,7 @@ void LoadAssets(Game *game)
     game->sceneEntities.push_back(sphereEntity2);
 
     Model *car = ImportModel("../data/models/car_scene.obj", game->mainShader, aiProcess_Triangulate);
-    GLuint carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
+    Texture carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
     for(int i = 0; i < car->numOfMeshes; i++)
     {
         car->material[i].diffuseTexture = carDiffuseTexture;
