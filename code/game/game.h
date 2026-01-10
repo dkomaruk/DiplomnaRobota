@@ -62,6 +62,7 @@ struct Game
     Uint64 lastFrame;
 
     Text fpsCounter;
+    Text msPerFrame;
 
     //Scene
     std::vector<Entity *> sceneEntities;

@@ -15,6 +15,10 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdl3.h>
+
 bool InitGame(Game *game)
 {
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
@@ -71,6 +75,17 @@ bool InitGame(Game *game)
         return false;
     }
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+
+    ImGui_ImplSDL3_InitForOpenGL(game->window, context);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
+
     SDL_Time ticks;
     SDL_GetCurrentTime(&ticks);
     SDL_srand(ticks);
@@ -98,7 +113,7 @@ bool InitGame(Game *game)
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
-    SDL_GL_SetSwapInterval(1); //VSync
+    //SDL_GL_SetSwapInterval(1); //VSync
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
@@ -312,6 +327,7 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->mainShader, "u_view", game->view);
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
+    ShaderSetMatrix4(game->particleShader, "u_view", game->view);
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
 }

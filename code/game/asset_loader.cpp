@@ -173,7 +173,7 @@ void LoadAssets(Game *game)
     ShaderSetMatrix4(uiTextShader, "u_projection", game->orthoProjection);
 
     game->shaders.push_back(particleShader);
-    ShaderSetMatrix4(particleShader, "u_projection", game->orthoProjection);
+    ShaderSetMatrix4(particleShader, "u_projection", game->perspectiveProjection);
 
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
@@ -338,6 +338,7 @@ void LoadAssets(Game *game)
 #endif
 
     game->fpsCounter = CreateText(&game->fonts[18], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader);
+    game->msPerFrame = CreateText(&game->fonts[18], "0 ms/f", glm::vec2(180.0f, 36.0f), game->uiTextShader);
 
     game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

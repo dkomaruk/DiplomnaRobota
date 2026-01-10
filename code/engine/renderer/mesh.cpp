@@ -270,6 +270,19 @@ Mesh CreateUnitQuad()
     return CreateMesh(vertices);
 }
 
+Mesh CreateUnitQuadStripes()
+{
+    glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
+
+    Vertex v1 = {glm::vec3(0.0f, 1.0f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v2 = {glm::vec3(0.0f, 0.0f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
+    Vertex v3 = {glm::vec3(1.0f, 0.0f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
+    Vertex v4 = {glm::vec3(1.0f, 1.0f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
+    std::vector<Vertex> vertices = {v2, v3, v1, v4};
+
+    return CreateMesh(vertices);
+}
+
 Mesh *GetUnitQuad()
 {
     static Mesh unitQuad = CreateUnitQuad();
@@ -331,18 +344,13 @@ void RenderSurface(GLuint shader, Texture *texture, glm::mat4 model)
 {
     Mesh *quad = GetUnitQuad();
 
-    UseShader(shader);
-
     ShaderSetMatrix4(shader, "u_model", model);
-
-    ShaderSetInt(shader, "u_texture", 0);
-    SetTexture(texture, 0);
 
     glBindVertexArray(quad->vao);
     glDrawArrays(GL_TRIANGLES, 0, quad->verticesCount);
 
     glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat)

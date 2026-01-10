@@ -11,6 +11,8 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui_impl_sdl3.h>
+
 void ProcessInput(Game *game)
 {
     Camera &camera = game->camera;
@@ -21,6 +23,7 @@ void ProcessInput(Game *game)
     SDL_Event event;
     while(SDL_PollEvent(&event))
     {
+        ImGui_ImplSDL3_ProcessEvent(&event);
         switch(event.type)
         {
             case SDL_EVENT_QUIT:
@@ -54,16 +57,19 @@ void ProcessInput(Game *game)
 
             case SDL_EVENT_MOUSE_MOTION:
             {
-                SDL_MouseMotionEvent mouse = event.motion;
+                if(game->isCursorHidden)
+                {
+                    SDL_MouseMotionEvent mouse = event.motion;
 
-                camera.yaw += mouse.xrel * camera.sensitivity;
-                camera.pitch -= mouse.yrel * camera.sensitivity;
-                camera.pitch = SDL_clamp(camera.pitch, camera.maxPitch.x, camera.maxPitch.y);
+                    camera.yaw += mouse.xrel * camera.sensitivity;
+                    camera.pitch -= mouse.yrel * camera.sensitivity;
+                    camera.pitch = SDL_clamp(camera.pitch, camera.maxPitch.x, camera.maxPitch.y);
 
-                camera.direction.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-                camera.direction.y = sin(glm::radians(camera.pitch));
-                camera.direction.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
-                camera.direction = normalize(camera.direction);
+                    camera.direction.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+                    camera.direction.y = sin(glm::radians(camera.pitch));
+                    camera.direction.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+                    camera.direction = normalize(camera.direction);
+                }
             } break;
 
             case SDL_EVENT_MOUSE_WHEEL:
