@@ -81,8 +81,17 @@ struct Game
     bool textDemoEnabled;
     TextDemo textDemo;
 
-    Text aliveParticles;
-    ParticleSystem smokeParticles;
+    bool renderParticles = true;
+    Text aliveParticlesText;
+    ParticleSystem particleSystems[5];
+    ParticleData *particleData;
+    int aliveParticles;
+    Mesh particlesQuad;
+    GLuint textureID;
+    GLuint vboInstances;
+
+    Texture particleTextures[5];
+    int currentTexture = 1;
 };
 
 bool InitGame(Game *game);

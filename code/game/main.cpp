@@ -44,52 +44,9 @@
 #include <stdlib.h>
 #include <vector>
 
-#include <random>
 #include <time.h>
 
 #include <imgui.h>
-
-float RandomBetween(float min, float max)
-{
-    if(min == max) return max;
-    return min + (((float)rand() / RAND_MAX) * (max - min));
-}
-
-inline float Clamp(float min, float value, float max)
-{
-    float result = value;
-
-    if(result < min)
-    {
-        result = min;
-    }
-    else if(result > max)
-    {
-        result = max;
-    }
-
-    return(result);
-}
-
-inline float Clamp01(float value)
-{
-    float result = Clamp(0.0f, value, 1.0f);
-    return(result);
-}
-
-inline float Clamp01MapToRange(float min, float t, float max)
-{
-    float result = 0.0f;
-
-    float range = max - min;
-    if(range != 0.0f)
-    {
-        result = Clamp01((t - min) / range);
-    }
-
-    return(result);
-}
-
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -105,22 +62,29 @@ int main(int argc, char *argv[])
     game->lastFrame = SDL_GetPerformanceCounter();
     //game->lockFPS = true;
 
-    Texture particleTexture = CreateTexture("../data/imgs/smoke2.png");
+    game->particleTextures[0] = CreateTexture("../data/imgs/smoke.png");
+    game->particleTextures[1] = CreateTexture("../data/imgs/smoke2.png");
+    game->particleTextures[2] = CreateTexture("../data/imgs/smoke3.png");
+    game->particleTextures[3] = CreateTexture("../data/imgs/smoke4.png");
+    game->particleTextures[4] = CreateTexture("../data/imgs/smoke5.png");
 
-    ParticleSystem *smoke = &game->smokeParticles;
-    smoke->numOfParticles = 300;
-    smoke->particles = (Particle *)calloc(smoke->numOfParticles, sizeof(Particle));
-    smoke->particleData = (ParticleData *)calloc(smoke->numOfParticles, sizeof(ParticleData));
+    for(int i = 0; i < 5; i++)
+    {
+        game->particleSystems[i] = InitParticleSystem(game);
+    }
 
-    Mesh quad = CreateUnitQuadStripes();
+    int maxNumOfParticles = game->particleSystems[0].maxNumOfParticles;
+    game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
+    game->textureID = game->particleTextures[game->currentTexture].id;
 
-    glBindVertexArray(quad.vao);
+    game->particlesQuad = CreateUnitQuadStripes();
+    glBindVertexArray(game->particlesQuad.vao);
 
-    GLuint vboInstances;
-    glGenBuffers(1, &vboInstances);
-    glBindBuffer(GL_ARRAY_BUFFER, vboInstances);
+    glGenBuffers(1, &game->vboInstances);
+    glBindBuffer(GL_ARRAY_BUFFER, game->vboInstances);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * smoke->numOfParticles, smoke->particleData, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * maxNumOfParticles * ArrayCount(game->particleSystems),
+                 game->particleData, GL_STREAM_DRAW);
 
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(0));
@@ -136,7 +100,6 @@ int main(int argc, char *argv[])
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    bool renderParticles = true;
 
     while(game->isRunning)
     {
@@ -147,116 +110,21 @@ int main(int argc, char *argv[])
         UpdateEditorUI(game);
         UpdateGame(game);
 
-        static float a = 0;
-        a += smoke->spawnRate * game->deltaTime;
-        int particlesToSpawn = (int)a;
-        a -= particlesToSpawn;
-
-        for(int i = 0; i < particlesToSpawn; ++i)
-        {
-            Particle *particle = smoke->particles + smoke->nextParticle++;
-
-            if((int)smoke->nextParticle >= smoke->numOfParticles)
-            {
-                smoke->nextParticle = 0;
-            }
-
-            glm::vec3 dir;
-            do
-            {
-                dir = glm::vec3( RandomBetween(-1.0f, 1.0f), RandomBetween(-1.0f, 1.0f), RandomBetween(-1.0f, 1.0f));
-            } while(glm::length(dir) > 1.0f);
-
-            dir = glm::normalize(dir);
-            float radius = RandomBetween(0.0f, smoke->radius);
-            radius = cbrtf(radius);
-            float spawnRadius = 0.5f * 2;
-            particle->pos = smoke->pos + dir * radius * spawnRadius;
-
-            //particle->velocity = glm::vec3(RandomBetween(-0.2f, 0.2f), RandomBetween(0.1f, 0.05f) * 2.0f, 0.0f);
-            //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
-
-            particle->rotation = glm::radians(RandomBetween(0.0f, 360.0f));
-            particle->rotationVelocity = glm::radians(RandomBetween(0.0f, 20.0f));
-
-            particle->color = glm::vec4(RandomBetween(smoke->minColor.r, smoke->maxColor.r),
-                                        RandomBetween(smoke->minColor.g, smoke->maxColor.g),
-                                        RandomBetween(smoke->minColor.b, smoke->maxColor.b),
-                                        RandomBetween(smoke->minColor.a, smoke->maxColor.a));
-
-            particle->colorVelocity = smoke->colorVelocity;
-        }
-
-        for(int i = 0; i < smoke->numOfParticles; ++i)
-        {
-            Particle *particle = smoke->particles + i;
-
-            if(particle->velocity != glm::vec3(0.0f))
-            {
-                SDL_Log("ALARM IDIOT");
-            }
-
-            if(particle->color.a > 0.0f)
-            {
-                particle->pos += particle->velocity * game->deltaTime;
-                particle->rotation += particle->rotationVelocity * game->deltaTime;
-                particle->color += particle->colorVelocity * game->deltaTime;
-
-                particle->colorOut = particle->color;
-                //particle->colorOut.y = Clamp01(particle->color.y);
-                particle->colorOut.a = Clamp01(particle->color.a);
-
-                float alphaThreshold = smoke->maxColor.a - 0.1f;
-                if(particle->colorOut.a > alphaThreshold)
-                {
-                    particle->colorOut.a = alphaThreshold * Clamp01MapToRange(smoke->maxColor.a, particle->colorOut.a, alphaThreshold);
-                }
-
-            }
-        }
-
         if(IsFirstPress(game, SDL_SCANCODE_Y))
         {
-            renderParticles = !renderParticles;
+            game->renderParticles = !game->renderParticles;
         }
 
-        int aliveParticles = 0;
-        if(renderParticles)
+        if(game->renderParticles)
         {
-            uint64 start = SDL_GetPerformanceCounter();
-
-            glm::vec3 cameraPos = game->camera.position;
-            for(int i = 0; i < smoke->numOfParticles; i++)
+            for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
             {
-                Particle *particle = smoke->particles + i;
-
-                if(particle->color.a > 0.0f)
-                {
-                    smoke->particleData[aliveParticles].angle = particle->rotation;
-                    smoke->particleData[aliveParticles].offset = particle->pos;
-                    smoke->particleData[aliveParticles].color = particle->colorOut;
-
-                    glm::vec3 diff = cameraPos - particle->pos;
-                    smoke->particleData[aliveParticles].cameraDist = glm::length2(diff);
-
-                    ++aliveParticles;
-                }
+                SpawnParticles(game, &game->particleSystems[i]);
+                UpdateParticles(game, &game->particleSystems[i]);
             }
 
-            qsort(smoke->particleData, aliveParticles, sizeof(ParticleData), CompareParticles);
-
-            uint64 end = SDL_GetPerformanceCounter();
-            SDL_Log("%f ms", (float)(end - start) / game->perfFreq * 1000.0f);
-
-            glBindBuffer(GL_ARRAY_BUFFER, vboInstances);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * aliveParticles, NULL, GL_STREAM_DRAW);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(ParticleData) * aliveParticles, smoke->particleData);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            SortAllParticles(game);
         }
-
-        char dynamicBuffer[20];
-        sprintf(dynamicBuffer, "Alive Particles: %d", aliveParticles);
-        UpdateText(&game->aliveParticles, dynamicBuffer);
 
         //Rendering
         if(!game->textDemoEnabled)
@@ -312,27 +180,9 @@ int main(int argc, char *argv[])
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
 
-            if(renderParticles)
+            if(game->renderParticles)
             {
-                glEnable(GL_BLEND);
-                //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                glDepthMask(GL_FALSE);
-                glEnable(GL_CULL_FACE);
-                glCullFace(GL_FRONT);
-
-                UseShader(game->particleShader);
-
-                ShaderSetInt(game->particleShader, "u_texture", 0);
-                SetTexture(&particleTexture, 0);
-
-                glBindVertexArray(quad.vao);
-                //glDrawArraysInstanced(GL_TRIANGLES, 0, quad.verticesCount, smoke->numOfParticles);
-                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, aliveParticles);
-                glBindVertexArray(0);
-
-                glDisable(GL_BLEND);
-                glDisable(GL_CULL_FACE);
-                glDepthMask(GL_TRUE);
+                RenderParticles(game);
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -351,7 +201,7 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            RenderText(&game->aliveParticles);
+            RenderText(&game->aliveParticlesText);
             RenderText(&game->fpsCounter);
             RenderText(&game->msPerFrame);
 
@@ -387,12 +237,13 @@ int main(int argc, char *argv[])
         float fps = 1000.0f / ms;
         //SDL_Log("%f", fps);
 
-        sprintf(dynamicBuffer, "%.5f FPS", fps);
+        char buffer[20];
+        sprintf(buffer, "%.5f FPS", fps);
 
-        UpdateText(&game->fpsCounter, dynamicBuffer);
+        UpdateText(&game->fpsCounter, buffer);
 
-        sprintf(dynamicBuffer, "%.5f ms/f", ms);
-        UpdateText(&game->msPerFrame, dynamicBuffer);
+        sprintf(buffer, "%.5f ms/f", ms);
+        UpdateText(&game->msPerFrame, buffer);
 
         game->lastFrame = thisFrame;
     }

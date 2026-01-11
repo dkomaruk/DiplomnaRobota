@@ -35,6 +35,7 @@ Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags 
 Texture CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
 
 void SetTexture(Texture *texture, GLuint textureSlot);
+void SetTexture(GLuint textureID, GLuint textureSlot);
 
 #define TEXTURE_H
 #endif

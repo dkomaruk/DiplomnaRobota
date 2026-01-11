@@ -91,3 +91,9 @@ void SetTexture(Texture *texture, GLuint textureSlot)
     glActiveTexture(GL_TEXTURE0 + textureSlot);
     glBindTexture(GL_TEXTURE_2D, texture->id);
 }
+
+void SetTexture(GLuint textureID, GLuint textureSlot)
+{
+    glActiveTexture(GL_TEXTURE0 + textureSlot);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+}
