@@ -1,6 +1,8 @@
 #ifndef EDITOR_UI_H
 
-void UpdateEditorUI();
+#include "game.h"
+
+void UpdateEditorUI(Game *game);
 
 #define EDITOR_UI_H
 #endif

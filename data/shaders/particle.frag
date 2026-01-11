@@ -12,6 +12,6 @@ void main()
 //        discard;
 //    }
 
-    vec4 color = vec4(2.0, 2.0, 2.0, Color.a);
-    gl_FragColor = texture(u_texture, TexCoords) * color;
+    //vec4 color = vec4(2.0, 2.0, 2.0, Color.a);
+    gl_FragColor = texture(u_texture, TexCoords) * Color;
 }

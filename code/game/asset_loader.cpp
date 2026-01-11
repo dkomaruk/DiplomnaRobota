@@ -340,6 +340,7 @@ void LoadAssets(Game *game)
 
     game->fpsCounter = CreateText(&game->fonts[18], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader);
     game->msPerFrame = CreateText(&game->fonts[18], "0 ms/f", glm::vec2(180.0f, 36.0f), game->uiTextShader);
+    game->aliveParticles = CreateText(&game->fonts[18], "Alive Particles: 0", glm::vec2(20.0f, 72.0f), game->uiTextShader);
 
     game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

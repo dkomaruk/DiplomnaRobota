@@ -5,6 +5,7 @@
 #include "input.h"
 #include "text.h"
 #include "text_demo.h"
+#include "particle_system.h"
 
 #include "defines.h"
 
@@ -79,6 +80,9 @@ struct Game
     //Game temp stuff
     bool textDemoEnabled;
     TextDemo textDemo;
+
+    Text aliveParticles;
+    ParticleSystem smokeParticles;
 };
 
 bool InitGame(Game *game);
