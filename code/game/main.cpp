@@ -1,3 +1,6 @@
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp> //Has to be included before any other glm header file
+
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
 
@@ -21,6 +24,7 @@
 #include "image.cpp"
 #include "mesh.cpp"
 #include "particle.cpp"
+#include "editor_ui.cpp"
 
 #include <GL/glew.h>
 
@@ -35,7 +39,9 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <vector>
 
 #include <random>
@@ -85,9 +91,23 @@ inline float Clamp01MapToRange(float min, float t, float max)
 
 struct ParticleData
 {
-    glm::vec4 color;
+    float angle;
     glm::vec3 offset;
+    glm::vec4 color;
+
+    float cameraDist;
 };
+
+int CompareParticles(const void *a, const void *b)
+{
+    ParticleData *p1 = (ParticleData *)a;
+    ParticleData *p2 = (ParticleData *)b;
+
+    if (p1->cameraDist > p2->cameraDist) return -1;
+    if (p1->cameraDist < p2->cameraDist) return 1;
+
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -107,8 +127,8 @@ int main(int argc, char *argv[])
     Texture particleTexture = CreateTexture("../data/imgs/smoke2.png");
 
     uint32 nextParticle = 0;
-    Particle particles[10000] = {};
-    ParticleData particleData[10000] = {};
+    Particle particles[300] = {};
+    ParticleData particleData[300] = {};
 
     Mesh quad = CreateUnitQuadStripes();
 
@@ -121,12 +141,15 @@ int main(int argc, char *argv[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * ArrayCount(particles), particleData, GL_STREAM_DRAW);
 
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(0));
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(0));
     glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(1 * sizeof(glm::vec4)));
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(1 * sizeof(float)));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)(1 * sizeof(glm::vec3) + 1 * sizeof(float)));
 
     glVertexAttribDivisor(3, 1);
     glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -140,10 +163,11 @@ int main(int argc, char *argv[])
 
         //Update
         UpdateGame(game);
+        UpdateEditorUI();
 
         float particleAlpha = 1.0f;
         static int a = 0;
-        if(a++ % 3 == 0)
+        if(a++ % 10 == 0)
         {
             for(int i = 0; i < 1; ++i)
             {
@@ -154,13 +178,9 @@ int main(int argc, char *argv[])
                     nextParticle = 0;
                 }
 
-                //particle->pos = glm::vec3(RandomBetween(smokeOffsetX - 100.0f, smokeOffsetX + 100.0f),
-                //                        RandomBetween(smokeOffsetY - 10.0f, smokeOffsetY + 10.0f), 0.0f);
-                //particle->velocity = glm::vec3(RandomBetween(-180.0f, 180.0f), -RandomBetween(0.0f, 180.0f), 0.0f);
-                //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
-
                 particle->pos = glm::vec3(RandomBetween(-0.5f, 0.5f), RandomBetween(0.0f, 0.2f), RandomBetween(3.5f, 4.5f));
                 //particle->velocity = glm::vec3(RandomBetween(-0.2f, 0.2f), RandomBetween(0.1f, 0.05f) * 2.0f, 0.0f);
+                //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
 
                 glm::vec3 dir;
                 do
@@ -171,19 +191,15 @@ int main(int argc, char *argv[])
                 dir = glm::normalize(dir);
                 float radius = RandomBetween(0.0f, 1.0f);
                 radius = cbrtf(radius);
-                float spawnRadius = 0.5f * 2; // same horizontal + vertical radius
+                float spawnRadius = 0.5f * 2;
                 particle->pos = glm::vec3(0.0f, 0.0f, 3.5f) + dir * radius * spawnRadius;
 
-
-                //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
-
-                //particle->rotation = RandomBetween(0.0f, 360.0f);
-                //particle->rotationVelocity = RandomBetween(0.0f, 20.0f);
+                particle->rotation = glm::radians(RandomBetween(0.0f, 360.0f));
+                particle->rotationVelocity = glm::radians(RandomBetween(0.0f, 20.0f));
 
                 particle->color = glm::vec4(RandomBetween(0.75f, 1.0f), RandomBetween(0.75f, 1.0f),
                                             RandomBetween(0.75f, 1.0f), particleAlpha);
-                //particle->colorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.2f); //RandomBetween(-0.1f, -0.2f));
-                particle->colorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.1f); //RandomBetween(-0.1f, -0.2f));
+                particle->colorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.3f);
             }
         }
 
@@ -194,22 +210,19 @@ int main(int argc, char *argv[])
             if(particle->color.a > 0.0f)
             {
                 particle->pos += particle->velocity * game->deltaTime;
-                //particle->rotation += particle->rotationVelocity * game->deltaTime;
+                particle->rotation += particle->rotationVelocity * game->deltaTime;
                 particle->color += particle->colorVelocity * game->deltaTime;
 
-                glm::vec4 colorOut = particle->color;
-                colorOut.y = Clamp01(particle->color.y);
-                colorOut.a = Clamp01(particle->color.a);
+                particle->colorOut = particle->color;
+                particle->colorOut.y = Clamp01(particle->color.y);
+                particle->colorOut.a = Clamp01(particle->color.a);
 
                 float alphaThreshold = particleAlpha - 0.1f;
-                if(colorOut.a > alphaThreshold)
+                if(particle->colorOut.a > alphaThreshold)
                 {
-                    colorOut.a = alphaThreshold * Clamp01MapToRange(particleAlpha, colorOut.a, alphaThreshold);
+                    particle->colorOut.a = alphaThreshold * Clamp01MapToRange(particleAlpha, particle->colorOut.a, alphaThreshold);
                 }
 
-                particleData[i].color = colorOut;
-                particleData[i].offset = particle->pos;
-                //particleData[i].model = UpdateParticleMatrix(particle, &particleTexture, 0.3f);
             }
         }
 
@@ -218,12 +231,33 @@ int main(int argc, char *argv[])
             renderParticles = !renderParticles;
         }
 
+        int aliveParticles = 0;
         if(renderParticles)
         {
+            glm::vec3 cameraPos = game->camera.position;
+            for(int i = 0; i < ArrayCount(particles); i++)
+            {
+                Particle *particle = particles + i;
+
+                if(particle->color.a > 0.0f)
+                {
+                    particleData[aliveParticles].angle = particle->rotation;
+                    particleData[aliveParticles].offset = particle->pos;
+                    particleData[aliveParticles].color = particle->colorOut;
+
+                    glm::vec3 diff = cameraPos - particle->pos;
+                    particleData[aliveParticles].cameraDist = glm::length2(diff);
+
+                    ++aliveParticles;
+                }
+            }
+
+            qsort(particleData, aliveParticles, sizeof(ParticleData), CompareParticles);
+
             uint64 start = SDL_GetPerformanceCounter();
             glBindBuffer(GL_ARRAY_BUFFER, vboInstances);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * ArrayCount(particleData), NULL, GL_STREAM_DRAW);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(ParticleData) * ArrayCount(particleData), particleData);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * aliveParticles, NULL, GL_STREAM_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(ParticleData) * aliveParticles, particleData);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             uint64 end = SDL_GetPerformanceCounter();
             SDL_Log("%f ms", (float)(end - start) / game->perfFreq * 1000.0f);
@@ -298,7 +332,7 @@ int main(int argc, char *argv[])
 
                 glBindVertexArray(quad.vao);
                 //glDrawArraysInstanced(GL_TRIANGLES, 0, quad.verticesCount, ArrayCount(particles));
-                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, ArrayCount(particles));
+                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, aliveParticles);
                 glBindVertexArray(0);
 
                 glDisable(GL_BLEND);
@@ -331,14 +365,6 @@ int main(int argc, char *argv[])
         {
             RenderTextDemo(game);
         }
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::Begin("ImguiOK");
-        ImGui::Text("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        ImGui::End();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

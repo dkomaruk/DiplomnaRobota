@@ -1,9 +1,10 @@
 # Current
+- [ ] Particle System
+  - [ ] Research smoke/clouds/explosions rendering (billboards probably)
 
 # Next
 
 # Upcoming
-- [ ] Particle System
 - [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 - [ ] Skeletal Animations
 - [ ] Further Text Improvements
@@ -50,7 +51,6 @@
       - Alt: use 'fast-forward' mechanism. Player receives latest snapshot, other players still continue the game while connecting one is loading in. Once the outdated game state snapshot is loaded, the server sends all user inputs that happened from that moment and the connecting machine has to fast-forward the simulation by going faster than the main simulation between joined players. In Factorio players usually see 'Catching Up' progress bar. Once the simulation is caught up, newly joined player can now make their own inputs and play the game normally. If the connecting player computer is too slow, they can never catch up in which case "Pause when player joins" is necessary
   - Alt: state sync
   - Alt: send state snapshot
-  - [ ] Research smoke/clouds/explosions rendering (billboards probably)
 
 # Log
 

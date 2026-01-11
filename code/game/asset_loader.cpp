@@ -323,6 +323,7 @@ void LoadAssets(Game *game)
     {
         InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
         *squad = CreateInfantrySquad(cubeMesh, 1, 10);
+        //*squad = CreateInfantrySquad(soldier, 1, 10);
         squad->scale = glm::vec3(0.5f);
         squad->position.z = -10.0f / 2.0f;
         squad->position.x = -10.0f / 2.0f;

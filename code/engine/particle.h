@@ -17,7 +17,10 @@ struct Particle
     float rotationVelocity;
 
     glm::vec4 color;
+    glm::vec4 colorOut;
     glm::vec4 colorVelocity;
+
+    int cameraDist;
 };
 
 glm::mat4 UpdateParticleMatrix(Particle *particle, Texture *texture, float scale = 1.0f);
