@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     game->particleTextures[3] = CreateTexture("../data/imgs/smoke4.png");
     game->particleTextures[4] = CreateTexture("../data/imgs/smoke5.png");
 
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < ArrayCount(game->particleSystems); i++)
     {
         game->particleSystems[i] = InitParticleSystem(game);
     }
@@ -202,6 +202,7 @@ int main(int argc, char *argv[])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             RenderText(&game->aliveParticlesText);
+            RenderText(&game->deadParticlesText);
             RenderText(&game->fpsCounter);
             RenderText(&game->msPerFrame);
 

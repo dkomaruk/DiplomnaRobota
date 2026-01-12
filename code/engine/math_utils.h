@@ -35,6 +35,26 @@ inline float Clamp01MapToRange(float min, float t, float max)
     return(result);
 }
 
+inline float Min(float a, float b)
+{
+    return (a < b) ? a : b;
+}
+
+inline int Min(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
+inline float Max(float a, float b)
+{
+    return (a > b) ? a : b;
+}
+
+inline int Max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
 
 #define MATH_UTILS_H
 #endif

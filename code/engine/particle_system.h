@@ -10,6 +10,8 @@
 
 #include <GL/glew.h>
 
+struct Game;
+
 struct Particle
 {
     glm::vec3 pos;
@@ -43,10 +45,12 @@ struct ParticleSystem
 
     int spawnRate = 13;
     float accumulatedSpawns;
+    int aliveParticles;
 
     float radius = 1.0f;
 
     glm::vec3 pos = glm::vec3(0.0f, 0.0f, 3.5f);
+    glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
     glm::vec4 minColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
     glm::vec4 maxColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);

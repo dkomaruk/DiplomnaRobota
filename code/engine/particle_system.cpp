@@ -3,6 +3,10 @@
 #include "mesh.h"
 #include "shader.h"
 
+#include "game.h"
+
+#include <glm/gtx/norm.hpp>
+
 #include "math_utils.h"
 #include "random.h"
 
@@ -29,8 +33,11 @@ ParticleSystem InitParticleSystem(Game *game)
 
 void SpawnParticles(Game *game, ParticleSystem *system)
 {
-    system->accumulatedSpawns += system->spawnRate * game->deltaTime;
+    int deadParticles = system->maxNumOfParticles - system->aliveParticles;
     int particlesToSpawn = (int)system->accumulatedSpawns;
+    particlesToSpawn = Min(deadParticles, particlesToSpawn);
+
+    system->accumulatedSpawns += system->spawnRate * game->deltaTime;
     system->accumulatedSpawns -= particlesToSpawn;
 
     for(int i = 0; i < particlesToSpawn; ++i)
@@ -54,6 +61,7 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         float spawnRadius = 0.5f * 2;
         particle->pos = system->pos + dir * radius * spawnRadius;
 
+        particle->velocity = system->velocity;
         //particle->velocity = glm::vec3(RandomBetween(-0.2f, 0.2f), RandomBetween(0.1f, 0.05f) * 2.0f, 0.0f);
         //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
 
@@ -104,6 +112,7 @@ void SortAllParticles(Game *game)
     {
         ParticleSystem *system = &game->particleSystems[i];
 
+        int aliveParticles = 0;
         for(int j = 0; j < system->maxNumOfParticles; ++j)
         {
             Particle *particle = system->particles + j;
@@ -118,8 +127,11 @@ void SortAllParticles(Game *game)
                 game->particleData[game->aliveParticles].cameraDist = glm::length2(diff);
 
                 ++game->aliveParticles;
+                ++aliveParticles;
             }
         }
+
+        system->aliveParticles = aliveParticles;
     }
 
     qsort(game->particleData, game->aliveParticles, sizeof(ParticleData), CompareParticles);
@@ -129,9 +141,13 @@ void SortAllParticles(Game *game)
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(ParticleData) * game->aliveParticles, game->particleData);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    char buffer[20];
+    char buffer[25];
     sprintf(buffer, "Alive Particles: %d", game->aliveParticles);
     UpdateText(&game->aliveParticlesText, buffer);
+
+    int deadParticles = (game->particleSystems[0].maxNumOfParticles * ArrayCount(game->particleSystems)) - game->aliveParticles;
+    sprintf(buffer, "Dead Particles: %d", deadParticles);
+    UpdateText(&game->deadParticlesText, buffer);
 }
 
 void RenderParticles(Game *game)

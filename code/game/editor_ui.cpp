@@ -15,7 +15,7 @@ void UpdateEditorUI(Game *game)
     int updated = 0;
     ParticleSystem *smoke = &game->particleSystems[0];
 
-    updated += ImGui::DragFloat("Radius", &smoke->radius, 0.0f, 2000.0f);
+    updated += ImGui::DragFloat("Radius", &smoke->radius, 1.0f, 0.0f, 2000.0f);
 
     glm::vec3 diff = glm::vec3(0.0f);
     glm::vec3 oldPos = smoke->pos;
@@ -25,9 +25,11 @@ void UpdateEditorUI(Game *game)
         ++updated;
     }
 
+    updated += ImGui::DragFloat3("Velocity", &smoke->velocity[0], 0.1f, 0.0f, 2.0f);
+
     updated += ImGui::SliderFloat4("Min Color", &smoke->minColor[0], 0.0f, 2.0f);
     updated += ImGui::SliderFloat4("Max Color", &smoke->maxColor[0], 0.0f, 2.0f);
-    updated += ImGui::DragFloat4("Color Velocity", &smoke->colorVelocity[0], -1.0f, 0.0f);
+    updated += ImGui::DragFloat4("Color Velocity", &smoke->colorVelocity[0], 0.01f, -1.0f, 0.0f);
 
     int oldNumOfParticles = smoke->maxNumOfParticles;
     if(ImGui::InputInt("Num Of Particles", &smoke->maxNumOfParticles))
@@ -72,6 +74,7 @@ void UpdateEditorUI(Game *game)
             ParticleSystem *p = &game->particleSystems[i];
             p->radius = smoke->radius;
             p->pos += diff;
+            p->velocity = smoke->velocity;
             p->minColor = smoke->minColor;
             p->maxColor = smoke->maxColor;
             p->colorVelocity = smoke->colorVelocity;

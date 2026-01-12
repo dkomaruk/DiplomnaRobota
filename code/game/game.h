@@ -82,8 +82,8 @@ struct Game
     TextDemo textDemo;
 
     bool renderParticles = true;
-    Text aliveParticlesText;
-    ParticleSystem particleSystems[5];
+    Text aliveParticlesText, deadParticlesText;
+    ParticleSystem particleSystems[100];
     ParticleData *particleData;
     int aliveParticles;
     Mesh particlesQuad;
