@@ -20,6 +20,10 @@ struct Particle
     float rotation;
     float rotationVelocity;
 
+    float scale;
+    float scaleVelocity;
+
+    float startingAlpha;
     glm::vec4 color;
     glm::vec4 colorOut;
     glm::vec4 colorVelocity;
@@ -29,11 +33,13 @@ struct Particle
 //because I can put alive sorted particles in and not worry about order in the main Particle array
 struct ParticleData
 {
+    float scale;
     float angle;
     glm::vec3 offset;
     glm::vec4 color;
 
-    float cameraDist;
+    //TODO: cameraDist is getting sent to the GPU I think, because of sizeof(ParticleData) in glBufferSubData
+    float cameraDist; //Wasted bandwidth to the GPU
 };
 
 struct ParticleSystem
@@ -49,12 +55,20 @@ struct ParticleSystem
 
     float radius = 1.0f;
 
-    glm::vec3 pos = glm::vec3(0.0f, 0.0f, 3.5f);
-    glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    float minScale = 1.0f;
+    float maxScale = 1.0f;
+    float minScaleVelocity = 0.0f;
+    float maxScaleVelocity = 0.0f;
+
+    glm::vec3 minPos = glm::vec3(0.0f, 0.0f, 3.5f);
+    glm::vec3 maxPos = glm::vec3(0.0f, 0.0f, 3.5f);
+    glm::vec3 minVelocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 maxVelocity = glm::vec3(0.0f, 0.0f, 0.0f);
 
     glm::vec4 minColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
     glm::vec4 maxColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
-    glm::vec4 colorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
+    glm::vec4 minColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
+    glm::vec4 maxColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
 };
 
 int CompareParticles(const void *a, const void *b);

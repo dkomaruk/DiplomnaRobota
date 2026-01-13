@@ -1,6 +1,6 @@
 # Current
 - [ ] Particle System
-  - [ ] Research smoke/clouds/explosions rendering (billboards probably)
+  - [ ] Add particle settings presets saving/loading
 
 # Next
 

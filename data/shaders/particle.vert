@@ -3,9 +3,10 @@
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texCoords;
-layout(location = 3) in float angle;
-layout(location = 4) in vec3 offset;
-layout(location = 5) in vec4 color;
+layout(location = 3) in float scale;
+layout(location = 4) in float angle;
+layout(location = 5) in vec3 offset;
+layout(location = 6) in vec4 color;
 
 uniform mat4 u_projection;
 uniform mat4 u_view;
@@ -26,8 +27,7 @@ void main()
 
     vec2 rotatedPos = vec2(pos.x * c - pos.y * s, pos.x * s + pos.y * c);
 
-    float size = 1.0;
-    vec3 worldPos = offset + cameraRight * rotatedPos.x * size + cameraUp * rotatedPos.y * size;
+    vec3 worldPos = offset + cameraRight * rotatedPos.x * scale + cameraUp * rotatedPos.y * scale;
 
     gl_Position = u_projection * u_view * vec4(worldPos, 1.0);
 }
