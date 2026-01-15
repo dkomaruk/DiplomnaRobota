@@ -1,5 +1,7 @@
 #ifndef TEXTURE_H
 
+#include "defines.h"
+
 #include <GL/glew.h>
 
 enum TextureFlags

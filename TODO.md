@@ -1,6 +1,11 @@
 # Current
+## 2026-01-08/15 S2 Improved Text Rendering
 - [ ] Particle System
-  - [ ] Add particle settings presets saving/loading
+  - [ ] Add particle system settings preset saving/loading
+  - [ ] Add particle system demo/ability to add new emitters at some position
+  - [ ] Improve fade in/out behaviour (fix popping in and out of existence)
+  - [ ] Gradient generator for color ramp during particle lifetime
+  - [ ] Curve editor for controlling parameters over lifetime of the particle
 
 # Next
 
@@ -54,7 +59,7 @@
 
 # Log
 
-## 2025-12-29/2026-01-03 S2 Improved Text Rendering
+## 2025-12-29/2026-01-08 S2 Improved Text Rendering
 - [x] Improve text rendering
   - [x] Add dynamic text rendering using quads for each glyph instead of making a texture for the whole string of text
         - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.

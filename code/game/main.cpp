@@ -1,4 +1,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
+#define IMGUI_DEFINE_MATH_OPERATORS
+
 #include <glm/gtx/norm.hpp> //Has to be included before any other glm header file
 
 #include "stb_image.cpp"
@@ -47,6 +49,7 @@
 #include <time.h>
 
 #include <imgui.h>
+
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -70,10 +73,12 @@ int main(int argc, char *argv[])
 
     for(int i = 0; i < ArrayCount(game->particleSystems); i++)
     {
-        game->particleSystems[i] = InitParticleSystem(game);
+        game->particleSystems[i] = InitParticleSystem(game, &game->smokeSettings);
     }
 
-    int maxNumOfParticles = game->particleSystems[0].maxNumOfParticles;
+    game->particleSystems[0].pos = glm::vec3(0.0f);
+
+    int maxNumOfParticles = game->smokeSettings.maxNumOfParticles;
     game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
     game->textureID = game->particleTextures[game->currentTexture].id;
 
@@ -102,6 +107,14 @@ int main(int argc, char *argv[])
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
+    {
+        if(game->smokeSettings.prewarm)
+        {
+            game->particleSystems[i].prewarmTimer = StartTimer(game->smokeSettings.prewarmSeconds);
+        }
+    }
 
     while(game->isRunning)
     {

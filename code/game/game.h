@@ -83,7 +83,8 @@ struct Game
 
     bool renderParticles = true;
     Text aliveParticlesText, deadParticlesText;
-    ParticleSystem particleSystems[100];
+    ParticleSystem particleSystems[1];
+    ParticleSystemSettings smokeSettings;
     ParticleData *particleData;
     int aliveParticles;
     Mesh particlesQuad;

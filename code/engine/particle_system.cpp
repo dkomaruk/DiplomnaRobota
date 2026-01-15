@@ -21,34 +21,42 @@ int CompareParticles(const void *a, const void *b)
     return 0;
 }
 
-ParticleSystem InitParticleSystem(Game *game)
+ParticleSystem InitParticleSystem(Game *game, ParticleSystemSettings *settings, glm::vec3 *position)
 {
     ParticleSystem system = {};
-    system.maxNumOfParticles = 300;
-    system.particles = (Particle *)calloc(system.maxNumOfParticles, sizeof(Particle));
-    system.minPos = glm::vec3(RandomBetween(-20.0f, 20.0f), 0.0f, RandomBetween(-20.0f, 20.0f));
-    system.maxPos = system.minPos;
+    system.settings = settings;
+
+    system.particles = (Particle *)calloc(settings->maxNumOfParticles, sizeof(Particle));
+
+    if(!position)
+    {
+        system.pos = glm::vec3(RandomBetween(-20.0f, 20.0f), 0.0f, RandomBetween(-20.0f, 20.0f));
+    }
 
     return system;
 }
 
 void SpawnParticles(Game *game, ParticleSystem *system)
 {
-    int deadParticles = system->maxNumOfParticles - system->aliveParticles;
+    ParticleSystemSettings *settings = system->settings;
+
+    int deadParticles = settings->maxNumOfParticles - system->aliveParticles;
     int particlesToSpawn = (int)system->accumulatedSpawns;
     particlesToSpawn = Min(deadParticles, particlesToSpawn);
 
-    system->accumulatedSpawns += system->spawnRate * game->deltaTime;
+    system->accumulatedSpawns += settings->spawnRate * game->deltaTime;
     system->accumulatedSpawns -= particlesToSpawn;
 
     for(int i = 0; i < particlesToSpawn; ++i)
     {
         Particle *particle = system->particles + system->nextParticle++;
 
-        if((int)system->nextParticle >= system->maxNumOfParticles)
+        if((int)system->nextParticle >= settings->maxNumOfParticles)
         {
             system->nextParticle = 0;
         }
+
+        particle->timeLeft = settings->lifetime;
 
         glm::vec3 dir;
         do
@@ -57,53 +65,65 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         } while(glm::length(dir) > 1.0f);
 
         dir = glm::normalize(dir);
-        float radius = RandomBetween(0.0f, system->radius);
+        float radius = RandomBetween(0.0f, settings->radius);
         radius = cbrtf(radius);
         float spawnRadius = 0.5f * 2;
-        particle->pos = RandomBetween(system->minPos, system->maxPos) + dir * radius * spawnRadius;
+        particle->pos = system->pos + RandomBetween(settings->minOffset, settings->maxOffset) + dir * radius * spawnRadius;
 
-        particle->scale = RandomBetween(system->minScale, system->maxScale);
-        particle->scaleVelocity = RandomBetween(system->minScaleVelocity, system->maxScaleVelocity);
+        particle->scale = RandomBetween(settings->minScale, settings->maxScale);
+        particle->scaleVelocity = RandomBetween(settings->minScaleVelocity, settings->maxScaleVelocity);
 
-        particle->velocity = RandomBetween(system->minVelocity, system->maxVelocity);
-        //particle->velocity = glm::vec3(RandomBetween(-0.2f, 0.2f), RandomBetween(0.1f, 0.05f) * 2.0f, 0.0f);
-        //particle->velocity = glm::normalize(particle->velocity) * 70.0f;
+        particle->velocity = RandomBetween(settings->minVelocity, settings->maxVelocity);
+        particle->acceleration = RandomBetween(settings->minAccel, settings->maxAccel);
 
         particle->rotation = glm::radians(RandomBetween(0.0f, 360.0f));
         particle->rotationVelocity = glm::radians(RandomBetween(0.0f, 20.0f));
 
-        particle->color = glm::vec4(RandomBetween(system->minColor.r, system->maxColor.r),
-                                    RandomBetween(system->minColor.g, system->maxColor.g),
-                                    RandomBetween(system->minColor.b, system->maxColor.b),
-                                    RandomBetween(system->minColor.a, system->maxColor.a));
+        particle->color = glm::vec4(RandomBetween(settings->minColor.r, settings->maxColor.r),
+                                    RandomBetween(settings->minColor.g, settings->maxColor.g),
+                                    RandomBetween(settings->minColor.b, settings->maxColor.b),
+                                    RandomBetween(settings->minColor.a, settings->maxColor.a));
         particle->startingAlpha = particle->color.a;
-        particle->colorVelocity = RandomBetween(system->minColorVelocity, system->maxColorVelocity);
+        particle->colorVelocity = RandomBetween(settings->minColorVelocity, settings->maxColorVelocity);
     }
 }
 
 void UpdateParticles(Game *game, ParticleSystem *system)
 {
-    for(int i = 0; i < system->maxNumOfParticles; ++i)
+    int maxNumOfParticles = system->settings->maxNumOfParticles;
+    bool limitedLife = (system->settings->lifetime > 0.0f);
+
+    UpdateTimer(&system->prewarmTimer, game->deltaTime);
+
+    for(int i = 0; i < maxNumOfParticles; ++i)
     {
         Particle *particle = system->particles + i;
 
-        if(particle->color.a > 0.0f)
+        if(particle->color.a > 0.0f && particle->timeLeft > 0.0f)
         {
-            particle->pos += particle->velocity * game->deltaTime;
-            particle->scale += particle->scaleVelocity * game->deltaTime;
-            particle->rotation += particle->rotationVelocity * game->deltaTime;
+            float deltaTime = ((particle->timeLeft - game->deltaTime < 0.0f) && limitedLife) ? particle->timeLeft
+                                                                                             : game->deltaTime;
+            particle->timeLeft -= deltaTime;
 
-            if(particle->color.a + particle->colorVelocity.a * game->deltaTime < 0.0f)
+            particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
+                             (particle->velocity * deltaTime);
+            particle->velocity += particle->acceleration * deltaTime;
+
+            particle->scale += particle->scaleVelocity * deltaTime;
+            particle->rotation += particle->rotationVelocity * deltaTime;
+
+            if((particle->color.a + (particle->colorVelocity.a * deltaTime)) < 0.0f)
             {
-                particle->colorVelocity.a *= 0.1f;
+                particle->colorVelocity.a *= 0.01f;
             }
 
-            particle->color += particle->colorVelocity * game->deltaTime;
+            particle->color += particle->colorVelocity * deltaTime;
             particle->colorOut = particle->color;
-            particle->colorOut.a = Clamp01(particle->color.a);
+            particle->colorOut.a = Max(0.0f, particle->color.a);
 
-            //Slowly fade in instead of popping into existence immediately
-            float alphaThreshold = particle->startingAlpha - 0.1f;
+            //Slowly fade in after beign spawned instead of popping into existence immediately
+            float fadeInFactor = 0.1f;
+            float alphaThreshold = particle->startingAlpha - fadeInFactor;
             if(particle->colorOut.a > alphaThreshold)
             {
                 particle->colorOut.a = alphaThreshold * Clamp01MapToRange(particle->startingAlpha, particle->colorOut.a, alphaThreshold);
@@ -117,30 +137,37 @@ void SortAllParticles(Game *game)
     glm::vec3 cameraPos = game->camera.position;
 
     game->aliveParticles = 0;
+    int deadParticles = 0;
+
     for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
     {
         ParticleSystem *system = &game->particleSystems[i];
+        int maxNumOfParticles = system->settings->maxNumOfParticles;
 
         int aliveParticles = 0;
-        for(int j = 0; j < system->maxNumOfParticles; ++j)
+        if(system->prewarmTimer.isFinished)
         {
-            Particle *particle = system->particles + j;
-
-            if(particle->color.a > 0.0f)
+            for(int j = 0; j < maxNumOfParticles; ++j)
             {
-                game->particleData[game->aliveParticles].scale = particle->scale;
-                game->particleData[game->aliveParticles].angle = particle->rotation;
-                game->particleData[game->aliveParticles].offset = particle->pos;
-                game->particleData[game->aliveParticles].color = particle->colorOut;
+                Particle *particle = system->particles + j;
 
-                glm::vec3 diff = cameraPos - particle->pos;
-                game->particleData[game->aliveParticles].cameraDist = glm::length2(diff);
+                if(particle->color.a > 0.0f && particle->timeLeft > 0.0f)
+                {
+                    game->particleData[game->aliveParticles].scale = particle->scale;
+                    game->particleData[game->aliveParticles].angle = particle->rotation;
+                    game->particleData[game->aliveParticles].offset = particle->pos;
+                    game->particleData[game->aliveParticles].color = particle->colorOut;
 
-                ++game->aliveParticles;
-                ++aliveParticles;
+                    glm::vec3 diff = cameraPos - particle->pos;
+                    game->particleData[game->aliveParticles].cameraDist = glm::length2(diff);
+
+                    ++game->aliveParticles;
+                    ++aliveParticles;
+                }
             }
         }
 
+        deadParticles += maxNumOfParticles - aliveParticles;
         system->aliveParticles = aliveParticles;
     }
 
@@ -155,7 +182,6 @@ void SortAllParticles(Game *game)
     sprintf(buffer, "Alive Particles: %d", game->aliveParticles);
     UpdateText(&game->aliveParticlesText, buffer);
 
-    int deadParticles = (game->particleSystems[0].maxNumOfParticles * ArrayCount(game->particleSystems)) - game->aliveParticles;
     sprintf(buffer, "Dead Particles: %d", deadParticles);
     UpdateText(&game->deadParticlesText, buffer);
 }

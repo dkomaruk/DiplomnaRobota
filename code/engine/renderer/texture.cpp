@@ -1,7 +1,7 @@
 #include "texture.h"
 
 #include <glm/vec3.hpp>
-
+#include <SDL3/SDL.h>
 #include <stb_image.h>
 
 Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
@@ -17,30 +17,30 @@ Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
                                     TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_NearNear |
                                     TextureFlag_Filter_Min_LinNear | TextureFlag_Filter_Min_NearLin);
 
-    if(!minFilterFlags || (minFilterFlags & (minFilterFlags - 1)))
+    if(FLAG_IS_SINGLE(minFilterFlags))
     {
         SDL_Log("Failed to create a texture. Multiple min filter flags are set");
         return texture; //TODO: Return a missing texture placeholder
     }
-    if((flags & TextureFlag_Filter_Mag_Linear) && (flags & TextureFlag_Filter_Mag_Nearest))
+    if(FLAG_IS_SET(flags, (TextureFlag_Filter_Mag_Linear | TextureFlag_Filter_Mag_Nearest)))
     {
         SDL_Log("Failed to create a texture. Multiple mag filter flags are set");
         return texture; //TODO: Return a missing texture placeholder
     }
 
     GLint minFilter = GL_LINEAR_MIPMAP_LINEAR;
-    if(flags & TextureFlag_Filter_Min_Linear)
+    if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_Linear))
         minFilter = GL_LINEAR;
-    if(flags & TextureFlag_Filter_Min_Nearest)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_Nearest))
         minFilter = GL_NEAREST;
-    if(flags & TextureFlag_Filter_Min_NearNear)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_NearNear))
         minFilter = GL_NEAREST_MIPMAP_NEAREST;
-    if(flags & TextureFlag_Filter_Min_NearLin)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_NearLin))
         minFilter = GL_NEAREST_MIPMAP_LINEAR;
-    if(flags & TextureFlag_Filter_Min_LinNear)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_LinNear))
         minFilter = GL_LINEAR_MIPMAP_NEAREST;
 
-    GLint magFilter = (flags & TextureFlag_Filter_Mag_Linear) ? GL_LINEAR : GL_NEAREST;
+    GLint magFilter = FLAG_IS_SET(flags, TextureFlag_Filter_Mag_Linear) ? GL_LINEAR : GL_NEAREST;
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);

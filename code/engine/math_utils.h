@@ -55,6 +55,15 @@ inline int Max(int a, int b)
     return (a > b) ? a : b;
 }
 
+inline float Square(float a)
+{
+    return a * a;
+}
+
+inline int Square(int a)
+{
+    return a * a;
+}
 
 #define MATH_UTILS_H
 #endif
