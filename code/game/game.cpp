@@ -33,8 +33,9 @@ bool InitGame(Game *game)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
+    //NOTE: This causes horrible performance with lots of particles on the screen
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
 #ifdef WINDOW_TRANSPARENT
     bool isBorderless = true;
@@ -116,7 +117,7 @@ bool InitGame(Game *game)
     //SDL_GL_SetSwapInterval(1); //VSync
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
 
     Audio *audio = &game->audio;
     audio->device = alcOpenDevice(0);

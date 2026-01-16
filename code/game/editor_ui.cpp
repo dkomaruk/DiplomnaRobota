@@ -1,5 +1,7 @@
 #include "editor_ui.h"
 
+#include "particle_system.h"
+
 #include <imgui.h>
 //#include <imgui_curve.hpp>
 #include <imgui_impl_sdl3.h>
@@ -15,15 +17,10 @@ void UpdateEditorUI(Game *game)
 
     ParticleSystemSettings *smoke = &game->smokeSettings;
 
-    static bool limitedLifetime = true;
-    ImGui::Checkbox("Limited Lifetime", &limitedLifetime);
-    if(limitedLifetime)
+    ImGui::Checkbox("Limited Lifetime", &smoke->limitedLife);
+    if(smoke->limitedLife)
     {
         ImGui::InputFloat("Existence Seconds", &smoke->lifetime);
-    }
-    else
-    {
-        smoke->lifetime = 0.0f;
     }
 
     ImGui::DragFloat("Radius", &smoke->radius, 1.0f, 0.0f, 2000.0f);
@@ -63,6 +60,8 @@ void UpdateEditorUI(Game *game)
             {
                 p->nextParticle = 0;
             }
+
+            p->accumulatedSpawns = 0.0f;
         }
 
         int particleSystemsSize = sizeof(ParticleData) * smoke->maxNumOfParticles * ArrayCount(game->particleSystems);
@@ -80,16 +79,19 @@ void UpdateEditorUI(Game *game)
         game->textureID = game->particleTextures[game->currentTexture].id;
     }
 
-    if(ImGui::CollapsingHeader("Color Over Lifetime"))
+    if(ImGui::CollapsingHeader("Velocity Over Lifetime"))
     {
+        ImGui::Checkbox("Use Velocity Over Lifetime", &smoke->velocityOverLifetime);
+
         static int selection = -1;
-        static ImVec2 points[10] = {ImVec2(ImGui::CurveTerminator, 0.0f)};
-        ImGui::Curve("Test", ImVec2(300, 300), ArrayCount(points), points, &selection, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+        ImGui::Curve("Test", ImVec2(300, 300), PARTICLES_MAX_CONTROL_POINTS,
+                     smoke->imVelocityControlPoints, &selection, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 
         static float x = 0.0f;
         ImGui::InputFloat("X ", &x);
         ImGui::SameLine();
-        ImGui::LabelText("Y", "%f", ImGui::CurveValue(x, ArrayCount(points), points));
+        ImGui::LabelText("Y", "%f", ImGui::CurveValue(x, PARTICLES_MAX_CONTROL_POINTS,
+                         smoke->imVelocityControlPoints));
     }
 
     ImGui::End();

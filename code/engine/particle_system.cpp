@@ -73,7 +73,8 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         particle->scale = RandomBetween(settings->minScale, settings->maxScale);
         particle->scaleVelocity = RandomBetween(settings->minScaleVelocity, settings->maxScaleVelocity);
 
-        particle->velocity = RandomBetween(settings->minVelocity, settings->maxVelocity);
+        particle->initialVelocity = RandomBetween(settings->minVelocity, settings->maxVelocity);
+        particle->velocity = particle->initialVelocity;
         particle->acceleration = RandomBetween(settings->minAccel, settings->maxAccel);
 
         particle->rotation = glm::radians(RandomBetween(0.0f, 360.0f));
@@ -91,7 +92,7 @@ void SpawnParticles(Game *game, ParticleSystem *system)
 void UpdateParticles(Game *game, ParticleSystem *system)
 {
     int maxNumOfParticles = system->settings->maxNumOfParticles;
-    bool limitedLife = (system->settings->lifetime > 0.0f);
+    bool limitedLife = system->settings->limitedLife;
 
     UpdateTimer(&system->prewarmTimer, game->deltaTime);
 
@@ -99,15 +100,24 @@ void UpdateParticles(Game *game, ParticleSystem *system)
     {
         Particle *particle = system->particles + i;
 
-        if(particle->color.a > 0.0f && particle->timeLeft > 0.0f)
+        if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !limitedLife))
         {
-            float deltaTime = ((particle->timeLeft - game->deltaTime < 0.0f) && limitedLife) ? particle->timeLeft
+            float deltaTime = (limitedLife && (particle->timeLeft - game->deltaTime < 0.0f)) ? particle->timeLeft
                                                                                              : game->deltaTime;
             particle->timeLeft -= deltaTime;
 
+            if(system->settings->velocityOverLifetime && limitedLife)
+            {
+                float p = 1.0f - (particle->timeLeft / system->settings->lifetime);
+                particle->velocity = (ImGui::CurveValueSmooth(p, PARTICLES_MAX_CONTROL_POINTS, system->settings->imVelocityControlPoints)) * particle->initialVelocity;
+            }
+            else
+            {
+                particle->velocity += particle->acceleration * deltaTime;
+            }
+
             particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
                              (particle->velocity * deltaTime);
-            particle->velocity += particle->acceleration * deltaTime;
 
             particle->scale += particle->scaleVelocity * deltaTime;
             particle->rotation += particle->rotationVelocity * deltaTime;
@@ -143,6 +153,7 @@ void SortAllParticles(Game *game)
     {
         ParticleSystem *system = &game->particleSystems[i];
         int maxNumOfParticles = system->settings->maxNumOfParticles;
+        bool limitedLife = system->settings->limitedLife;
 
         int aliveParticles = 0;
         if(system->prewarmTimer.isFinished)
@@ -151,7 +162,7 @@ void SortAllParticles(Game *game)
             {
                 Particle *particle = system->particles + j;
 
-                if(particle->color.a > 0.0f && particle->timeLeft > 0.0f)
+                if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !limitedLife))
                 {
                     game->particleData[game->aliveParticles].scale = particle->scale;
                     game->particleData[game->aliveParticles].angle = particle->rotation;
@@ -192,7 +203,7 @@ void RenderParticles(Game *game)
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
 
     UseShader(game->particleShader);
 
@@ -200,7 +211,6 @@ void RenderParticles(Game *game)
     SetTexture(game->textureID, 0);
 
     glBindVertexArray(game->particlesQuad.vao);
-    //glDrawArraysInstanced(GL_TRIANGLES, 0, quad.verticesCount, smoke->numOfParticles);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->aliveParticles);
     glBindVertexArray(0);
 

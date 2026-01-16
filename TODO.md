@@ -2,10 +2,14 @@
 ## 2026-01-08/15 S2 Improved Text Rendering
 - [ ] Particle System
   - [ ] Add particle system settings preset saving/loading
-  - [ ] Add particle system demo/ability to add new emitters at some position
+  - [ ] Add particle system demo
+  - [ ] Ability to add new emitters at some position. Also select and drag existing ones
   - [ ] Improve fade in/out behaviour (fix popping in and out of existence)
   - [ ] Gradient generator for color ramp during particle lifetime
   - [ ] Curve editor for controlling parameters over lifetime of the particle
+  - [ ] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
+  - [ ] Overdraw issue: <https://community.khronos.org/t/huge-performance-drop-when-rendering-60-tris-on-screen-overdraw/108095>
+  - [ ] Point sprites?
 
 # Next
 
@@ -24,10 +28,11 @@
   - [ ] Make a grid system where units have their Y coordinate set to the Y coordinate of the terrain in the position they are located.
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
+- [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
 - [ ] Audio Utils
 - [ ] User Interface
-  - Use Dear Imgui
-  - Alt: build custom UI (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
+  - Use Dear Imgui (for editor)
+  - Alt: build custom UI (for game) (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
     - Why: good practice
     - Why not: can take too long
 - [ ] Raycasting Utilities (for mouse picking/game logic stuff like line of sight, shooting projectiles, pathfinding, collision detection, fog of war, lighting, bullet ricochets from surface and so on)

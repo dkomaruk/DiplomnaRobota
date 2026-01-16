@@ -11,6 +11,10 @@
 
 #include <GL/glew.h>
 
+#include <imgui.h>
+
+#define PARTICLES_MAX_CONTROL_POINTS 10
+
 struct Game;
 
 struct Particle
@@ -19,6 +23,7 @@ struct Particle
 
     glm::vec3 pos;
     glm::vec3 velocity;
+    glm::vec3 initialVelocity;
     glm::vec3 acceleration;
 
     float rotation;
@@ -55,6 +60,7 @@ struct ParticleSystemSettings
 
     int spawnRate = 13;
     float lifetime = 10.0f;
+    bool limitedLife = false;
 
     float radius = 1.0f;
 
@@ -75,6 +81,14 @@ struct ParticleSystemSettings
     glm::vec4 maxColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
     glm::vec4 minColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
     glm::vec4 maxColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
+
+    union
+    {
+        //Max size + 1, because otherwise ImGui::Curve overflows buffer
+        glm::vec2 velocityControlPoints[PARTICLES_MAX_CONTROL_POINTS + 1];
+        ImVec2 imVelocityControlPoints[PARTICLES_MAX_CONTROL_POINTS + 1] = {ImVec2(ImGui::CurveTerminator, 0.0f)};
+    };
+    bool velocityOverLifetime = false;
 };
 
 struct ParticleSystem

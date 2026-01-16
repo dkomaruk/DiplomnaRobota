@@ -19,8 +19,8 @@ void main()
     TexCoords = texCoords;
     Color = color;
 
-    vec3 cameraUp = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
-    vec3 cameraRight = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
+    vec3 cameraRight = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
+    vec3 cameraUp = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
 
     float c = cos(angle);
     float s = sin(angle);
