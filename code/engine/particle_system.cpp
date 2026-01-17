@@ -77,8 +77,8 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         particle->velocity = particle->initialVelocity;
         particle->acceleration = RandomBetween(settings->minAccel, settings->maxAccel);
 
-        particle->rotation = glm::radians(RandomBetween(0.0f, 360.0f));
-        particle->rotationVelocity = glm::radians(RandomBetween(0.0f, 20.0f));
+        particle->rotation = glm::radians(RandomBetween(settings->minRotation, settings->maxRotation));
+        particle->rotationVelocity = glm::radians(RandomBetween(settings->minRotationSpeed, settings->maxRotationSpeed));
 
         particle->color = glm::vec4(RandomBetween(settings->minColor.r, settings->maxColor.r),
                                     RandomBetween(settings->minColor.g, settings->maxColor.g),
@@ -86,13 +86,25 @@ void SpawnParticles(Game *game, ParticleSystem *system)
                                     RandomBetween(settings->minColor.a, settings->maxColor.a));
         particle->startingAlpha = particle->color.a;
         particle->colorVelocity = RandomBetween(settings->minColorVelocity, settings->maxColorVelocity);
+
+        if(settings->isAnimated && settings->atlas && settings->atlas->sprites.size())
+        {
+            particle->uvOffset = settings->atlas->sprites[0].pos;
+            particle->uvScale = settings->atlas->sprites[0].size;
+        }
+        else
+        {
+            particle->uvOffset = glm::vec2(0.0f);
+            particle->uvScale = glm::vec2(1.0f);
+        }
     }
 }
 
 void UpdateParticles(Game *game, ParticleSystem *system)
 {
+    ParticleSystemSettings *settings = system->settings;
+
     int maxNumOfParticles = system->settings->maxNumOfParticles;
-    bool limitedLife = system->settings->limitedLife;
 
     UpdateTimer(&system->prewarmTimer, game->deltaTime);
 
@@ -100,20 +112,32 @@ void UpdateParticles(Game *game, ParticleSystem *system)
     {
         Particle *particle = system->particles + i;
 
-        if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !limitedLife))
+        if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !settings->limitedLife))
         {
-            float deltaTime = (limitedLife && (particle->timeLeft - game->deltaTime < 0.0f)) ? particle->timeLeft
-                                                                                             : game->deltaTime;
+            float deltaTime = (settings->limitedLife && (particle->timeLeft - game->deltaTime < 0.0f))
+                              ? particle->timeLeft : game->deltaTime;
             particle->timeLeft -= deltaTime;
 
-            if(system->settings->velocityOverLifetime && limitedLife)
+            if(settings->limitedLife)
             {
-                float p = 1.0f - (particle->timeLeft / system->settings->lifetime);
-                particle->velocity = (ImGui::CurveValueSmooth(p, PARTICLES_MAX_CONTROL_POINTS, system->settings->imVelocityControlPoints)) * particle->initialVelocity;
+                float p = 1.0f - (particle->timeLeft / settings->lifetime);
+                if(settings->velocityOverLifetime)
+                {
+                    particle->velocity = (ImGui::CurveValueSmooth(p, PARTICLES_MAX_CONTROL_POINTS, settings->imVelocityControlPoints)) * particle->initialVelocity;
+                }
             }
             else
             {
                 particle->velocity += particle->acceleration * deltaTime;
+            }
+
+            Atlas *atlas = settings->atlas;
+            if(settings->isAnimated && atlas)
+            {
+                float elapsedTime = settings->lifetime - particle->timeLeft;
+                int i = (int)(elapsedTime * settings->animationFPS) % atlas->sprites.size();
+                particle->uvOffset = atlas->sprites[i].pos;
+                particle->uvScale = atlas->sprites[i].size;
             }
 
             particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
@@ -162,10 +186,12 @@ void SortAllParticles(Game *game)
             {
                 Particle *particle = system->particles + j;
 
-                if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !limitedLife))
+                if((particle->color.a > 0.00001f) && ((particle->timeLeft > 0.0f) || !limitedLife))
                 {
                     game->particleData[game->aliveParticles].scale = particle->scale;
                     game->particleData[game->aliveParticles].angle = particle->rotation;
+                    game->particleData[game->aliveParticles].uvOffset = particle->uvOffset;
+                    game->particleData[game->aliveParticles].uvScale = particle->uvScale;
                     game->particleData[game->aliveParticles].offset = particle->pos;
                     game->particleData[game->aliveParticles].color = particle->colorOut;
 
@@ -209,6 +235,9 @@ void RenderParticles(Game *game)
 
     ShaderSetInt(game->particleShader, "u_texture", 0);
     SetTexture(game->textureID, 0);
+
+    ShaderSetInt(game->particleShader, "u_atlas", 1);
+    SetTexture(game->textureID, 1);
 
     glBindVertexArray(game->particlesQuad.vao);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->aliveParticles);

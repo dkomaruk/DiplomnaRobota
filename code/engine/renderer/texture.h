@@ -4,6 +4,12 @@
 
 #include <GL/glew.h>
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
+#include <vector>
+
 enum TextureFlags
 {
     TextureFlag_Filter_Min_Nearest         = 0x00'00'00'01,
@@ -31,6 +37,27 @@ struct Texture
     GLuint id;
     int x;
     int y;
+};
+
+struct Sprite
+{
+    char name[128];
+    union
+    {
+        glm::vec4 rect;
+        struct
+        {
+            glm::vec2 pos;
+            glm::vec2 size;
+        };
+    };
+};
+
+struct Atlas
+{
+    char *path;
+    glm::vec2 size;
+    std::vector<Sprite> sprites;
 };
 
 Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);

@@ -6,8 +6,8 @@
   - [ ] Ability to add new emitters at some position. Also select and drag existing ones
   - [ ] Improve fade in/out behaviour (fix popping in and out of existence)
   - [ ] Gradient generator for color ramp during particle lifetime
-  - [ ] Curve editor for controlling parameters over lifetime of the particle
-  - [ ] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
+  - [x] Curve editor for controlling parameters over lifetime of the particle
+  - [x] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
   - [ ] Overdraw issue: <https://community.khronos.org/t/huge-performance-drop-when-rendering-60-tris-on-screen-overdraw/108095>
   - [ ] Point sprites?
 

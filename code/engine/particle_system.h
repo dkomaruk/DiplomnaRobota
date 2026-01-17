@@ -21,6 +21,9 @@ struct Particle
 {
     float timeLeft;
 
+    glm::vec2 uvOffset;
+    glm::vec2 uvScale;
+
     glm::vec3 pos;
     glm::vec3 velocity;
     glm::vec3 initialVelocity;
@@ -44,6 +47,8 @@ struct ParticleData
 {
     float scale;
     float angle;
+    glm::vec2 uvOffset;
+    glm::vec2 uvScale;
     glm::vec3 offset;
     glm::vec4 color;
 
@@ -60,9 +65,14 @@ struct ParticleSystemSettings
 
     int spawnRate = 13;
     float lifetime = 10.0f;
-    bool limitedLife = false;
+    bool limitedLife = true;
 
     float radius = 1.0f;
+
+    float minRotation = 0.0f;
+    float maxRotation = 360.0f;
+    float minRotationSpeed = 0.0f;
+    float maxRotationSpeed = 20.0f;
 
     float minScale = 1.0f;
     float maxScale = 1.0f;
@@ -81,6 +91,10 @@ struct ParticleSystemSettings
     glm::vec4 maxColor = glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
     glm::vec4 minColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
     glm::vec4 maxColorVelocity = glm::vec4(0.0f, 0.0f, 0.0f, -0.083f);
+
+    bool isAnimated = false;
+    int animationFPS = 120;
+    Atlas *atlas;
 
     union
     {

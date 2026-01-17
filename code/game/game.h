@@ -83,7 +83,7 @@ struct Game
 
     bool renderParticles = true;
     Text aliveParticlesText, deadParticlesText;
-    ParticleSystem particleSystems[10];
+    ParticleSystem particleSystems[1];
     ParticleSystemSettings smokeSettings;
     ParticleData *particleData;
     int aliveParticles;
@@ -91,7 +91,7 @@ struct Game
     GLuint textureID;
     GLuint vboInstances;
 
-    Texture particleTextures[5];
+    Texture particleTextures[6];
     int currentTexture = 1;
 };
 
