@@ -5,6 +5,7 @@
 #include "input.h"
 #include "text.h"
 #include "text_demo.h"
+#include "particle_system.h"
 
 #include "defines.h"
 
@@ -30,7 +31,7 @@ struct Game
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader, particleShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -38,10 +39,10 @@ struct Game
     //Framebuffers
     //TODO: Move these framebuffers out into a struct
     GLuint pickingFbo;
-    GLuint pickingTexture;
+    Texture pickingTexture;
 
     GLuint outlineFbo;
-    GLuint outlineTexture, fullSceneTexture;
+    Texture outlineTexture, fullSceneTexture;
 
     //Post-processing
     Mesh fullscreenQuad;
@@ -62,6 +63,7 @@ struct Game
     Uint64 lastFrame;
 
     Text fpsCounter;
+    Text msPerFrame;
 
     //Scene
     std::vector<Entity *> sceneEntities;
@@ -78,6 +80,24 @@ struct Game
     //Game temp stuff
     bool textDemoEnabled;
     TextDemo textDemo;
+
+    //Particle system
+    bool renderParticles = true;
+    Text aliveParticlesText, deadParticlesText;
+
+    ParticleSystem particleSystems[1];
+    ParticleSystemSettings smokeSettings;
+    ParticleData *particleData;
+
+    int aliveParticles;
+    Mesh particlesQuad;
+    GLuint textureID;
+    GLuint vboInstances;
+
+    Atlas atlas;
+
+    Texture particleTextures[6];
+    int currentTexture = 1;
 };
 
 bool InitGame(Game *game);

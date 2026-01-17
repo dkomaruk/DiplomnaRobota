@@ -10,17 +10,14 @@
 
 #include <string>
 
-GLuint LoadTextures(const aiScene *scene, aiMaterial *material, std::string dirPath, std::vector<std::string> *loadedPaths,
-                    std::vector<uint32> *loadedTextures, aiTextureType type);
-Mesh CreateVBO(std::vector<Vertex> vertices);
-
-GLuint LoadTextures(const aiScene *scene, aiMaterial *material, std::string dirPath, std::vector<std::string> *loadedPaths,
-                    std::vector<uint32> *loadedTextures, aiTextureType type)
+Texture LoadTextures(const aiScene *scene, aiMaterial *material,
+                    std::string dirPath, std::vector<std::string> *loadedPaths,
+                    std::vector<Texture> *loadedTextures, aiTextureType type)
 {
-    GLuint result = 0;
+    Texture result = {};
 
     int texturesCount = material->GetTextureCount(type);
-    if(!texturesCount) return 0;
+    if(!texturesCount) return result; //Return a missing texture placeholder
 
     Assert(texturesCount < 2); //TODO: Handle multiple textures of the same type on one mesh
 
@@ -43,7 +40,7 @@ GLuint LoadTextures(const aiScene *scene, aiMaterial *material, std::string dirP
         {
             int w, h;
             uint8 *image = stbi_load_from_memory((uint8 *)texture->pcData, texture->mWidth, &w, &h, 0, 4);
-            if(!image) return 0;
+            if(!image) return result; //TODO: Handle multiple textures of the same type on one mesh
 
             result = CreateGLTexture(image, w, h);
             stbi_image_free(image);
@@ -95,11 +92,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
         return result;
     }
 
-    //int meshCounter = 0;
-    //int nodeCounter = 0;
-    //ProcessNode(scene->mRootNode, &meshCounter, &nodeCounter);
-    //SDL_Log("mNumMeshes: %d, Mesh counter: %d, Node counter: %d", scene->mNumMeshes, meshCounter, nodeCounter);
-
     std::string dirPath = filepath;
     size_t found = dirPath.find_last_of("\\/");
     dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
@@ -109,7 +101,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
     result->numOfMeshes = scene->mNumMeshes;
 
     std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
-    std::vector<uint32> diffuseTextures, specularTextures;
+    std::vector<Texture> diffuseTextures, specularTextures;
 
     for(uint32 i = 0; i < scene->mNumMeshes; i++)
     {
@@ -145,12 +137,12 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
 
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-        GLuint diffuseTexture = LoadTextures(scene, material, dirPath, &loadedDiffusePaths, &diffuseTextures, aiTextureType_DIFFUSE);
-        GLuint specularTexture = LoadTextures(scene, material, dirPath, &loadedSpecularPaths, &specularTextures, aiTextureType_SPECULAR);
+        Texture diffuseTexture = LoadTextures(scene, material, dirPath, &loadedDiffusePaths, &diffuseTextures, aiTextureType_DIFFUSE);
+        Texture specularTexture = LoadTextures(scene, material, dirPath, &loadedSpecularPaths, &specularTextures, aiTextureType_SPECULAR);
 
         result->mesh[i] = CreateMesh(vertices, indices);
 
-        MaterialPhong phongMaterial = {shader, diffuseTexture, specularTexture, 0, 32.0f};
+        MaterialPhong phongMaterial = {shader, diffuseTexture, specularTexture, {}, 32.0f};
         result->material[i] = phongMaterial;
     }
 
@@ -269,32 +261,45 @@ Mesh CreateUnitQuad()
 {
     glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
 
-    Vertex v1 = {glm::vec3(0.0f, 1.0f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
-    Vertex v2 = {glm::vec3(0.0f, 0.0f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
-    Vertex v3 = {glm::vec3(1.0f, 0.0f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
-    Vertex v4 = {glm::vec3(1.0f, 1.0f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
+    Vertex v1 = {glm::vec3(-0.5f, 0.5f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v2 = {glm::vec3(-0.5f, -0.5f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
+    Vertex v3 = {glm::vec3(0.5f, -0.5f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
+    Vertex v4 = {glm::vec3(0.5f, 0.5f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
     std::vector<Vertex> vertices = {v1, v2, v3, v1, v3, v4};
 
     return CreateMesh(vertices);
 }
 
-Mesh GetUnitQuad()
+Mesh CreateUnitQuadStripes()
+{
+    glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
+
+    Vertex v1 = {glm::vec3(-0.5f, 0.5f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v2 = {glm::vec3(-0.5f, -0.5f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
+    Vertex v3 = {glm::vec3(0.5f, -0.5f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
+    Vertex v4 = {glm::vec3(0.5f, 0.5f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
+    std::vector<Vertex> vertices = {v2, v3, v1, v4};
+
+    return CreateMesh(vertices);
+}
+
+Mesh *GetUnitQuad()
 {
     static Mesh unitQuad = CreateUnitQuad();
-    return unitQuad;
+    return &unitQuad;
 }
 
 glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _scale)
 {
     glm::mat4 model = glm::mat4(1.0f);
-    model = translate(model, position);
+    model = glm::translate(model, position);
 
     //TODO: Rotation using quaternions
-    model = rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    model = scale(model, _scale);
+    model = glm::scale(model, _scale);
     return model;
 }
 
@@ -310,9 +315,6 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model
         shader = game->pickingShader;
     }
 
-    //GLuint shader = game->outlinePass ? game->outlineShader : mesh->shader;
-    //GLuint shader = game->outlineShader;
-
     UseShader(shader);
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
@@ -321,8 +323,8 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model
     ShaderSetMatrix4(shader, "u_model", model);
 
     ShaderSetMaterial(shader, material);
-    SetTexture(material->diffuseTexture, 0);
-    SetTexture(material->specularTexture, 1);
+    SetTexture(&material->diffuseTexture, 0);
+    SetTexture(&material->specularTexture, 1);
 
     glBindVertexArray(mesh->vao);
     if(mesh->indicesCount > 0)
@@ -336,6 +338,19 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void RenderSurface(GLuint shader, Texture *texture, glm::mat4 model)
+{
+    Mesh *quad = GetUnitQuad();
+
+    ShaderSetMatrix4(shader, "u_model", model);
+
+    glBindVertexArray(quad->vao);
+    glDrawArrays(GL_TRIANGLES, 0, quad->verticesCount);
+
+    glBindVertexArray(0);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat)

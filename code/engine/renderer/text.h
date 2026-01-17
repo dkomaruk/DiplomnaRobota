@@ -24,7 +24,7 @@ struct Character
 
 struct Font
 {
-    GLuint atlas;
+    Texture atlas;
     TTF_Font *ttfFont;
 
     std::map<char, Character> characters;

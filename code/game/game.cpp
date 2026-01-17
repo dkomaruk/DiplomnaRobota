@@ -15,6 +15,10 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdl3.h>
+
 bool InitGame(Game *game)
 {
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
@@ -29,8 +33,9 @@ bool InitGame(Game *game)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
+    //NOTE: This causes horrible performance with lots of particles on the screen
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
 #ifdef WINDOW_TRANSPARENT
     bool isBorderless = true;
@@ -71,6 +76,17 @@ bool InitGame(Game *game)
         return false;
     }
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+
+
+    ImGui_ImplSDL3_InitForOpenGL(game->window, context);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
+
     SDL_Time ticks;
     SDL_GetCurrentTime(&ticks);
     SDL_srand(ticks);
@@ -98,10 +114,10 @@ bool InitGame(Game *game)
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
-    SDL_GL_SetSwapInterval(1); //VSync
+    //SDL_GL_SetSwapInterval(1); //VSync
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
 
     Audio *audio = &game->audio;
     audio->device = alcOpenDevice(0);
@@ -301,6 +317,24 @@ void UpdateGame(Game *game)
         UpdateTextDemo(game);
     }
 
+    //UPDATE PARTICLES
+    if(IsFirstPress(game, SDL_SCANCODE_Y))
+    {
+        game->renderParticles = !game->renderParticles;
+    }
+
+    if(game->renderParticles)
+    {
+        for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
+        {
+            SpawnParticles(game, &game->particleSystems[i]);
+            UpdateParticles(game, &game->particleSystems[i]);
+        }
+
+        SortAllParticles(game);
+    }
+
+
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);
     ShaderSetVec3(game->mainShader, "u_viewDir", game->camera.direction);
@@ -312,6 +346,7 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->mainShader, "u_view", game->view);
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
+    ShaderSetMatrix4(game->particleShader, "u_view", game->view);
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
 }

@@ -1,41 +1,46 @@
 #include "texture.h"
 
+#include <glm/vec3.hpp>
+#include <SDL3/SDL.h>
 #include <stb_image.h>
 
-GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
+Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
 {
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    Texture texture = {};
+    texture.x = width;
+    texture.y = height;
+
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
 
     GLint minFilterFlags = flags & (TextureFlag_Filter_Min_Linear | TextureFlag_Filter_Min_Nearest |
                                     TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_NearNear |
                                     TextureFlag_Filter_Min_LinNear | TextureFlag_Filter_Min_NearLin);
 
-    if(!minFilterFlags || (minFilterFlags & (minFilterFlags - 1)))
+    if(FLAG_IS_SINGLE(minFilterFlags))
     {
         SDL_Log("Failed to create a texture. Multiple min filter flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
-    if((flags & TextureFlag_Filter_Mag_Linear) && (flags & TextureFlag_Filter_Mag_Nearest))
+    if(FLAG_IS_SET(flags, (TextureFlag_Filter_Mag_Linear | TextureFlag_Filter_Mag_Nearest)))
     {
         SDL_Log("Failed to create a texture. Multiple mag filter flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
 
     GLint minFilter = GL_LINEAR_MIPMAP_LINEAR;
-    if(flags & TextureFlag_Filter_Min_Linear)
+    if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_Linear))
         minFilter = GL_LINEAR;
-    if(flags & TextureFlag_Filter_Min_Nearest)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_Nearest))
         minFilter = GL_NEAREST;
-    if(flags & TextureFlag_Filter_Min_NearNear)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_NearNear))
         minFilter = GL_NEAREST_MIPMAP_NEAREST;
-    if(flags & TextureFlag_Filter_Min_NearLin)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_NearLin))
         minFilter = GL_NEAREST_MIPMAP_LINEAR;
-    if(flags & TextureFlag_Filter_Min_LinNear)
+    else if(FLAG_IS_SET(flags, TextureFlag_Filter_Min_LinNear))
         minFilter = GL_LINEAR_MIPMAP_NEAREST;
 
-    GLint magFilter = (flags & TextureFlag_Filter_Mag_Linear) ? GL_LINEAR : GL_NEAREST;
+    GLint magFilter = FLAG_IS_SET(flags, TextureFlag_Filter_Mag_Linear) ? GL_LINEAR : GL_NEAREST;
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
@@ -51,7 +56,7 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     if((flags & TextureFlag_RGBA) && (flags & TextureFlag_RGB))
     {
         SDL_Log("Failed to create a texture. Multiple color channels flags are set");
-        return 0;
+        return texture; //TODO: Return a missing texture placeholder
     }
 
     GLint colorChannels = (flags & TextureFlag_RGB) ? GL_RGB : GL_RGBA;
@@ -61,26 +66,34 @@ GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     return texture;
 }
 
-GLuint CreateTexture(char *imagePath, TextureFlags flags)
+Texture CreateTexture(char *imagePath, TextureFlags flags)
 {
+    Texture texture = {};
+
     int width, height, channels;
     int desiredChannels = 4;
 
     bool flipY = flags & TextureFlag_FlipY;
     stbi_set_flip_vertically_on_load(flipY);
-    unsigned char *image = stbi_load(imagePath, &width, &height, &channels, desiredChannels);
+    unsigned char *image = stbi_load(imagePath, &texture.x, &texture.y, &channels, desiredChannels);
 
-    if(!image) return 0;
+    if(!image) return texture; //TODO: Return a missing texture placeholder
 
-    GLuint texture = CreateGLTexture(image, width, height, flags);
+    texture = CreateGLTexture(image, texture.x, texture.y, flags);
 
     stbi_image_free(image);
 
     return texture;
 }
 
-void SetTexture(GLuint texture, GLuint textureSlot)
+void SetTexture(Texture *texture, GLuint textureSlot)
 {
     glActiveTexture(GL_TEXTURE0 + textureSlot);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texture->id);
+}
+
+void SetTexture(GLuint textureID, GLuint textureSlot)
+{
+    glActiveTexture(GL_TEXTURE0 + textureSlot);
+    glBindTexture(GL_TEXTURE_2D, textureID);
 }

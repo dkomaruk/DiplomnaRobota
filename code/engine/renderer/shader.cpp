@@ -157,7 +157,6 @@ void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix)
 
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material)
 {
-    if(currentShader != shader) UseShader(shader);
     ShaderSetInt(shader, "u_material.diffuse", 0);
     ShaderSetInt(shader, "u_material.specular", 1);
     ShaderSetInt(shader, "u_material.emission", 2);

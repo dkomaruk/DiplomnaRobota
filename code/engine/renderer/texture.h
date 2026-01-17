@@ -1,6 +1,14 @@
 #ifndef TEXTURE_H
 
+#include "defines.h"
+
 #include <GL/glew.h>
+
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
+#include <vector>
 
 enum TextureFlags
 {
@@ -24,10 +32,39 @@ enum TextureFlags
                                              TextureFlag_Repeat | TextureFlag_FlipY | TextureFlag_RGBA
 };
 
-GLuint CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);
-GLuint CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
+struct Texture
+{
+    GLuint id;
+    int x;
+    int y;
+};
 
-void SetTexture(GLuint texture, GLuint textureSlot);
+struct Sprite
+{
+    char name[128];
+    union
+    {
+        glm::vec4 rect;
+        struct
+        {
+            glm::vec2 pos;
+            glm::vec2 size;
+        };
+    };
+};
+
+struct Atlas
+{
+    char *path;
+    glm::vec2 size;
+    std::vector<Sprite> sprites;
+};
+
+Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);
+Texture CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
+
+void SetTexture(Texture *texture, GLuint textureSlot);
+void SetTexture(GLuint textureID, GLuint textureSlot);
 
 #define TEXTURE_H
 #endif

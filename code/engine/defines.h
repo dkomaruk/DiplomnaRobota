@@ -23,5 +23,13 @@ typedef uint64_t uint64;
 #define Assert(expression) \
         if(!(expression)) { *(int *)0 = 0; }
 
+#define ArrayCount(array) (sizeof(array) / sizeof((array)[0]))
+
+#define FLAG_SET(n, f) ((n) |= (f))
+#define FLAG_CLEAR(n, f) ((n) &= ~(f))
+#define FLAG_TOGGLE(n, f) ((n) ^= (f))
+#define FLAG_IS_SET(n, f) (((n) & (f)) == (f))
+#define FLAG_IS_SINGLE(f) (!(f) || ((f) & ((f) - 1)))
+
 #define DEFINES_H
 #endif

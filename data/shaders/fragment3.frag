@@ -2,6 +2,7 @@
 
 uniform sampler2D u_outline;
 uniform sampler2D u_scene;
+
 uniform int u_outlineThickness;
 
 uniform bool u_inverted;

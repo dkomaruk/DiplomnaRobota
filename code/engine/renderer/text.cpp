@@ -196,7 +196,7 @@ void RenderText(Text *text)
     ShaderSetMatrix4(text->shader, "u_model", model);
 
     ShaderSetInt(text->shader, "u_texture", 0);
-    SetTexture(text->font->atlas, 0);
+    SetTexture(&text->font->atlas, 0);
     glBindVertexArray(text->quads.vao);
 
     //TODO: Make a single draw call for all visible text (for each font)

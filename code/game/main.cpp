@@ -1,3 +1,16 @@
+#define GLM_ENABLE_EXPERIMENTAL
+#define IMGUI_DEFINE_MATH_OPERATORS
+
+//TODO: Replace with SDL_ShowOpenFileDialog
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+
+//Has to be included at the start because of compilation errors otherwise
+//TODO: Replace with a less heavy library
+#include <json.hpp>
+
+#include <glm/gtx/norm.hpp> //Has to be included before any other glm header file
 
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
@@ -21,6 +34,8 @@
 #include "texture.cpp"
 #include "image.cpp"
 #include "mesh.cpp"
+#include "particle_system.cpp"
+#include "editor_ui.cpp"
 
 #include <GL/glew.h>
 
@@ -36,10 +51,19 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <vector>
+
+#include <time.h>
+
+#include <imgui.h>
+
+#include <expat.h>
 
 int main(int argc, char *argv[])
 {
+    srand((uint32)time(0));
+
     Game *game = GetGame();
     if(!InitGame(game))
     {
@@ -57,6 +81,7 @@ int main(int argc, char *argv[])
         ProcessInput(game);
 
         //Update
+        UpdateEditorUI(game);
         UpdateGame(game);
 
         //Rendering
@@ -105,21 +130,27 @@ int main(int argc, char *argv[])
 
             game->outlinePass = true;
             glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture.id, 0);
             RenderScene(game);
             game->outlinePass = false;
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture, 0);
+            glDepthMask(GL_TRUE);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
+
+            if(game->renderParticles)
+            {
+                RenderParticles(game);
+            }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
 
-            SetTexture(game->outlineTexture, 0);
+            SetTexture(&game->outlineTexture, 0);
             ShaderSetInt(game->postProcessShader, "u_outline", 0);
-            SetTexture(game->fullSceneTexture, 1);
+            SetTexture(&game->fullSceneTexture, 1);
             ShaderSetInt(game->postProcessShader, "u_scene", 1);
 
             glBindVertexArray(game->fullscreenQuad.vao);
@@ -128,7 +159,10 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+            RenderText(&game->aliveParticlesText);
+            RenderText(&game->deadParticlesText);
             RenderText(&game->fpsCounter);
+            RenderText(&game->msPerFrame);
 
             glDisable(GL_BLEND);
         }
@@ -136,6 +170,9 @@ int main(int argc, char *argv[])
         {
             RenderTextDemo(game);
         }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         SDL_GL_SwapWindow(game->window);
 
@@ -159,10 +196,13 @@ int main(int argc, char *argv[])
         float fps = 1000.0f / ms;
         //SDL_Log("%f", fps);
 
-        char dynamicBuffer[20];
-        sprintf(dynamicBuffer, "%.5f FPS", fps);
+        char buffer[20];
+        sprintf(buffer, "%.5f FPS", fps);
 
-        UpdateText(&game->fpsCounter, dynamicBuffer);
+        UpdateText(&game->fpsCounter, buffer);
+
+        sprintf(buffer, "%.5f ms/f", ms);
+        UpdateText(&game->msPerFrame, buffer);
 
         game->lastFrame = thisFrame;
     }

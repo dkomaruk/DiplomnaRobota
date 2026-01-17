@@ -1,9 +1,14 @@
 # Current
+## 2026-01-08/17 S2 Improved Text Rendering
+- [x] Particle System
+  - [x] Gradient generator for color ramp during particle lifetime
+  - [x] Add particle system settings preset saving/loading
+  - [x] Curve editor for controlling parameters over lifetime of the particle
+  - [x] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
 
 # Next
 
 # Upcoming
-- [ ] Particle System
 - [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 - [ ] Skeletal Animations
 - [ ] Further Text Improvements
@@ -18,12 +23,19 @@
   - [ ] Make a grid system where units have their Y coordinate set to the Y coordinate of the terrain in the position they are located.
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
+- [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
 - [ ] Audio Utils
 - [ ] User Interface
-  - Use Dear Imgui
-  - Alt: build custom UI (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
+  - Use Dear Imgui (for editor)
+  - Alt: build custom UI (for game) (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
     - Why: good practice
     - Why not: can take too long
+- [ ] Polish Particle System
+  - [ ] Add particle system demo
+  - [ ] Ability to add new emitters at some position. Also select and drag existing ones
+  - [ ] Improve fade in/out behaviour (fix popping in and out of existence, make it customizable)
+  - [ ] Overdraw issue: <https://community.khronos.org/t/huge-performance-drop-when-rendering-60-tris-on-screen-overdraw/108095>
+  - [ ] Point sprites?
 - [ ] Raycasting Utilities (for mouse picking/game logic stuff like line of sight, shooting projectiles, pathfinding, collision detection, fog of war, lighting, bullet ricochets from surface and so on)
 - [ ] Multiplayer
   - Research:
@@ -50,11 +62,10 @@
       - Alt: use 'fast-forward' mechanism. Player receives latest snapshot, other players still continue the game while connecting one is loading in. Once the outdated game state snapshot is loaded, the server sends all user inputs that happened from that moment and the connecting machine has to fast-forward the simulation by going faster than the main simulation between joined players. In Factorio players usually see 'Catching Up' progress bar. Once the simulation is caught up, newly joined player can now make their own inputs and play the game normally. If the connecting player computer is too slow, they can never catch up in which case "Pause when player joins" is necessary
   - Alt: state sync
   - Alt: send state snapshot
-  - [ ] Research smoke/clouds/explosions rendering (billboards probably)
 
 # Log
 
-## 2025-12-29/2026-01-03 S2 Improved Text Rendering
+## 2025-12-29/2026-01-08 S2 Improved Text Rendering
 - [x] Improve text rendering
   - [x] Add dynamic text rendering using quads for each glyph instead of making a texture for the whole string of text
         - Right now for each piece of text a separate texture is created which is then rendered on a simple quad with orthographic and model matrices applied to its coordinates in vertex shader to move it into correct position and give it correct size.
