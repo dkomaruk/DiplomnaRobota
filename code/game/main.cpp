@@ -1,6 +1,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #define IMGUI_DEFINE_MATH_OPERATORS
 
+//TODO: Replace with SDL_ShowOpenFileDialog
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+
 //Has to be included at the start because of compilation errors otherwise
 //TODO: Replace with a less heavy library
 #include <json.hpp>

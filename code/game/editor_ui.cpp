@@ -10,6 +10,9 @@
 #include <json.hpp>
 #include <fstream>
 
+#include <windows.h>
+#include <commdlg.h>
+
 using json = nlohmann::json;
 
 namespace glm
@@ -195,6 +198,39 @@ void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOf
     }
 }
 
+std::string OpenFileDialog()
+{
+    char fileName[MAX_PATH] = "";
+
+    OPENFILENAME ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = nullptr;
+    ofn.lpstrFilter = "JSON Files\0*.json\0All Files\0*.*\0";
+    ofn.lpstrFile = fileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+    if(GetOpenFileNameA(&ofn))
+        return std::string(fileName);
+    return "";
+}
+
+std::string SaveFileDialog()
+{
+    char fileName[MAX_PATH] = "";
+
+    OPENFILENAME ofn = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = nullptr;
+    ofn.lpstrFilter = "JSON Files\0*.json\0All Files\0*.*\0";
+    ofn.lpstrFile = fileName;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+
+    if(GetSaveFileNameA(&ofn))
+        return std::string(fileName);
+    return "";
+}
 
 void UpdateEditorUI(Game *game)
 {
@@ -288,12 +324,18 @@ void UpdateEditorUI(Game *game)
 
     if(ImGui::Button("Save"))
     {
-        SaveSettings(*smoke, "PRESET1.json");
+        std::string path = SaveFileDialog();
+        if(!path.empty())
+            SaveSettings(*smoke, path);
     }
     if(ImGui::Button("Load"))
     {
-        LoadSettings(*smoke, "PRESET1.json", smoke->atlas);
-        ReallocParticles(game, smoke, oldNumOfParticles);
+        std::string path = OpenFileDialog();
+        if(!path.empty())
+        {
+            LoadSettings(*smoke, path, smoke->atlas);
+            ReallocParticles(game, smoke, oldNumOfParticles);
+        }
     }
 
     ImGui::End();

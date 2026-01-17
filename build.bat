@@ -25,5 +25,5 @@ SET EXTERNAL_LIBRARIES=-LIBPATH:"C:\vclibraries\SDL3-3.2.0\lib\x64" -LIBPATH:"C:
 SET DISABLED_WARNINGS=-wd4100 -wd4101 -wd4189 -wd4201 -wd4996 -wd4456
 
 pushd build
-cl %DEFINES% /std:c++14 -nologo -WX -W4 %DISABLED_WARNINGS% -EHsc -Zi "..\code\game\main.cpp" %PROJECT_INCLUDES% %EXTERNAL_INCLUDES% -link %EXTERNAL_LIBRARIES% -SUBSYSTEM:WINDOWS glew32s.lib SDL3.lib assimp-vc143-mt.lib imgui.lib opengl32.lib OpenAL32.lib SDL3_ttf.lib libexpat.lib -PDB:"C:\vclibraries\SDL3-3.2.0\lib\x64\SDL3.pdb" -IGNORE:4099
+cl %DEFINES% /std:c++14 -nologo -WX -W4 %DISABLED_WARNINGS% -EHsc -Zi "..\code\game\main.cpp" %PROJECT_INCLUDES% %EXTERNAL_INCLUDES% -link %EXTERNAL_LIBRARIES% -SUBSYSTEM:WINDOWS glew32s.lib SDL3.lib assimp-vc143-mt.lib imgui.lib opengl32.lib OpenAL32.lib SDL3_ttf.lib libexpat.lib Comdlg32.lib -PDB:"C:\vclibraries\SDL3-3.2.0\lib\x64\SDL3.pdb" -IGNORE:4099
 popd
