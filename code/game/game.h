@@ -81,15 +81,20 @@ struct Game
     bool textDemoEnabled;
     TextDemo textDemo;
 
+    //Particle system
     bool renderParticles = true;
     Text aliveParticlesText, deadParticlesText;
+
     ParticleSystem particleSystems[1];
     ParticleSystemSettings smokeSettings;
     ParticleData *particleData;
+
     int aliveParticles;
     Mesh particlesQuad;
     GLuint textureID;
     GLuint vboInstances;
+
+    Atlas atlas;
 
     Texture particleTextures[6];
     int currentTexture = 1;

@@ -11,6 +11,8 @@
 
 #include <GL/glew.h>
 
+#include <expat.h>
+
 #include <imgui.h>
 #include <imgui_gradient/imgui_gradient.hpp>
 

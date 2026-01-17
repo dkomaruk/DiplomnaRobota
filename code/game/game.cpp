@@ -317,6 +317,24 @@ void UpdateGame(Game *game)
         UpdateTextDemo(game);
     }
 
+    //UPDATE PARTICLES
+    if(IsFirstPress(game, SDL_SCANCODE_Y))
+    {
+        game->renderParticles = !game->renderParticles;
+    }
+
+    if(game->renderParticles)
+    {
+        for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
+        {
+            SpawnParticles(game, &game->particleSystems[i]);
+            UpdateParticles(game, &game->particleSystems[i]);
+        }
+
+        SortAllParticles(game);
+    }
+
+
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);
     ShaderSetVec3(game->mainShader, "u_viewDir", game->camera.direction);

@@ -4,6 +4,9 @@
 #include "texture.h"
 #include "shader.h"
 #include "infantry.h"
+#include "mesh.h"
+
+#include "string_utils.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -11,6 +14,142 @@
 #include "AL/alext.h"
 
 #include "stb_vorbis.c"
+
+#define TEXTURE_ATLAS_ELEMENT 0
+#define SPRITE_ELEMENT 1
+
+void XMLCALL ParseParticleSettingsStartElement(void *userData, const XML_Char *name, const XML_Char **atts)
+{
+    Atlas *atlas = (Atlas *)userData;
+
+    int element = -1;
+    if(strcmp(name, "TextureAtlas") == 0)
+    {
+        element = TEXTURE_ATLAS_ELEMENT;
+    }
+    else if(strcmp(name, "sprite") == 0)
+    {
+        element = SPRITE_ELEMENT;
+    }
+
+    switch(element)
+    {
+        case TEXTURE_ATLAS_ELEMENT:
+        {
+            atlas->size.x = StrToFloat(atts[3]);
+            atlas->size.y = StrToFloat(atts[5]);
+            SDL_Log("x: %f; y:%f", atlas->size.x, atlas->size.y);
+        } break;
+
+        case SPRITE_ELEMENT:
+        {
+            Sprite sprite = {};
+            float pixelX = StrToFloat(atts[3]);
+            float pixelY = StrToFloat(atts[5]);
+            float pixelW = StrToFloat(atts[7]);
+            float pixelH = StrToFloat(atts[9]);
+
+            sprite.pos.x = pixelX / atlas->size.x;
+            sprite.pos.y = (atlas->size.y - pixelY - pixelH) / atlas->size.y;
+
+            sprite.size.x = pixelW / atlas->size.x;
+            sprite.size.y = pixelH / atlas->size.y;
+
+            atlas->sprites.push_back(sprite);
+
+            SDL_Log("%d. (%f, %f), (%f, %f)", (int)atlas->sprites.size(), sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y);
+        } break;
+    }
+}
+
+void XMLCALL ParseParticleSettingsEndElement(void *userData, const XML_Char *name) { }
+
+void LoadParticleSystem(Game *game)
+{
+    size_t fileSize;
+    void *fileMemory = SDL_LoadFile("../data/imgs/animated_smoke/1.xml", &fileSize);
+    if(!fileMemory)
+    {
+        SDL_Log("Failed to load 1.xml. Error: %s", SDL_GetError());
+    }
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    if(!parser)
+    {
+        SDL_Log("Failed to create an XML parser");
+    }
+
+    XML_SetUserData(parser, (void *)&game->atlas);
+    XML_SetElementHandler(parser, ParseParticleSettingsStartElement, ParseParticleSettingsEndElement);
+
+    XML_Status parsingResult = XML_Parse(parser, (char *)fileMemory, (int)fileSize, XML_TRUE);
+    if(!parsingResult)
+    {
+        SDL_Log("Failed to parse 1.xml");
+    }
+    SDL_free(fileMemory);
+
+    game->particleTextures[0] = CreateTexture("../data/imgs/smoke.png");
+    game->particleTextures[1] = CreateTexture("../data/imgs/smoke2.png");
+    game->particleTextures[2] = CreateTexture("../data/imgs/smoke3.png");
+    game->particleTextures[3] = CreateTexture("../data/imgs/smoke4.png");
+    game->particleTextures[4] = CreateTexture("../data/imgs/smoke5.png");
+    game->particleTextures[5] = CreateTexture("../data/imgs/animated_smoke/1.png");
+
+    for(int i = 0; i < ArrayCount(game->particleSystems); i++)
+    {
+        game->particleSystems[i] = InitParticleSystem(game, &game->smokeSettings);
+    }
+
+    game->particleSystems[0].pos = glm::vec3(0.0f);
+
+    int maxNumOfParticles = game->smokeSettings.maxNumOfParticles;
+    game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
+    game->textureID = game->particleTextures[game->currentTexture].id;
+
+    game->atlas.path = "../data/imgs/animated_smoke/1.png";
+    game->smokeSettings.atlas = &game->atlas;
+
+    game->particlesQuad = CreateUnitQuadStripes();
+    glBindVertexArray(game->particlesQuad.vao);
+
+    glGenBuffers(1, &game->vboInstances);
+    glBindBuffer(GL_ARRAY_BUFFER, game->vboInstances);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * maxNumOfParticles * ArrayCount(game->particleSystems),
+                 game->particleData, GL_STREAM_DRAW);
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, scale));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, angle));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvOffset));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvScale));
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, offset));
+    glEnableVertexAttribArray(8);
+    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, color));
+
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribDivisor(7, 1);
+    glVertexAttribDivisor(8, 1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
+    {
+        if(game->smokeSettings.prewarm)
+        {
+            game->particleSystems[i].prewarmTimer = StartTimer(game->smokeSettings.prewarmSeconds);
+        }
+    }
+}
 
 void LoadAudio(Game *game)
 {
@@ -337,6 +476,9 @@ void LoadAssets(Game *game)
         game->sceneEntities[i]->id = i + 1;
     }
 #endif
+
+    //PARTICLES
+    LoadParticleSystem(game);
 
     game->fpsCounter = CreateText(&game->fonts[18], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader);
     game->msPerFrame = CreateText(&game->fonts[18], "0 ms/f", glm::vec2(180.0f, 36.0f), game->uiTextShader);

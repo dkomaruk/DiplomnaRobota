@@ -62,6 +62,7 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
 Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
+Mesh CreateUnitQuadStripes();
 Mesh *GetUnitQuad();
 
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);

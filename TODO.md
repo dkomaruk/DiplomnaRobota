@@ -1,15 +1,10 @@
 # Current
-## 2026-01-08/15 S2 Improved Text Rendering
-- [ ] Particle System
-  - [ ] Add particle system settings preset saving/loading
-  - [ ] Add particle system demo
-  - [ ] Ability to add new emitters at some position. Also select and drag existing ones
-  - [ ] Improve fade in/out behaviour (fix popping in and out of existence)
-  - [ ] Gradient generator for color ramp during particle lifetime
+## 2026-01-08/17 S2 Improved Text Rendering
+- [x] Particle System
+  - [x] Gradient generator for color ramp during particle lifetime
+  - [x] Add particle system settings preset saving/loading
   - [x] Curve editor for controlling parameters over lifetime of the particle
   - [x] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
-  - [ ] Overdraw issue: <https://community.khronos.org/t/huge-performance-drop-when-rendering-60-tris-on-screen-overdraw/108095>
-  - [ ] Point sprites?
 
 # Next
 
@@ -35,6 +30,12 @@
   - Alt: build custom UI (for game) (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
     - Why: good practice
     - Why not: can take too long
+- [ ] Polish Particle System
+  - [ ] Add particle system demo
+  - [ ] Ability to add new emitters at some position. Also select and drag existing ones
+  - [ ] Improve fade in/out behaviour (fix popping in and out of existence, make it customizable)
+  - [ ] Overdraw issue: <https://community.khronos.org/t/huge-performance-drop-when-rendering-60-tris-on-screen-overdraw/108095>
+  - [ ] Point sprites?
 - [ ] Raycasting Utilities (for mouse picking/game logic stuff like line of sight, shooting projectiles, pathfinding, collision detection, fog of war, lighting, bullet ricochets from surface and so on)
 - [ ] Multiplayer
   - Research:
