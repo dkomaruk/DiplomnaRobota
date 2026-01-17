@@ -114,44 +114,56 @@ void UpdateParticles(Game *game, ParticleSystem *system)
 
         if((particle->color.a > 0.0f) && ((particle->timeLeft > 0.0f) || !settings->limitedLife))
         {
+            bool velocityOverLifetime = (settings->limitedLife && settings->velocityOverLifetime);
+
+            //Timing update
             float deltaTime = (settings->limitedLife && (particle->timeLeft - game->deltaTime < 0.0f))
                               ? particle->timeLeft : game->deltaTime;
             particle->timeLeft -= deltaTime;
+            float elapsedTime = settings->lifetime - particle->timeLeft; //For animation
+            float posTime = 1.0f - (particle->timeLeft / settings->lifetime); //For curve sampling
+            float posAlpha = 1.0f - (particle->color.a / particle->startingAlpha); //For gradient color sampling
 
-            if(settings->limitedLife)
+            //Update animation
+            Atlas *atlas = settings->atlas;
+            if(settings->isAnimated && atlas)
             {
-                float p = 1.0f - (particle->timeLeft / settings->lifetime);
-                if(settings->velocityOverLifetime)
-                {
-                    particle->velocity = (ImGui::CurveValueSmooth(p, PARTICLES_MAX_CONTROL_POINTS, settings->imVelocityControlPoints)) * particle->initialVelocity;
-                }
+                int i = (int)(elapsedTime * settings->animationFPS) % atlas->sprites.size();
+                particle->uvOffset = atlas->sprites[i].pos;
+                particle->uvScale = atlas->sprites[i].size;
+            }
+
+            //Update velocity over lifetime
+            if(velocityOverLifetime)
+            {
+                particle->velocity = (ImGui::CurveValueSmooth(posTime, PARTICLES_MAX_CONTROL_POINTS, settings->imVelocityControlPoints)) * particle->initialVelocity;
             }
             else
             {
                 particle->velocity += particle->acceleration * deltaTime;
             }
 
-            Atlas *atlas = settings->atlas;
-            if(settings->isAnimated && atlas)
-            {
-                float elapsedTime = settings->lifetime - particle->timeLeft;
-                int i = (int)(elapsedTime * settings->animationFPS) % atlas->sprites.size();
-                particle->uvOffset = atlas->sprites[i].pos;
-                particle->uvScale = atlas->sprites[i].size;
-            }
-
+            //Update position, scale, rotation
             particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
                              (particle->velocity * deltaTime);
 
             particle->scale += particle->scaleVelocity * deltaTime;
             particle->rotation += particle->rotationVelocity * deltaTime;
 
+            //Update color
             if((particle->color.a + (particle->colorVelocity.a * deltaTime)) < 0.0f)
             {
                 particle->colorVelocity.a *= 0.01f;
             }
 
             particle->color += particle->colorVelocity * deltaTime;
+            if(settings->colorOverLifetime)
+            {
+                float gradientPos = settings->limitedLife ? posTime : posAlpha;
+                ImVec4 c = settings->gradientWgt.gradient().at(ImGG::RelativePosition{gradientPos}) * 2.0f;
+                particle->color = glm::vec4(c.x, c.y, c.z, particle->color.a);
+            }
+
             particle->colorOut = particle->color;
             particle->colorOut.a = Max(0.0f, particle->color.a);
 
@@ -246,4 +258,10 @@ void RenderParticles(Game *game)
     glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE);
     glDepthMask(GL_TRUE);
+}
+
+ParticleSystemSettings *GetDefaultSettings()
+{
+    static ParticleSystemSettings defaultSettings = {};
+    return &defaultSettings;
 }

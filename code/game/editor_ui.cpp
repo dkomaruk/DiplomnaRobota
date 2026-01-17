@@ -3,9 +3,9 @@
 #include "particle_system.h"
 
 #include <imgui.h>
-//#include <imgui_curve.hpp>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_gradient/imgui_gradient.hpp>
 
 #include <json.hpp>
 #include <fstream>
@@ -96,8 +96,6 @@ void SaveSettings(const ParticleSystemSettings& settings, const std::string& fil
         j["atlasPath"] = settings.atlas->path;
     }
 
-
-    // Handle Union/Array
     for(int i = 0; i < PARTICLES_MAX_CONTROL_POINTS; ++i)
     {
         j["velocityControlPoints"].push_back({settings.velocityControlPoints[i].x,
@@ -105,10 +103,22 @@ void SaveSettings(const ParticleSystemSettings& settings, const std::string& fil
     }
 
     j["velocityOverLifetime"] = settings.velocityOverLifetime;
+    j["colorOverLifetime"] = settings.colorOverLifetime;
+
+    const ImGG::Gradient &gradient = settings.gradientWgt.gradient();
+
+    std::list<ImGG::Mark> marks = gradient.get_marks();
+    for(ImGG::Mark mark : marks)
+    {
+        ImGG::ColorRGBA c = mark.color;
+        j["colorControlPoints"].push_back({mark.position.get(), c.x, c.y, c.z, c.w});
+    }
 
     std::ofstream file(filepath);
     file << j.dump(4);
 }
+
+
 
 void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath, Atlas *atlas)
 {
@@ -118,42 +128,63 @@ void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath,
     json j;
     file >> j;
 
-    settings.maxNumOfParticles = j.at("maxNumOfParticles");
-    settings.prewarm = j.at("prewarm");
-    settings.prewarmSeconds = j.at("prewarmSeconds");
+    ParticleSystemSettings *ds = GetDefaultSettings();
 
-    settings.spawnRate = j.at("spawnRate");
-    settings.lifetime = j.at("lifetime");
-    settings.limitedLife = j.at("limitedLife");
+    settings.maxNumOfParticles = j.value("maxNumOfParticles", ds->maxNumOfParticles);
+    settings.prewarm = j.value("prewarm", ds->prewarm);
+    settings.prewarmSeconds = j.value("prewarmSeconds", ds->prewarmSeconds);
 
-    settings.radius = j.at("radius");
+    settings.spawnRate = j.value("spawnRate", ds->spawnRate);
+    settings.lifetime = j.value("lifetime", ds->lifetime);
+    settings.limitedLife = j.value("limitedLife", ds->limitedLife);
 
-    settings.minRotation = j.at("minRotation");
-    settings.maxRotation = j.at("maxRotation");
-    settings.minRotationSpeed = j.at("minRotationSpeed");
-    settings.maxRotationSpeed = j.at("maxRotationSpeed");
+    settings.radius = j.value("radius", ds->radius);
 
-    settings.minScale = j.at("minScale");
-    settings.maxScale = j.at("maxScale");
-    settings.minScaleVelocity = j.at("minScaleVelocity");
-    settings.maxScaleVelocity = j.at("maxScaleVelocity");
+    settings.minRotation = j.value("minRotation", ds->minRotation);
+    settings.maxRotation = j.value("maxRotation", ds->maxRotation);
+    settings.minRotationSpeed = j.value("minRotationSpeed", ds->minRotationSpeed);
+    settings.maxRotationSpeed = j.value("maxRotationSpeed", ds->maxRotationSpeed);
 
-    settings.minOffset = j.at("minOffset").get<glm::vec3>();
-    settings.maxOffset = j.at("maxOffset").get<glm::vec3>();
-    settings.minVelocity = j.at("minVelocity").get<glm::vec3>();
-    settings.maxVelocity = j.at("maxVelocity").get<glm::vec3>();
+    settings.minScale = j.value("minScale", ds->minScale);
+    settings.maxScale = j.value("maxScale", ds->maxScale);
+    settings.minScaleVelocity = j.value("minScaleVelocity", ds->minScaleVelocity);
+    settings.maxScaleVelocity = j.value("maxScaleVelocity", ds->maxScaleVelocity);
 
-    settings.minAccel = j.at("minAccel").get<glm::vec3>();
-    settings.maxAccel = j.at("maxAccel").get<glm::vec3>();
+    settings.minOffset = ds->minOffset;
+    settings.maxOffset = ds->maxOffset;
+    settings.minVelocity = ds->minVelocity;
+    settings.maxVelocity = ds->maxVelocity;
+    settings.minAccel = ds->minAccel;
+    settings.maxAccel = ds->maxAccel;
+    settings.minColor = ds->minColor;
+    settings.maxColor = ds->maxColor;
+    settings.minColorVelocity = ds->minColorVelocity;
+    settings.maxColorVelocity = ds->maxColorVelocity;
 
-    settings.minColor = j.at("minColor").get<glm::vec4>();
-    settings.maxColor = j.at("maxColor").get<glm::vec4>();
-    settings.minColorVelocity = j.at("minColorVelocity").get<glm::vec4>();
-    settings.maxColorVelocity = j.at("maxColorVelocity").get<glm::vec4>();
+    if(j.contains("minOffset"))
+        settings.minOffset = j.at("minOffset").get<glm::vec3>();
+    if(j.contains("maxOffset"))
+        settings.maxOffset = j.at("maxOffset").get<glm::vec3>();
+    if(j.contains("minVelocity"))
+        settings.minVelocity = j.at("minVelocity").get<glm::vec3>();
+    if(j.contains("maxVelocity"))
+        settings.maxVelocity = j.at("maxVelocity").get<glm::vec3>();
+    if(j.contains("minAccel"))
+        settings.minAccel = j.at("minAccel").get<glm::vec3>();
+    if(j.contains("maxAccel"))
+        settings.maxAccel = j.at("maxAccel").get<glm::vec3>();
+    if(j.contains("minColor"))
+        settings.minColor = j.at("minColor").get<glm::vec4>();
+    if(j.contains("maxColor"))
+        settings.maxColor = j.at("maxColor").get<glm::vec4>();
+    if(j.contains("minColorVelocity"))
+        settings.minColorVelocity = j.at("minColorVelocity").get<glm::vec4>();
+    if(j.contains("maxColorVelocity"))
+        settings.maxColorVelocity = j.at("maxColorVelocity").get<glm::vec4>();
 
     settings.atlas = atlas;
-    settings.isAnimated = j.at("isAnimated");
-    settings.animationFPS = j.at("animationFPS");
+    settings.isAnimated = j.value("isAnimated", ds->isAnimated);
+    settings.animationFPS = j.value("animationFPS", ds->animationFPS);
 
     if(j.contains("velocityControlPoints") && j["velocityControlPoints"].is_array())
     {
@@ -167,7 +198,31 @@ void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath,
         }
     }
 
-    settings.velocityOverLifetime = j.at("velocityOverLifetime");
+    settings.velocityOverLifetime = j.value("velocityOverLifetime", ds->velocityOverLifetime);
+    if(j.count("colorOverLifetime"))
+    {
+        settings.colorOverLifetime = j.value("colorOverLifetime", ds->colorOverLifetime);
+    }
+
+    const ImGG::Gradient &gradient = settings.gradientWgt.gradient();
+
+    std::list<ImGG::Mark> marks;
+    if(j.contains("colorControlPoints") && j["colorControlPoints"].is_array())
+    {
+        const auto &pointsJson = j["colorControlPoints"];
+        for(size_t i = 0; i < pointsJson.size(); ++i)
+        {
+            ImGG::Mark mark;
+            mark.position.set(pointsJson[i][0].get<float>());
+            mark.color.x = pointsJson[i][1].get<float>();
+            mark.color.y = pointsJson[i][2].get<float>();
+            mark.color.z = pointsJson[i][3].get<float>();
+            mark.color.w = pointsJson[i][4].get<float>();
+            marks.push_back(mark);
+        }
+    }
+
+    settings.gradientWgt = ImGG::GradientWidget(marks);
 }
 
 void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOfParticles)
@@ -299,6 +354,16 @@ void UpdateEditorUI(Game *game)
     if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0\0"))
     {
         game->textureID = game->particleTextures[game->currentTexture].id;
+    }
+
+    if(ImGui::CollapsingHeader("Color Over Lifetime"))
+    {
+        ImGui::Checkbox("Use Color Over Lifetime", &smoke->colorOverLifetime);
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        smoke->gradientWgt.widget("Color");
     }
 
     if(ImGui::CollapsingHeader("Velocity Over Lifetime"))

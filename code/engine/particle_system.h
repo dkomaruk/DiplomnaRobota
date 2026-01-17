@@ -12,6 +12,7 @@
 #include <GL/glew.h>
 
 #include <imgui.h>
+#include <imgui_gradient/imgui_gradient.hpp>
 
 #define PARTICLES_MAX_CONTROL_POINTS 10
 
@@ -103,6 +104,9 @@ struct ParticleSystemSettings
         ImVec2 imVelocityControlPoints[PARTICLES_MAX_CONTROL_POINTS + 1] = {ImVec2(ImGui::CurveTerminator, 0.0f)};
     };
     bool velocityOverLifetime = false;
+    bool colorOverLifetime = false;
+
+    ImGG::GradientWidget gradientWgt;
 };
 
 struct ParticleSystem
@@ -126,6 +130,8 @@ void SpawnParticles(Game *game, ParticleSystem *system);
 void UpdateParticles(Game *game, ParticleSystem *system);
 void SortAllParticles(Game *game);
 void RenderParticles(Game *game);
+
+ParticleSystemSettings *GetDefaultSettings();
 
 #define PARTICLE_SYSTEM_H
 #endif
