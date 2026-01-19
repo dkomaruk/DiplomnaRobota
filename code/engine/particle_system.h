@@ -109,6 +109,7 @@ struct ParticleSystemSettings
     bool colorOverLifetime = false;
 
     ImGG::GradientWidget gradientWgt;
+    ImVec4 sampledGradient[1024];
 };
 
 struct ParticleSystem

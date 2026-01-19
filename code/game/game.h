@@ -42,7 +42,7 @@ struct Game
     Texture pickingTexture;
 
     GLuint outlineFbo;
-    Texture outlineTexture, fullSceneTexture;
+    Texture outlineTexture, fullSceneTexture, fullSceneDepthTexture;
 
     //Post-processing
     Mesh fullscreenQuad;

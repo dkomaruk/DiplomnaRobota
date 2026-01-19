@@ -7,6 +7,8 @@
 
 #include <glm/gtx/norm.hpp>
 
+#include <imgui_gradient/imgui_gradient.hpp>
+
 #include "math_utils.h"
 #include "random.h"
 
@@ -104,7 +106,7 @@ void UpdateParticles(Game *game, ParticleSystem *system)
 {
     ParticleSystemSettings *settings = system->settings;
 
-    int maxNumOfParticles = system->settings->maxNumOfParticles;
+    int maxNumOfParticles = settings->maxNumOfParticles;
 
     UpdateTimer(&system->prewarmTimer, game->deltaTime);
 
@@ -160,7 +162,8 @@ void UpdateParticles(Game *game, ParticleSystem *system)
             if(settings->colorOverLifetime)
             {
                 float gradientPos = settings->limitedLife ? posTime : posAlpha;
-                ImVec4 c = settings->gradientWgt.gradient().at(ImGG::RelativePosition{gradientPos}) * 2.0f;
+                int index = (int)(gradientPos * ArrayCount(settings->sampledGradient));
+                ImVec4 c = settings->sampledGradient[index];
                 particle->color = glm::vec4(c.x, c.y, c.z, particle->color.a);
             }
 
@@ -238,8 +241,11 @@ void SortAllParticles(Game *game)
 void RenderParticles(Game *game)
 {
     glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //This is needed to make transparent smoke at low resolution occlude scene geometry
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     glDepthMask(GL_FALSE);
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 

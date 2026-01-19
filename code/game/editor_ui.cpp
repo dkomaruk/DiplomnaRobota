@@ -118,7 +118,13 @@ void SaveSettings(const ParticleSystemSettings& settings, const std::string& fil
     file << j.dump(4);
 }
 
-
+void ResampleGradient(ImGG::Gradient *gradient, ImVec4 *samples, int numOfSamples)
+{
+    for(int i = 0; i < numOfSamples; i++)
+    {
+        samples[i] = gradient->at(ImGG::RelativePosition{i / (float)numOfSamples});
+    }
+}
 
 void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath, Atlas *atlas)
 {
@@ -223,6 +229,7 @@ void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath,
     }
 
     settings.gradientWgt = ImGG::GradientWidget(marks);
+    ResampleGradient(&settings.gradientWgt.gradient(), settings.sampledGradient, ArrayCount(settings.sampledGradient));
 }
 
 void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOfParticles)
@@ -358,12 +365,16 @@ void UpdateEditorUI(Game *game)
 
     if(ImGui::CollapsingHeader("Color Over Lifetime"))
     {
-        ImGui::Checkbox("Use Color Over Lifetime", &smoke->colorOverLifetime);
+        bool resampleNeeded = ImGui::Checkbox("Use Color Over Lifetime", &smoke->colorOverLifetime);
 
         ImGui::Spacing();
         ImGui::Spacing();
 
-        smoke->gradientWgt.widget("Color");
+        resampleNeeded = smoke->gradientWgt.widget("Color") || resampleNeeded;
+        if(resampleNeeded)
+        {
+            ResampleGradient(&smoke->gradientWgt.gradient(), smoke->sampledGradient, ArrayCount(smoke->sampledGradient));
+        }
     }
 
     if(ImGui::CollapsingHeader("Velocity Over Lifetime"))

@@ -38,7 +38,7 @@ void XMLCALL ParseParticleSettingsStartElement(void *userData, const XML_Char *n
         {
             atlas->size.x = StrToFloat(atts[3]);
             atlas->size.y = StrToFloat(atts[5]);
-            SDL_Log("x: %f; y:%f", atlas->size.x, atlas->size.y);
+            //SDL_Log("x: %f; y:%f", atlas->size.x, atlas->size.y);
         } break;
 
         case SPRITE_ELEMENT:
@@ -57,7 +57,7 @@ void XMLCALL ParseParticleSettingsStartElement(void *userData, const XML_Char *n
 
             atlas->sprites.push_back(sprite);
 
-            SDL_Log("%d. (%f, %f), (%f, %f)", (int)atlas->sprites.size(), sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y);
+            //SDL_Log("%d. (%f, %f), (%f, %f)", (int)atlas->sprites.size(), sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y);
         } break;
     }
 }
@@ -236,14 +236,15 @@ void SetupFramebuffers(Game *game)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
 
+    glGenTextures(1, &game->fullSceneDepthTexture.id);
+    glBindTexture(GL_TEXTURE_2D, game->fullSceneDepthTexture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, game->fullSceneDepthTexture.id, 0);
+
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
     {
