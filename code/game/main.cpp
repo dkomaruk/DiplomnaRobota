@@ -75,6 +75,33 @@ int main(int argc, char *argv[])
     game->lastFrame = SDL_GetPerformanceCounter();
     //game->lockFPS = true;
 
+    GLuint smokeFBO;
+    Texture smokeTexture = {};
+    smokeTexture.x = (int)(WINDOW_WIDTH / 2.0f);
+    smokeTexture.y = (int)(WINDOW_HEIGHT / 2.0f);
+
+    Texture smokeDepthTexture = smokeTexture;
+
+    glGenFramebuffers(1, &smokeFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
+
+    glGenTextures(1, &smokeTexture.id);
+    glBindTexture(GL_TEXTURE_2D, smokeTexture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, smokeTexture.x, smokeTexture.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, smokeTexture.id, 0);
+
+    glGenTextures(1, &smokeDepthTexture.id);
+    glBindTexture(GL_TEXTURE_2D, smokeDepthTexture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, smokeDepthTexture.x, smokeDepthTexture.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, smokeDepthTexture.id, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     while(game->isRunning)
     {
         //Input
@@ -138,10 +165,21 @@ int main(int argc, char *argv[])
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
 
-            if(game->renderParticles)
-            {
-                RenderParticles(game);
-            }
+            //if(game->renderParticles)
+            //{
+            //    RenderParticles(game);
+            //}
+
+            glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
+            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glViewport(0, 0, smokeTexture.x, smokeTexture.y);
+            SetTexture(&game->fullSceneDepthTexture, 2);
+            ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
+            ShaderSetVec2(game->particleShader, "u_screenSize", (float)smokeTexture.x, (float)smokeTexture.y);
+            RenderParticles(game);
+            glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -152,6 +190,14 @@ int main(int argc, char *argv[])
             ShaderSetInt(game->postProcessShader, "u_outline", 0);
             SetTexture(&game->fullSceneTexture, 1);
             ShaderSetInt(game->postProcessShader, "u_scene", 1);
+            SetTexture(&smokeTexture, 2);
+            ShaderSetInt(game->postProcessShader, "u_smoke", 2);
+            SetTexture(&game->fullSceneDepthTexture, 3);
+            ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
+            SetTexture(&smokeDepthTexture, 4);
+            ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
+
+            ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / smokeTexture.x, 1.0f / smokeTexture.y);
 
             glBindVertexArray(game->fullscreenQuad.vao);
             glDrawArrays(GL_TRIANGLES, 0, 6);

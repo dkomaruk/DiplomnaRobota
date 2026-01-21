@@ -2,6 +2,10 @@
 
 uniform sampler2D u_outline;
 uniform sampler2D u_scene;
+uniform sampler2D u_smoke;
+uniform sampler2D u_sceneDepth;
+uniform sampler2D u_smokeDepth;
+uniform vec2 u_lowResInvSize;
 
 uniform int u_outlineThickness;
 
@@ -21,11 +25,32 @@ void main()
     vec3 outlineColor = vec3(1.0, 1.0, 1.0);
     vec4 sceneColor = texture(u_scene, TexCoords);
 
-    if(u_inverted)
-    {
+    float fullResDepth = texture(u_sceneDepth, TexCoords).r;
+    vec2 _offsets[4];
+    _offsets[0] = vec2(0.0, 0.0);
+    _offsets[1] = vec2(1.0, 0.0) * u_lowResInvSize;
+    _offsets[2] = vec2(0.0, 1.0) * u_lowResInvSize;
+    _offsets[3] = vec2(1.0, 1.0) * u_lowResInvSize;
+    float minDiff = 1000.0;
+    int bestSample = 0;
+    for(int i = 0; i < 4; i++) {
+        float lrDepth = texture(u_smokeDepth, TexCoords + _offsets[i]).r;
+        float diff = abs(lrDepth - fullResDepth);
+
+        if(diff < minDiff) {
+            minDiff = diff;
+            bestSample = i;
+        }
+    }
+
+    vec4 smokeColor = texture(u_smoke, TexCoords + _offsets[bestSample]);
+    sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
+
+    //if(u_inverted)
+    //{
         sceneColor = 1.0 - sceneColor;
         outlineColor = 1.0 - outlineColor;
-    }
+    //}
     if(u_grayscale)
     {
         float avg = sceneColor.r * 0.2126 + sceneColor.g * 0.7152 + sceneColor.b * 0.0722;
