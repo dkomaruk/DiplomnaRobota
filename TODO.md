@@ -21,6 +21,8 @@
 - [ ] Heightmaps For Terrain Rendering
   - [ ] Check how WARNO/Total War snaps unites to terrain and how it orients them on slopes and hills
   - [ ] Make a grid system where units have their Y coordinate set to the Y coordinate of the terrain in the position they are located.
+  - [ ] <https://gamedev.stackexchange.com/questions/24572/how-does-terrain-following-work-on-height-map?rq=1>
+
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
 - [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)

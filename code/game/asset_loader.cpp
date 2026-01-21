@@ -288,7 +288,9 @@ void LoadAssets(Game *game)
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                    LoadShader("../data/shaders/fragment3.frag"));
     GLuint particleShader = CreateShaderProgram(LoadShader("../data/shaders/particle.vert"),
-                                                   LoadShader("../data/shaders/particle.frag"));
+                                                LoadShader("../data/shaders/particle.frag"));
+    GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
+                                               LoadShader("../data/shaders/terrain.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -303,6 +305,7 @@ void LoadAssets(Game *game)
     game->shaders.push_back(lightSourceShader);
     game->shaders.push_back(pickingShader);
     game->shaders.push_back(postProcessShader);
+    game->shaders.push_back(terrainShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -322,6 +325,7 @@ void LoadAssets(Game *game)
     game->pickingShader = pickingShader;
     game->uiTextShader = uiTextShader;
     game->particleShader = particleShader;
+    game->terrainShader = terrainShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
@@ -334,6 +338,7 @@ void LoadAssets(Game *game)
         strcpy(soldierEntity->textId, "soldier");
         soldierEntity->position.y += 0.5f;
         game->sceneEntities.push_back(soldierEntity);
+        game->soldierEntity = soldierEntity;
     }
 
     Model *test = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
@@ -477,6 +482,9 @@ void LoadAssets(Game *game)
         game->sceneEntities[i]->id = i + 1;
     }
 #endif
+
+    game->terrain = CreateTerrain("../data/heightmap.png", 6.0f, 1.0f);
+    game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
 
     //PARTICLES
     LoadParticleSystem(game);

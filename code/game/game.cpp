@@ -105,6 +105,7 @@ bool InitGame(Game *game)
     camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
     //camera->speed = 2.5f;
     camera->speed = 5.0f;
+    //camera->speed = 40.0f;
     camera->sensitivity = 0.1f;
 
     game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
