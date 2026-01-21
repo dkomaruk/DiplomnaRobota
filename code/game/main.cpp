@@ -10,7 +10,9 @@
 //TODO: Replace with a less heavy library
 #include <json.hpp>
 
-#include <glm/gtx/norm.hpp> //Has to be included before any other glm header file
+//GLM extensions have to be included before any other glm header file for some reason
+#include <glm/gtx/norm.hpp>
+#include <glm/gtx/intersect.hpp>
 
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
@@ -36,6 +38,7 @@
 #include "mesh.cpp"
 #include "particle_system.cpp"
 #include "editor_ui.cpp"
+#include "terrain.cpp"
 
 #include <GL/glew.h>
 
@@ -102,6 +105,32 @@ int main(int argc, char *argv[])
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    //TERRAIN
+    std::vector<Vertex> lineVertices = {
+        Vertex{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
+        Vertex{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
+    };
+
+    Mesh line = CreateMesh(lineVertices);
+    MaterialPhong lineMat = {};
+    lineMat.shader = game->lightSourceShader;
+
+    game->soldierEntity->position.x = 0.0f;
+    game->soldierEntity->position.z = 0.0f;
+
+    glm::vec2 target = {0.0f, 0.0f};
+    glm::vec2 targetDirection = {0.0f, 0.0f};
+
+    {
+        //Need to do this before the game loop because calling glReadPixels for the first time
+        //for some reason causes a huge freeze (174 ms unoptimized). Subsequent calls are 10-12 ms
+        //This is not a good solution but it's a workaround
+        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+        uint8 pixels[3];
+        glReadPixels((int)0, (int)0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     while(game->isRunning)
     {
         //Input
@@ -110,6 +139,19 @@ int main(int argc, char *argv[])
         //Update
         UpdateEditorUI(game);
         UpdateGame(game);
+
+        float time = SDL_GetTicks() / 1000.0f;
+
+        float x = game->soldierEntity->position.x + targetDirection.x * 10.0f * game->deltaTime;
+        float z = game->soldierEntity->position.z + targetDirection.y * 10.0f * game->deltaTime;
+        float y = GetTerrainHeight(&game->terrain, x, z);
+
+        game->soldierEntity->position = glm::vec3(x, y, z);
+
+        if(glm::distance(glm::vec2(x, z), target) < 0.1f)
+        {
+            targetDirection = glm::vec2(0, 0);
+        }
 
         //Rendering
         if(!game->textDemoEnabled)
@@ -135,9 +177,12 @@ int main(int argc, char *argv[])
                     y = (int)WINDOW_HEIGHT - y;
                 }
 
+                uint64 start = SDL_GetPerformanceCounter();
                 uint8 pixels[3];
                 glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
                 uint32 pickedID = pixels[0];
+                uint64 end = SDL_GetPerformanceCounter();
+                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
 
                 if(!pickedID || !game->keys[SDL_SCANCODE_LSHIFT])
                 {
@@ -153,6 +198,27 @@ int main(int argc, char *argv[])
                 {
                     game->selectedIDs.insert(pickedID);
                 }
+
+                glm::vec3 windowPos = glm::vec3(x, y, 0.0f);
+                glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
+                                                   glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
+                windowPos.z = 1.0f;
+                glm::vec3 rayFar = glm::unProject(windowPos, game->view, game->perspectiveProjection,
+                                                  glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
+
+                glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
+                //SDL_Log("%f %f %f", rayDirection.x, rayDirection.y, rayDirection.z);
+
+                glm::vec3 rayOrigin = game->camera.position;
+                lineVertices[0].position = glm::vec3(rayOrigin);
+                lineVertices[1].position = glm::vec3(rayOrigin + rayDirection * 200.0f);
+                UpdateMesh(&line, lineVertices);
+
+                glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, rayOrigin, rayDirection, 200.0f);
+                //SDL_Log("Intersection: %f %f %f", intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
+
+                target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
+                targetDirection = glm::normalize(target - glm::vec2(game->soldierEntity->position.x, game->soldierEntity->position.z));
             }
 
             game->outlinePass = true;
@@ -165,21 +231,32 @@ int main(int argc, char *argv[])
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
 
-            //if(game->renderParticles)
-            //{
-            //    RenderParticles(game);
-            //}
+            static GLenum terrainDisplayMode = GL_FILL;
+            if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+            {
+                terrainDisplayMode = (terrainDisplayMode == GL_LINE) ? GL_FILL : GL_LINE;
+            }
 
-            glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
-            glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glPolygonMode(GL_FRONT_AND_BACK, terrainDisplayMode);
+            RenderTerrain(game);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-            glViewport(0, 0, smokeTexture.x, smokeTexture.y);
-            SetTexture(&game->fullSceneDepthTexture, 2);
-            ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
-            ShaderSetVec2(game->particleShader, "u_screenSize", (float)smokeTexture.x, (float)smokeTexture.y);
-            RenderParticles(game);
-            glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+            ShaderSetVec3(game->lightSourceShader, "u_lightColor", 1.0f, 0.0f, 0.0f);
+            RenderMesh(game, &line, &lineMat, glm::mat4(1.0f), GL_LINES);
+
+            if(game->renderParticles)
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
+                glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                glViewport(0, 0, smokeTexture.x, smokeTexture.y);
+                SetTexture(&game->fullSceneDepthTexture, 2);
+                ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
+                ShaderSetVec2(game->particleShader, "u_screenSize", (float)smokeTexture.x, (float)smokeTexture.y);
+                RenderParticles(game);
+                glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+            }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);

@@ -6,6 +6,7 @@
 #include "text.h"
 #include "text_demo.h"
 #include "particle_system.h"
+#include "terrain.h"
 
 #include "defines.h"
 
@@ -31,7 +32,8 @@ struct Game
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, outlineShader, pickingShader, postProcessShader, uiTextShader, particleShader;
+    GLuint mainShader, lightSourceShader, outlineShader, pickingShader,
+           postProcessShader, uiTextShader, particleShader, terrainShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -69,6 +71,9 @@ struct Game
     std::vector<Entity *> sceneEntities;
     std::unordered_set<uint32> selectedIDs;
     Entity *testEntity;
+    Entity *soldierEntity;
+
+    Terrain terrain;
 
     //Audio
     Audio audio; //TODO: Audio API

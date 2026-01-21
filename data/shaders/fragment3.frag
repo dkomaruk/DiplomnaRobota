@@ -46,11 +46,11 @@ void main()
     vec4 smokeColor = texture(u_smoke, TexCoords + _offsets[bestSample]);
     sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
 
-    //if(u_inverted)
-    //{
+    if(u_inverted)
+    {
         sceneColor = 1.0 - sceneColor;
         outlineColor = 1.0 - outlineColor;
-    //}
+    }
     if(u_grayscale)
     {
         float avg = sceneColor.r * 0.2126 + sceneColor.g * 0.7152 + sceneColor.b * 0.0722;

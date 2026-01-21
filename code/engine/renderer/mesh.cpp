@@ -149,11 +149,24 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
     return result;
 }
 
-Mesh CreateVBO(std::vector<Vertex> vertices)
+void GetDefaultAttribs(AttribInfo *attribs)
+{
+    attribs[0] = {0, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, position)};
+    attribs[1] = {1, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, normal)};
+    attribs[2] = {2, 2, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, uv)};
+}
+
+Mesh CreateVBO(float *vertexData, int vertexDataElements, AttribInfo *attribs, int numOfAttribs)
 {
     Mesh mesh = {};
 
-    mesh.verticesCount = (uint32)vertices.size();
+    int attribsPerVertex = 0;
+    for(int i = 0; i < numOfAttribs; ++i)
+    {
+        attribsPerVertex += attribs[i].size;
+    }
+
+    mesh.verticesCount = (uint32)(vertexDataElements / attribsPerVertex);
 
     glGenVertexArrays(1, &mesh.vao);
     glBindVertexArray(mesh.vao);
@@ -161,16 +174,14 @@ Mesh CreateVBO(std::vector<Vertex> vertices)
     glGenBuffers(1, &mesh.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
 
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertexDataElements * sizeof(float), vertexData, GL_STATIC_DRAW);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, position));
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, normal));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, uv));
+    for(int i = 0; i < numOfAttribs; ++i)
+    {
+        glEnableVertexAttribArray(attribs[i].attribLocation);
+        glVertexAttribPointer(attribs[i].attribLocation, attribs[i].size, attribs[i].type,
+                              GL_FALSE, attribs[i].stride, attribs[i].pointer);
+    }
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -180,7 +191,47 @@ Mesh CreateVBO(std::vector<Vertex> vertices)
 
 Mesh CreateMesh(std::vector<Vertex> vertices)
 {
-    Mesh mesh = CreateVBO(vertices);
+    AttribInfo defaultAttribs[3];
+    GetDefaultAttribs(defaultAttribs);
+    return CreateVBO(&(vertices[0].position.x), (uint32)vertices.size() * 8, defaultAttribs, 3);
+}
+
+Mesh CreateMesh(std::vector<float> vertices, AttribInfo *attribs, int numOfAttribs)
+{
+    Mesh mesh = {};
+    if(attribs && numOfAttribs > 0)
+    {
+        mesh = CreateVBO(&vertices[0], (uint32)vertices.size(), attribs, numOfAttribs);
+    }
+
+    return mesh;
+}
+
+void CreateEBO(Mesh *mesh, std::vector<unsigned int> indices)
+{
+    mesh->indicesCount = (uint32)indices.size();
+
+    glBindVertexArray(mesh->vao);
+
+    glGenBuffers(1, &mesh->ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+Mesh CreateMesh(std::vector<float> vertices, std::vector<unsigned int> indices, AttribInfo *attribs, int numOfAttribs)
+{
+    Mesh mesh = CreateMesh(vertices, attribs, numOfAttribs);
+    CreateEBO(&mesh, indices);
+    return mesh;
+}
+
+Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
+{
+    Mesh mesh = CreateMesh(vertices);
+    CreateEBO(&mesh, indices);
     return mesh;
 }
 
@@ -216,22 +267,11 @@ Mesh CreateTextMesh(std::vector<VertexText> vertices)
     return mesh;
 }
 
-Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
+void UpdateMesh(Mesh *mesh, std::vector<Vertex> newVertices)
 {
-    Mesh mesh = CreateMesh(vertices);
-    mesh.indicesCount = (uint32)indices.size();
-
-    glBindVertexArray(mesh.vao);
-
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    return mesh;
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * newVertices.size(), &newVertices[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size)
@@ -303,7 +343,7 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 _
     return model;
 }
 
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model)
+void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLenum drawMode)
 {
     GLuint shader = material->shader;
     if(game->outlinePass)
@@ -329,11 +369,11 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model
     glBindVertexArray(mesh->vao);
     if(mesh->indicesCount > 0)
     {
-        glDrawElements(GL_TRIANGLES, mesh->indicesCount, GL_UNSIGNED_INT, 0);
+        glDrawElements(drawMode, mesh->indicesCount, GL_UNSIGNED_INT, 0);
     }
     else
     {
-        glDrawArrays(GL_TRIANGLES, 0, mesh->verticesCount);
+        glDrawArrays(drawMode, 0, mesh->verticesCount);
     }
 
     glBindVertexArray(0);

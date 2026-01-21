@@ -70,7 +70,7 @@ Texture CreateTexture(char *imagePath, TextureFlags flags)
 {
     Texture texture = {};
 
-    int width, height, channels;
+    int channels;
     int desiredChannels = 4;
 
     bool flipY = flags & TextureFlag_FlipY;
