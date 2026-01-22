@@ -18,15 +18,27 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
     Terrain t = {};
 
     int fullMapWidth, fullMapHeight, channels;
-    unsigned short *image = stbi_load_16(heightmapPath, &fullMapWidth, &fullMapHeight, &channels, 0);
+    stbi_info(heightmapPath, &fullMapWidth, &fullMapHeight, &channels);
+
+    uint8 *image = 0;
+    uint16 *image16 = 0;
+
+    if(channels == 1)
+    {
+        image16 = stbi_load_16(heightmapPath, &fullMapWidth, &fullMapHeight, &channels, 0);
+        t.yScale = (maxHeight / 65535.0f);
+    }
+    else
+    {
+        image = stbi_load(heightmapPath, &fullMapWidth, &fullMapHeight, &channels, 0);
+        t.yScale = (maxHeight / 256.0f);
+    }
 
     t.mapWidth = (int)(fullMapWidth * mapPortion);
     t.mapHeight = (int)(fullMapHeight * mapPortion);
 
-    t.yScale = (maxHeight / 65535.0f);
     t.yShift = 0.0f;
     t.heightmap = (float *)calloc(t.mapWidth * t.mapHeight, sizeof(float));
-    uint16 max = 0;
     for(int i = 0; i < t.mapHeight; ++i)
     {
         for(int j = 0; j < t.mapWidth; ++j)
@@ -34,7 +46,7 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
             int sampleIndex = j + i * fullMapWidth;
             int destIndex = j + i * t.mapWidth;
 
-            uint16 sample = image[sampleIndex];
+            uint16 sample = (channels == 1) ? image16[sampleIndex] : image[sampleIndex * channels];
             t.heightmap[destIndex] = sample * t.yScale - t.yShift;
         }
     }
