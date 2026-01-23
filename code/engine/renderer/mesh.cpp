@@ -67,19 +67,6 @@ Texture LoadTextures(const aiScene *scene, aiMaterial *material,
     return result;
 }
 
-void ProcessNode(aiNode *node, int *meshCounter, int *nodeCounter)
-{
-    if(!node) return;
-
-    *nodeCounter += 1;
-    *meshCounter += node->mNumMeshes;
-
-    for(uint32 i = 0; i < node->mNumChildren; i++)
-    {
-        ProcessNode(node->mChildren[i], meshCounter, nodeCounter);
-    }
-}
-
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
 {
     Model *result = (Model *)malloc(sizeof(Model));

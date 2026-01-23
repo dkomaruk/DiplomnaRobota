@@ -273,7 +273,7 @@ void UpdateGame(Game *game)
             int bytesPerPixel = 3;
 
             uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
             glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
             stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
             free(pixels);

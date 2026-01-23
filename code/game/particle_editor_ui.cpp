@@ -1,6 +1,8 @@
-#include "editor_ui.h"
+#include "particle_editor_ui.h"
 
 #include "particle_system.h"
+
+#include "math_utils.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -54,7 +56,7 @@ namespace glm
     }
 }
 
-void SaveSettings(const ParticleSystemSettings& settings, const std::string& filepath) {
+void SaveParticleSettings(const ParticleSystemSettings& settings, const std::string& filepath) {
     json j;
     j["maxNumOfParticles"] = settings.maxNumOfParticles;
     j["prewarm"] = settings.prewarm;
@@ -75,6 +77,8 @@ void SaveSettings(const ParticleSystemSettings& settings, const std::string& fil
     j["maxScale"] = settings.maxScale;
     j["minScaleVelocity"] = settings.minScaleVelocity;
     j["maxScaleVelocity"] = settings.maxScaleVelocity;
+
+    j["blendingType"] = settings.blendingType;
 
     j["minOffset"] = settings.minOffset;
     j["maxOffset"] = settings.maxOffset;
@@ -126,7 +130,7 @@ void ResampleGradient(ImGG::Gradient *gradient, ImVec4 *samples, int numOfSample
     }
 }
 
-void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath, Atlas *atlas)
+void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &filepath, Atlas *atlas)
 {
     std::ifstream file(filepath);
     if (!file.is_open()) return;
@@ -155,6 +159,8 @@ void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath,
     settings.maxScale = j.value("maxScale", ds->maxScale);
     settings.minScaleVelocity = j.value("minScaleVelocity", ds->minScaleVelocity);
     settings.maxScaleVelocity = j.value("maxScaleVelocity", ds->maxScaleVelocity);
+
+    settings.blendingType = j.value("blendingType", ds->blendingType);
 
     settings.minOffset = ds->minOffset;
     settings.maxOffset = ds->maxOffset;
@@ -196,7 +202,7 @@ void LoadSettings(ParticleSystemSettings& settings, const std::string &filepath,
     {
         const auto &pointsJson = j["velocityControlPoints"];
 
-        size_t count = std::min(pointsJson.size(), (size_t)PARTICLES_MAX_CONTROL_POINTS);
+        size_t count = Min((int)pointsJson.size(), PARTICLES_MAX_CONTROL_POINTS);
         for(size_t i = 0; i < count; ++i)
         {
             settings.velocityControlPoints[i].x = pointsJson[i][0].get<float>();
@@ -294,7 +300,7 @@ std::string SaveFileDialog()
     return "";
 }
 
-void UpdateEditorUI(Game *game)
+void UpdateParticleEditorUI(Game *game)
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -358,10 +364,12 @@ void UpdateEditorUI(Game *game)
 
     ImGui::DragInt("Spawn Rate", &smoke->spawnRate, 1, 0, 1000);
 
-    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0\0"))
+    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0\0"))
     {
         game->textureID = game->particleTextures[game->currentTexture].id;
     }
+
+    ImGui::Combo("Blending Type", &smoke->blendingType, "Standard\0Additive\0Screen\0Premultiplied\0\0");
 
     if(ImGui::CollapsingHeader("Color Over Lifetime"))
     {
@@ -402,14 +410,14 @@ void UpdateEditorUI(Game *game)
     {
         std::string path = SaveFileDialog();
         if(!path.empty())
-            SaveSettings(*smoke, path);
+            SaveParticleSettings(*smoke, path);
     }
     if(ImGui::Button("Load"))
     {
         std::string path = OpenFileDialog();
         if(!path.empty())
         {
-            LoadSettings(*smoke, path, smoke->atlas);
+            LoadParticleSettings(*smoke, path, smoke->atlas);
             ReallocParticles(game, smoke, oldNumOfParticles);
         }
     }

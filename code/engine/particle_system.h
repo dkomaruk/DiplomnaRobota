@@ -59,6 +59,14 @@ struct ParticleData
     float cameraDist; //Wasted bandwidth to the GPU
 };
 
+enum ParticleBlending
+{
+    ParticleBlending_Standard,
+    ParticleBlending_Additive,
+    ParticleBlending_Screen,
+    ParticleBlending_Premultiplied,
+};
+
 struct ParticleSystemSettings
 {
     int maxNumOfParticles = 300;
@@ -81,6 +89,8 @@ struct ParticleSystemSettings
     float maxScale = 1.0f;
     float minScaleVelocity = 0.0f;
     float maxScaleVelocity = 0.0f;
+
+    int blendingType = ParticleBlending_Standard;
 
     glm::vec3 minOffset = glm::vec3(0.0f, 0.0f, 3.5f);
     glm::vec3 maxOffset = glm::vec3(0.0f, 0.0f, 3.5f);

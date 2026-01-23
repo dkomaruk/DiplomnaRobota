@@ -37,8 +37,9 @@
 #include "image.cpp"
 #include "mesh.cpp"
 #include "particle_system.cpp"
-#include "editor_ui.cpp"
+#include "particle_editor_ui.cpp"
 #include "terrain.cpp"
+#include "framebuffer.cpp"
 
 #include <GL/glew.h>
 
@@ -63,6 +64,139 @@
 
 #include <expat.h>
 
+aiNode *FindNode(aiNode *node, char *name)
+{
+    if(!node || (strcmp(name, node->mName.C_Str()) == 0))
+    {
+        return node;
+    }
+
+    for(uint32 i = 0; i < node->mNumChildren; i++)
+    {
+        aiNode *result = FindNode(node->mChildren[i], name);
+        if(result)
+        {
+            return result;
+        }
+    }
+
+    return NULL;
+}
+
+struct SceneImporter
+{
+    aiScene *scene;
+    std::string dirPath;
+    std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
+    std::vector<Texture> diffuseTextures, specularTextures;
+    std::vector<Mesh> meshes;
+    std::vector<MaterialPhong> materials;
+    GLuint shader;
+};
+
+void ProcessNode(aiNode *node, SceneImporter *importData, aiMatrix4x4 modelMat)
+{
+    if(!node) return;
+    SceneImporter *imp = importData;
+
+    aiMatrix3x3 normalMat;
+    aiMatrix3FromMatrix4(&normalMat, &modelMat);
+    aiMatrix3Inverse(&normalMat);
+    aiTransposeMatrix3(&normalMat);
+
+    for(uint32 i = 0; i < node->mNumMeshes; ++i)
+    {
+        aiMesh *mesh = imp->scene->mMeshes[node->mMeshes[i]];
+        bool hasUVs = mesh->HasTextureCoords(0);
+
+        std::vector<Vertex> vertices;
+        std::vector<uint32> indices;
+        for(uint32 j = 0; j < mesh->mNumVertices; j++)
+        {
+            aiVector3D pos = modelMat * mesh->mVertices[j];
+
+            //glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+
+            aiVector3D norm = normalMat * mesh->mNormals[j];
+            norm.Normalize();
+
+            Vertex vertex = {};
+            vertex.position = glm::vec3(pos.x, pos.y, pos.z);
+            vertex.normal = glm::vec3(norm.x, norm.y, norm.z);
+            if(hasUVs)
+            {
+                aiVector3D uv = mesh->mTextureCoords[0][j];
+                vertex.uv = glm::vec2(uv.x, uv.y);
+            }
+
+            vertices.push_back(vertex);
+        }
+
+        for(uint32 j = 0; j < mesh->mNumFaces; j++)
+        {
+            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
+            {
+                indices.push_back(mesh->mFaces[j].mIndices[k]);
+            }
+        }
+
+        aiMaterial *material = imp->scene->mMaterials[mesh->mMaterialIndex];
+
+        Texture diffuseTexture = LoadTextures(imp->scene, material, imp->dirPath, &imp->loadedDiffusePaths, &imp->diffuseTextures, aiTextureType_DIFFUSE);
+        Texture specularTexture = LoadTextures(imp->scene, material, imp->dirPath, &imp->loadedSpecularPaths, &imp->specularTextures, aiTextureType_SPECULAR);
+
+        imp->meshes.push_back(CreateMesh(vertices, indices));
+        imp->materials.push_back({imp->shader, diffuseTexture, specularTexture, {}, 32.0f});
+    }
+
+    for(uint32 i = 0; i < node->mNumChildren; i++)
+    {
+        ProcessNode(node->mChildren[i], imp, modelMat * node->mChildren[i]->mTransformation);
+    }
+}
+
+Model *ImportModel2(char *filepath, GLuint shader)
+{
+    Model *result = (Model *)malloc(sizeof(Model));
+    result->numOfMeshes = -1;
+
+    const aiScene *scene = aiImportFile(filepath, 0);
+    if(!scene)
+    {
+        SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
+        return result;
+    }
+
+    std::string dirPath = filepath;
+    size_t found = dirPath.find_last_of("\\/");
+    dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
+
+    SceneImporter imp = {};
+    if(strcmp(filepath, "../data/models/abrams/abrams.fbx") == 0)
+    {
+        aiNode *turret = FindNode(scene->mRootNode, "Tourelle_01");
+        if(turret)
+        {
+            imp.scene = (aiScene *)scene;
+            imp.dirPath = dirPath;
+            imp.shader = shader;
+
+            aiMatrix4x4 modelMat = turret->mTransformation;
+            aiMatrix4RotationX(&modelMat, glm::radians(-90.0f));
+            ProcessNode(turret, &imp, modelMat);
+        }
+    }
+
+    result->mesh = (Mesh *)malloc(sizeof(Mesh) * imp.meshes.size());
+    result->material = (MaterialPhong *)malloc(sizeof(MaterialPhong) * imp.meshes.size());
+    result->numOfMeshes = (int)imp.meshes.size();
+
+    std::copy(imp.meshes.begin(), imp.meshes.end(), result->mesh);
+    std::copy(imp.materials.begin(), imp.materials.end(), result->material);
+
+    return result;
+}
+
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -75,37 +209,6 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    game->lastFrame = SDL_GetPerformanceCounter();
-    //game->lockFPS = true;
-
-    GLuint smokeFBO;
-    Texture smokeTexture = {};
-    smokeTexture.x = (int)(WINDOW_WIDTH / 2.0f);
-    smokeTexture.y = (int)(WINDOW_HEIGHT / 2.0f);
-
-    Texture smokeDepthTexture = smokeTexture;
-
-    glGenFramebuffers(1, &smokeFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
-
-    glGenTextures(1, &smokeTexture.id);
-    glBindTexture(GL_TEXTURE_2D, smokeTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, smokeTexture.x, smokeTexture.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, smokeTexture.id, 0);
-
-    glGenTextures(1, &smokeDepthTexture.id);
-    glBindTexture(GL_TEXTURE_2D, smokeDepthTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, smokeDepthTexture.x, smokeDepthTexture.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, smokeDepthTexture.id, 0);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    //TERRAIN
     std::vector<Vertex> lineVertices = {
         Vertex{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
         Vertex{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
@@ -123,24 +226,54 @@ int main(int argc, char *argv[])
 
     {
         //Need to do this before the game loop because calling glReadPixels for the first time
-        //for some reason causes a huge freeze (174 ms unoptimized). Subsequent calls are 10-12 ms
-        //This is not a good solution but it's a workaround
-        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+        //for some reason causes a huge freeze (174 ms unoptimized compilation). Subsequent calls are 10-12 ms
+        //Maybe I should just do ray picking instead of using a framebuffer with IDs
+        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
         uint8 pixels[3];
         glReadPixels((int)0, (int)0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+    Model *abramsTurret = ImportModel2("../data/models//abrams.fbx", game->mainShader);
+    //Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, aiProcess_PreTransformVertices);
+    if(!abramsTurret)
+    {
+        SDL_Log("Failed to load abrams.fbx");
+    }
+
+    Entity tankTurret = CreateEntity(abramsTurret);
+    tankTurret.position.y += 5.0f;
+    tankTurret.id = game->sceneEntities.back()->id + 1;
+    game->sceneEntities.push_back(&tankTurret);
+
+    glm::vec3 velocity = glm::vec3(0.0f);
+    glm::vec3 acceleration = glm::vec3(0.0f);
+    glm::vec3 angularVelocity = glm::vec3(0.0f);
+
+    game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
     {
         //Input
         ProcessInput(game);
 
         //Update
-        UpdateEditorUI(game);
+        UpdateParticleEditorUI(game);
         UpdateGame(game);
 
-        float time = SDL_GetTicks() / 1000.0f;
+        tankTurret.position += velocity * game->deltaTime + 0.5f * acceleration * Square(game->deltaTime);
+        tankTurret.rotation += angularVelocity * game->deltaTime;
+
+        if(IsFirstPress(game, SDL_SCANCODE_R))
+        {
+            velocity = glm::vec3(RandomBetween(-2.0f, 2.0f), 25.0f, RandomBetween(-2.0f, 2.0f));
+            acceleration.y = -9.8f;
+            angularVelocity = glm::vec3(RandomBetween(-180.0f, 180.0f),
+                                        RandomBetween(-180.0f, 180.0f),
+                                        RandomBetween(-180.0f, 180.0f));
+        }
+
+        angularVelocity -= angularVelocity * 0.3f * game->deltaTime;
+        velocity += acceleration * game->deltaTime;
 
         float x = game->soldierEntity->position.x + targetDirection.x * 10.0f * game->deltaTime;
         float z = game->soldierEntity->position.z + targetDirection.y * 10.0f * game->deltaTime;
@@ -159,7 +292,7 @@ int main(int argc, char *argv[])
             glEnable(GL_DEPTH_TEST);
 
             game->pickingPass = true;
-            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
             RenderScene(game);
             game->pickingPass = false;
 
@@ -179,6 +312,7 @@ int main(int argc, char *argv[])
 
                 uint64 start = SDL_GetPerformanceCounter();
                 uint8 pixels[3];
+                //This is very expensive, I think AABB ray intersection will be much more cheap
                 glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
                 uint32 pickedID = pixels[0];
                 uint64 end = SDL_GetPerformanceCounter();
@@ -207,29 +341,29 @@ int main(int argc, char *argv[])
                                                   glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
 
                 glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
-                //SDL_Log("%f %f %f", rayDirection.x, rayDirection.y, rayDirection.z);
-
                 glm::vec3 rayOrigin = game->camera.position;
+
                 lineVertices[0].position = glm::vec3(rayOrigin);
                 lineVertices[1].position = glm::vec3(rayOrigin + rayDirection * 200.0f);
                 UpdateMesh(&line, lineVertices);
 
                 glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, rayOrigin, rayDirection, 200.0f);
-                //SDL_Log("Intersection: %f %f %f", intersectionPoint.x, intersectionPoint.y, intersectionPoint.z);
 
                 target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
                 targetDirection = glm::normalize(target - glm::vec2(game->soldierEntity->position.x, game->soldierEntity->position.z));
             }
 
             game->outlinePass = true;
-            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture.id, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
             RenderScene(game);
             game->outlinePass = false;
 
             glDepthMask(GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
             RenderScene(game);
+
+            RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
 
             static GLenum terrainDisplayMode = GL_FILL;
             if(IsFirstPress(game, SDL_SCANCODE_SPACE))
@@ -246,14 +380,14 @@ int main(int argc, char *argv[])
 
             if(game->renderParticles)
             {
-                glBindFramebuffer(GL_FRAMEBUFFER, smokeFBO);
+                glBindFramebuffer(GL_FRAMEBUFFER, game->smokeFbo.id);
                 glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                glViewport(0, 0, smokeTexture.x, smokeTexture.y);
+                glViewport(0, 0, game->smokeFbo.color.x, game->smokeFbo.color.y);
                 SetTexture(&game->fullSceneDepthTexture, 2);
                 ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
-                ShaderSetVec2(game->particleShader, "u_screenSize", (float)smokeTexture.x, (float)smokeTexture.y);
+                ShaderSetVec2(game->particleShader, "u_screenSize", game->smokeFbo.color.size);
                 RenderParticles(game);
                 glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
             }
@@ -263,18 +397,18 @@ int main(int argc, char *argv[])
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
 
-            SetTexture(&game->outlineTexture, 0);
+            SetTexture(&game->outlineFbo.color, 0);
             ShaderSetInt(game->postProcessShader, "u_outline", 0);
             SetTexture(&game->fullSceneTexture, 1);
             ShaderSetInt(game->postProcessShader, "u_scene", 1);
-            SetTexture(&smokeTexture, 2);
+            SetTexture(&game->smokeFbo.color, 2);
             ShaderSetInt(game->postProcessShader, "u_smoke", 2);
             SetTexture(&game->fullSceneDepthTexture, 3);
             ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
-            SetTexture(&smokeDepthTexture, 4);
+            SetTexture(&game->smokeFbo.depth, 4);
             ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
 
-            ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / smokeTexture.x, 1.0f / smokeTexture.y);
+            ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->smokeFbo.color.size);
 
             glBindVertexArray(game->fullscreenQuad.vao);
             glDrawArrays(GL_TRIANGLES, 0, 6);

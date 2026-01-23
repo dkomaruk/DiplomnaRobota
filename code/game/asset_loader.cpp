@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "infantry.h"
 #include "mesh.h"
+#include "framebuffer.h"
 
 #include "string_utils.h"
 
@@ -95,6 +96,8 @@ void LoadParticleSystem(Game *game)
     game->particleTextures[3] = CreateTexture("../data/imgs/smoke4.png");
     game->particleTextures[4] = CreateTexture("../data/imgs/smoke5.png");
     game->particleTextures[5] = CreateTexture("../data/imgs/animated_smoke/1.png");
+    game->particleTextures[6] = CreateTexture("../data/imgs/fire.png");
+    game->particleTextures[7] = CreateTexture("../data/imgs/fire2.png");
 
     for(int i = 0; i < ArrayCount(game->particleSystems); i++)
     {
@@ -188,69 +191,6 @@ void LoadAudio(Game *game)
     alSourcef(game->source, AL_MAX_DISTANCE, 20.0f);
 
     //alSourcePlay(game->source);
-}
-
-//TODO: Move this somewhere else (doesn't belong in the asset loader)
-void SetupFramebuffers(Game *game)
-{
-    //Framebuffer
-    //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
-
-    glGenFramebuffers(1, &game->pickingFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo);
-
-    glGenTextures(1, &game->pickingTexture.id);
-    glBindTexture(GL_TEXTURE_2D, game->pickingTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->pickingTexture.id, 0);
-
-    GLuint pickingRbo;
-    glGenRenderbuffers(1, &pickingRbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, pickingRbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pickingRbo);
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-    {
-        SDL_Log("Picking framebuffer is complete");
-    }
-
-    //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
-    glGenFramebuffers(1, &game->outlineFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo);
-
-    glGenTextures(1, &game->outlineTexture.id);
-    glBindTexture(GL_TEXTURE_2D, game->outlineTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineTexture.id, 0);
-
-    glGenTextures(1, &game->fullSceneTexture.id);
-    glBindTexture(GL_TEXTURE_2D, game->fullSceneTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
-
-    glGenTextures(1, &game->fullSceneDepthTexture.id);
-    glBindTexture(GL_TEXTURE_2D, game->fullSceneDepthTexture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, game->fullSceneDepthTexture.id, 0);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-    {
-        SDL_Log("Outline/scene framebuffer is complete");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void LoadAssets(Game *game)

@@ -24,19 +24,29 @@ enum TextureFlags
 
     TextureFlag_RGBA                       = 0x00'00'01'00,
     TextureFlag_RGB                        = 0x00'00'02'00,
+    TextureFlag_Depth32                    = 0x00'00'04'00,
 
-    TextureFlag_Repeat                     = 0x00'00'04'00,
-    TextureFlag_FlipY                      = 0x00'00'08'00,
-
-    TextureFlag_Common                     = TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Mag_Linear |
-                                             TextureFlag_Repeat | TextureFlag_FlipY | TextureFlag_RGBA
+    TextureFlag_Repeat                     = 0x00'00'08'00,
+    TextureFlag_ClampToEdge                = 0x00'00'10'00,
+    TextureFlag_Mipmaps                    = 0x00'00'20'00,
+    TextureFlag_FlipY                      = 0x00'00'40'00,
 };
+
+#define TexturePreset_Common (TextureFlag_Filter_Min_LinLin | \
+                              TextureFlag_Filter_Mag_Linear | \
+                              TextureFlag_Repeat            | \
+                              TextureFlag_Mipmaps           | \
+                              TextureFlag_FlipY             | \
+                              TextureFlag_RGBA)
 
 struct Texture
 {
     GLuint id;
-    int x;
-    int y;
+    union
+    {
+        struct {int x; int y;};
+        glm::ivec2 size;
+    };
 };
 
 struct Sprite
@@ -60,8 +70,8 @@ struct Atlas
     std::vector<Sprite> sprites;
 };
 
-Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags = TextureFlag_Common);
-Texture CreateTexture(char *imagePath, TextureFlags flags = TextureFlag_Common);
+Texture CreateGLTexture(uint8 *image, int width, int height, int flags = TexturePreset_Common);
+Texture CreateTexture(char *imagePath, int flags = TexturePreset_Common);
 
 void SetTexture(Texture *texture, GLuint textureSlot);
 void SetTexture(GLuint textureID, GLuint textureSlot);

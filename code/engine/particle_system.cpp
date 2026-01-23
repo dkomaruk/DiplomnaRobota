@@ -123,7 +123,7 @@ void UpdateParticles(Game *game, ParticleSystem *system)
                               ? particle->timeLeft : game->deltaTime;
             particle->timeLeft -= deltaTime;
             float elapsedTime = settings->lifetime - particle->timeLeft; //For animation
-            float posTime = 1.0f - (particle->timeLeft / settings->lifetime); //For curve sampling
+            float posTime = 1.0f - (particle->timeLeft / Max(0.01f, settings->lifetime)); //For curve sampling
             float posAlpha = 1.0f - (particle->color.a / particle->startingAlpha); //For gradient color sampling
 
             //Update animation
@@ -135,6 +135,10 @@ void UpdateParticles(Game *game, ParticleSystem *system)
                 particle->uvScale = atlas->sprites[i].size;
             }
 
+            //Update position, scale, rotation
+            particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
+                             (particle->velocity * deltaTime);
+
             //Update velocity over lifetime
             if(velocityOverLifetime)
             {
@@ -144,10 +148,6 @@ void UpdateParticles(Game *game, ParticleSystem *system)
             {
                 particle->velocity += particle->acceleration * deltaTime;
             }
-
-            //Update position, scale, rotation
-            particle->pos += (0.5f * particle->acceleration * Square(deltaTime)) +
-                             (particle->velocity * deltaTime);
 
             particle->scale += particle->scaleVelocity * deltaTime;
             particle->rotation += particle->rotationVelocity * deltaTime;
@@ -241,8 +241,25 @@ void SortAllParticles(Game *game)
 void RenderParticles(Game *game)
 {
     glEnable(GL_BLEND);
-    //This is needed to make transparent smoke at low resolution occlude scene geometry
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    switch(game->smokeSettings.blendingType)
+    {
+        case ParticleBlending_Standard:
+            //This is needed to make transparent smoke at low resolution occlude scene geometry
+            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        break;
+
+        case ParticleBlending_Screen:
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+        break;
+
+        case ParticleBlending_Premultiplied:
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        break;
+
+        case ParticleBlending_Additive:
+        default: //Fall through
+            glBlendFunc(GL_ONE, GL_ONE);
+    }
 
     glDepthMask(GL_FALSE);
 

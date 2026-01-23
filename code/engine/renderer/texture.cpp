@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <stb_image.h>
 
-Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
+Texture CreateGLTexture(uint8 *image, int width, int height, int flags)
 {
     Texture texture = {};
     texture.x = width;
@@ -45,28 +45,49 @@ Texture CreateGLTexture(uint8 *image, int width, int height, TextureFlags flags)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 
-    GLfloat maxAniso;
-    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLint)maxAniso);
+    //GLfloat maxAniso;
+    //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLint)maxAniso);
 
-    GLint wrapping = (flags & TextureFlag_Repeat) ? GL_REPEAT : GL_CLAMP_TO_EDGE;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
-
-    if((flags & TextureFlag_RGBA) && (flags & TextureFlag_RGB))
+    if(FLAG_IS_SET(flags, TextureFlag_Repeat) || FLAG_IS_SET(flags, TextureFlag_ClampToEdge))
     {
-        SDL_Log("Failed to create a texture. Multiple color channels flags are set");
-        return texture; //TODO: Return a missing texture placeholder
+        GLint wrapping = FLAG_IS_SET(flags, TextureFlag_Repeat) ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
     }
 
-    GLint colorChannels = (flags & TextureFlag_RGB) ? GL_RGB : GL_RGBA;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, colorChannels, GL_UNSIGNED_BYTE, (const void *)image);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    if(FLAG_IS_SET(flags, TextureFlag_RGBA) && FLAG_IS_SET(flags, TextureFlag_RGB))
+    {
+        SDL_Log("Failed to create a texture. Multiple color channels flags are set");
+        return texture;
+    }
+
+    GLenum internalFormat = GL_RGB;
+    GLenum format = GL_RGB;
+    GLenum type = GL_UNSIGNED_BYTE;
+    if(FLAG_IS_SET(flags, TextureFlag_RGBA))
+    {
+        internalFormat = GL_RGBA;
+        format = GL_RGBA;
+    }
+    else if(FLAG_IS_SET(flags, TextureFlag_Depth32))
+    {
+        internalFormat = GL_DEPTH_COMPONENT32F;
+        format = GL_DEPTH_COMPONENT;
+        type = GL_FLOAT;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, (const void *)image);
+
+    if(FLAG_IS_SET(flags, TextureFlag_Mipmaps))
+    {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
 
     return texture;
 }
 
-Texture CreateTexture(char *imagePath, TextureFlags flags)
+Texture CreateTexture(char *imagePath, int flags)
 {
     Texture texture = {};
 

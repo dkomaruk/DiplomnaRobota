@@ -7,6 +7,7 @@
 #include "text_demo.h"
 #include "particle_system.h"
 #include "terrain.h"
+#include "framebuffer.h"
 
 #include "defines.h"
 
@@ -40,11 +41,12 @@ struct Game
 
     //Framebuffers
     //TODO: Move these framebuffers out into a struct
-    GLuint pickingFbo;
-    Texture pickingTexture;
+    Framebuffer pickingFbo;
 
-    GLuint outlineFbo;
-    Texture outlineTexture, fullSceneTexture, fullSceneDepthTexture;
+    Framebuffer outlineFbo;
+    Texture fullSceneTexture, fullSceneDepthTexture;
+
+    Framebuffer smokeFbo;
 
     //Post-processing
     Mesh fullscreenQuad;
@@ -101,7 +103,7 @@ struct Game
 
     Atlas atlas;
 
-    Texture particleTextures[6];
+    Texture particleTextures[8];
     int currentTexture = 1;
 };
 
