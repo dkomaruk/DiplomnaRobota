@@ -58,6 +58,7 @@ uniform PointLight u_pointLights[16];
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 FragPos;
+//in vec3 DebugColor;
 
 vec3 CalculateDirLight(DirLight light, SampledTextures textures, vec3 normal, vec3 viewDir)
 {
@@ -109,5 +110,6 @@ void main()
         finalColor += CalculatePointLight(u_pointLights[i], sampledTextures, normal, FragPos, viewDir);
     }
 
+    //finalColor = DebugColor;
     gl_FragColor = vec4(finalColor, 1.0);
 }

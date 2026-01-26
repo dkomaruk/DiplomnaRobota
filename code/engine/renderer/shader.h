@@ -33,7 +33,7 @@ void ShaderSetVec4(GLuint shader, char *uniform, float v0, float v1, float v2, f
 void ShaderSetVec4(GLuint shader, char *uniform, glm::vec4 vector);
 
 void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix);
-
+void ShaderSetMatrix4Array(GLuint shader, char *uniform, float *matrix, int count = 1);
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material);
 
 void ShaderSetDirLight(GLuint shader, DirectionalLight light);

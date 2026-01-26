@@ -136,21 +136,28 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags)
     return result;
 }
 
-void GetDefaultAttribs(AttribInfo *attribs)
-{
-    attribs[0] = {0, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, position)};
-    attribs[1] = {1, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, normal)};
-    attribs[2] = {2, 2, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, uv)};
-}
-
-Mesh CreateVBO(float *vertexData, int vertexDataElements, AttribInfo *attribs, int numOfAttribs)
+Mesh CreateVBO(void *vertexData, int vertexDataElements, AttribInfo *attribs, int numOfAttribs)
 {
     Mesh mesh = {};
 
     int attribsPerVertex = 0;
+    int vertexSize = 0;
     for(int i = 0; i < numOfAttribs; ++i)
     {
         attribsPerVertex += attribs[i].size;
+
+        int attribElementSize = 0;
+        switch(attribs[i].type)
+        {
+            case GL_FLOAT: attribElementSize = sizeof(float); break;
+            case GL_UNSIGNED_INT: attribElementSize = sizeof(uint32); break;
+            case GL_INT: attribElementSize = sizeof(int); break;
+            case GL_UNSIGNED_BYTE: attribElementSize = sizeof(uint8); break;
+
+            CaseNotImplemented
+        }
+
+        vertexSize += attribElementSize * attribs[i].size;
     }
 
     mesh.verticesCount = (uint32)(vertexDataElements / attribsPerVertex);
@@ -161,13 +168,29 @@ Mesh CreateVBO(float *vertexData, int vertexDataElements, AttribInfo *attribs, i
     glGenBuffers(1, &mesh.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
 
-    glBufferData(GL_ARRAY_BUFFER, vertexDataElements * sizeof(float), vertexData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, mesh.verticesCount * vertexSize, vertexData, GL_STATIC_DRAW);
 
     for(int i = 0; i < numOfAttribs; ++i)
     {
         glEnableVertexAttribArray(attribs[i].attribLocation);
-        glVertexAttribPointer(attribs[i].attribLocation, attribs[i].size, attribs[i].type,
-                              GL_FALSE, attribs[i].stride, attribs[i].pointer);
+        switch(attribs[i].type)
+        {
+            case GL_FLOAT:
+            {
+                glVertexAttribPointer(attribs[i].attribLocation, attribs[i].size, attribs[i].type,
+                                     GL_FALSE, attribs[i].stride, attribs[i].pointer);
+            } break;
+
+            case GL_INT:
+            case GL_UNSIGNED_INT:
+            case GL_UNSIGNED_BYTE:
+            {
+                glVertexAttribIPointer(attribs[i].attribLocation, attribs[i].size, attribs[i].type,
+                                       attribs[i].stride, attribs[i].pointer);
+            } break;
+
+            CaseNotImplemented
+        }
     }
 
     glBindVertexArray(0);
@@ -178,9 +201,14 @@ Mesh CreateVBO(float *vertexData, int vertexDataElements, AttribInfo *attribs, i
 
 Mesh CreateMesh(std::vector<Vertex> vertices)
 {
-    AttribInfo defaultAttribs[3];
-    GetDefaultAttribs(defaultAttribs);
-    return CreateVBO(&(vertices[0].position.x), (uint32)vertices.size() * 8, defaultAttribs, 3);
+    AttribInfo vertexAttribs[3] = {};
+
+    vertexAttribs[0] = {0, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, position)};
+    vertexAttribs[1] = {1, 3, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, normal)};
+    vertexAttribs[2] = {2, 2, GL_FLOAT, sizeof(Vertex), (void *)offsetof(Vertex, uv)};
+
+    uint32 verticesElements = (uint32)vertices.size() * 8;
+    return CreateVBO(&(vertices[0].position.x), verticesElements, vertexAttribs, 3);
 }
 
 Mesh CreateMesh(std::vector<float> vertices, AttribInfo *attribs, int numOfAttribs)
@@ -222,6 +250,7 @@ Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices)
     return mesh;
 }
 
+//TODO: This should use CreateMesh and specify attribs
 Mesh CreateTextVBO(std::vector<VertexText> vertices, GLenum usage = GL_DYNAMIC_DRAW)
 {
     Mesh mesh = {};

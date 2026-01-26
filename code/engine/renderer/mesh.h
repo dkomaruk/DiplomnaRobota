@@ -66,6 +66,9 @@ struct Model
     int numOfMeshes;
 };
 
+Mesh CreateVBO(void *vertexData, int vertexDataElements, AttribInfo *attribs, int numOfAttribs);
+void CreateEBO(Mesh *mesh, std::vector<unsigned int> indices);
+
 Mesh CreateMesh(std::vector<Vertex> vertices);
 Mesh CreateMesh(std::vector<float> vertices, AttribInfo *attribs = 0, int numOfAttribs = 0);
 Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);

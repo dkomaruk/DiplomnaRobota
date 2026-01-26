@@ -155,6 +155,16 @@ void ShaderSetMatrix4(GLuint shader, char *uniform, glm::mat4 matrix)
     glUniformMatrix4fv(glGetUniformLocation(shader, uniform), 1, GL_FALSE, value_ptr(matrix));
 }
 
+void ShaderSetMatrix4Array(GLuint shader, char *uniform, float *matrix, int count)
+{
+    if(currentShader != shader) UseShader(shader);
+
+    char buffer[256];
+    sprintf(buffer, "%s[0]", uniform);
+
+    glUniformMatrix4fv(glGetUniformLocation(shader, buffer), count, GL_FALSE, matrix);
+}
+
 void ShaderSetMaterial(GLuint shader, MaterialPhong *material)
 {
     ShaderSetInt(shader, "u_material.diffuse", 0);

@@ -23,6 +23,9 @@ typedef uint64_t uint64;
 #define Assert(expression) \
         if(!(expression)) { *(int *)0 = 0; }
 
+#define InvalidCodepath Assert(0);
+#define CaseNotImplemented default: {InvalidCodepath} break;
+
 #define ArrayCount(array) (sizeof(array) / sizeof((array)[0]))
 
 #define FLAG_SET(n, f) ((n) |= (f))

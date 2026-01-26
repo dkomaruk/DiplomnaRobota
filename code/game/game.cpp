@@ -340,11 +340,16 @@ void UpdateGame(Game *game)
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);
     ShaderSetVec3(game->mainShader, "u_viewDir", game->camera.direction);
 
+    ShaderSetVec3(game->animationShader, "u_viewPos", game->camera.position);
+    ShaderSetVec3(game->animationShader, "u_viewDir", game->camera.direction);
+
     float time = SDL_GetTicks() / 1000.0f;
     ShaderSetFloat(game->mainShader, "u_time", time);
+    ShaderSetFloat(game->animationShader, "u_time", time);
     ShaderSetFloat(game->postProcessShader, "u_time", time);
 
     ShaderSetMatrix4(game->mainShader, "u_view", game->view);
+    ShaderSetMatrix4(game->animationShader, "u_view", game->view);
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
     ShaderSetMatrix4(game->particleShader, "u_view", game->view);

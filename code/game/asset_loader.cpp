@@ -231,8 +231,11 @@ void LoadAssets(Game *game)
                                                 LoadShader("../data/shaders/particle.frag"));
     GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
                                                LoadShader("../data/shaders/terrain.frag"));
+    GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
+                                                 LoadShader("../data/shaders/fragment.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
+    ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
     ShaderSetVec3(lightSourceShader, "u_lightColor", glm::vec3(1.0f));
 
@@ -246,6 +249,7 @@ void LoadAssets(Game *game)
     game->shaders.push_back(pickingShader);
     game->shaders.push_back(postProcessShader);
     game->shaders.push_back(terrainShader);
+    game->shaders.push_back(animationShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -266,10 +270,13 @@ void LoadAssets(Game *game)
     game->uiTextShader = uiTextShader;
     game->particleShader = particleShader;
     game->terrainShader = terrainShader;
+    game->animationShader = animationShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
-    Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
+    //Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
+    //aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
+    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->mainShader, aiProcess_Triangulate);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
     {
@@ -366,7 +373,9 @@ void LoadAssets(Game *game)
     //glm::vec3 dirSpecular = glm::vec3(0.8f, 0.7f, 0.0f);
     DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, dirLight);
-    //ShaderSetInt(game->mainShader, "u_dirLightCount", 0);
+    ShaderSetDirLight(game->animationShader, dirLight);
+    ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
+    ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
     Entity *dirLightMesh = (Entity *)malloc(sizeof(Entity));
     *dirLightMesh = CreateEntity(lightMesh);
     strcpy(dirLightMesh->textId, "dirLightCube");
@@ -394,6 +403,7 @@ void LoadAssets(Game *game)
         pointLights[i].quadratic = 0.0028f;
 
         ShaderSetPointLight(game->mainShader, pointLights[i], i);
+        ShaderSetPointLight(game->animationShader, pointLights[i], i);
 
         pointLightsSources[i] = CreateEntity(lightMesh);
         pointLightsSources[i].scale = glm::vec3(0.15f);
@@ -403,6 +413,7 @@ void LoadAssets(Game *game)
     }
 
     ShaderSetInt(game->mainShader, "u_pointLightCount", maxPointLights);
+    ShaderSetInt(game->animationShader, "u_pointLightCount", maxPointLights);
 
     for(int i = 0; i < 2; i++)
     {
