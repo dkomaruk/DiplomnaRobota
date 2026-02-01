@@ -45,9 +45,31 @@ struct Vertex
     glm::vec2 uv;
 };
 
+struct SkinnedVertex
+{
+    union
+    {
+        Vertex vertex;
+        struct
+        {
+            glm::vec3 position;
+            glm::vec3 normal;
+            glm::vec2 uv;
+        };
+    };
+    glm::ivec4 boneId;
+    glm::vec4 weight;
+};
+
 struct VertexText
 {
     glm::vec2 position;
+    glm::vec2 uv;
+};
+
+struct TerrainVertex
+{
+    glm::vec3 position;
     glm::vec2 uv;
 };
 
@@ -59,38 +81,34 @@ struct Mesh
     GLenum drawMode = GL_TRIANGLES;
 };
 
-struct Model
-{
-    Mesh *mesh;
-    MaterialPhong *material;
-    int numOfMeshes;
-};
+extern AttribInfo vertexAttribs[3];
+extern AttribInfo skinnedVertexAttribs[5];
+extern AttribInfo textVertexAttribs[2];
+extern AttribInfo terrainVertexAttribs[2];
 
-Mesh CreateVBO(void *vertexData, int vertexDataElements, AttribInfo *attribs, int numOfAttribs);
+Mesh CreateVBO(void *vertexData, int vertexDataElements, AttribInfo *attribs,
+               int numOfAttribs, GLenum usage = GL_STATIC_DRAW);
 void CreateEBO(Mesh *mesh, std::vector<unsigned int> indices);
 
-Mesh CreateMesh(std::vector<Vertex> vertices);
-Mesh CreateMesh(std::vector<float> vertices, AttribInfo *attribs = 0, int numOfAttribs = 0);
-Mesh CreateMesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
-Mesh CreateMesh(std::vector<float> vertices, std::vector<unsigned int> indices,
-                AttribInfo *attribs = 0, int numOfAttribs = 0);
+Mesh CreateMesh(void *verticesData, int verticesCount, int vertexSize = sizeof(Vertex),
+                AttribInfo *attribs = vertexAttribs, int numOfAttribs = ArrayCount(vertexAttribs),
+                GLenum usage = GL_STATIC_DRAW);
+Mesh CreateMesh(void *verticesData, int verticesCount, int vertexSize,
+                void *indicesData, int indicesCount,
+                AttribInfo *attribs = vertexAttribs,
+                int numOfAttribs = ArrayCount(vertexAttribs),
+                GLenum usage = GL_STATIC_DRAW);
 
-Mesh CreateTextMesh(std::vector<VertexText> vertices);
-
-void UpdateMesh(Mesh *mesh, std::vector<Vertex> newVertices);
+//void UpdateMesh(Mesh *mesh, std::vector<Vertex> newVertices);
+void UpdateMesh(Mesh *mesh, void *newVertices, int size, GLenum usage = GL_DYNAMIC_DRAW);
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
 Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
 Mesh CreateUnitQuadStripes();
 Mesh *GetUnitQuad();
 
-Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0);
-
 void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLenum drawMode = GL_TRIANGLES);
 void RenderSurface(GLuint shader, Texture *texture, glm::mat4 model);
-
-glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat);
 
 #define MESH_H
 #endif

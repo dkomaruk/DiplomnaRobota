@@ -2,8 +2,6 @@
 
 #include "defines.h"
 
-#include "mesh.h"
-
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -11,15 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-//This is 64 bytes according to sizeof(SkinnedVertex)
-struct SkinnedVertex
-{
-    glm::ivec4 boneId;
-    glm::vec4 weight;
-    glm::vec3 normal;
-    glm::vec3 position;
-    glm::vec2 uv;
-};
+struct AnimatedModel;
 
 struct Bone
 {
@@ -28,23 +18,23 @@ struct Bone
     int id;
 };
 
-struct Node
-{
-    glm::mat4 localTransform;
-    std::string name;
-    int boneId;
-    int parentId;
-};
+//TODO: Copy assimp node hierarchy into a flat array to avoid traversing the whole node tree when updating an animation
+//struct Node
+//{
+//    glm::mat4 localTransform;
+//    std::string name;
+//    int boneId;
+//    int parentId;
+//};
 
 struct Skeleton
 {
     std::unordered_map<std::string, Bone> boneMap;
     int numOfBones;
 
-    std::unordered_map<std::string, int> nameToNodeIndex;
-
-    Node *nodes;
-    int numOfNodes;
+    //std::unordered_map<std::string, int> nameToNodeIndex;
+    //Node *nodes;
+    //int numOfNodes;
 };
 
 struct KeyPosition
@@ -79,17 +69,13 @@ struct AnimationSample
 
 struct Animation
 {
-    Skeleton *skeleton;
     float ticksPerSecond;
     int numOfFrames;
-    //AnimationSample *samples;
     std::unordered_map<std::string, AnimationSample> samples;
 };
 
-glm::mat4 SampleAnimation(Animation *animation, float time);
-Mesh CreateMesh(std::vector<SkinnedVertex> vertices);
-Mesh CreateMesh(std::vector<SkinnedVertex> vertices, std::vector<unsigned int> indices);
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m);
+void UpdateAnimation(AnimatedModel *model, float deltaTime);
 
 #define ANIMATION_H
 #endif

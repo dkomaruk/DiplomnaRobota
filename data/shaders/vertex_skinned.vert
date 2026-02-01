@@ -1,16 +1,16 @@
 #version 460 core
 
-layout(location = 0) in ivec4 boneId;
-layout(location = 1) in vec4 bnWeight;
-layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 position;
-layout(location = 4) in vec2 texCoords;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec2 texCoords;
+layout(location = 3) in ivec4 boneId;
+layout(location = 4) in vec4 bnWeight;
 
 uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 
-const int MAX_BONES = 100;
+const int MAX_BONES = 206;
 const int MAX_BONE_INFLUENCE = 4;
 uniform mat4 u_skinning[MAX_BONES];
 

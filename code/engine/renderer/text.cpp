@@ -126,8 +126,9 @@ Text CreateText(Font *font, char *text, glm::vec2 position, GLuint shader, glm::
     result.font = font;
     result.position = position;
 
-    std::vector<VertexText> vertices =  PrepareTextVertices(font, text, &result.size);
-    result.quads = CreateTextMesh(vertices);
+    std::vector<VertexText> vertices = PrepareTextVertices(font, text, &result.size);
+    result.quads = CreateMesh(&vertices[0], vertices.size(), sizeof(VertexText), textVertexAttribs,
+                              ArrayCount(textVertexAttribs), GL_DYNAMIC_DRAW);
 
     result.capacity = (int)vertices.size() / VERTICES_PER_CHARACTER;
 

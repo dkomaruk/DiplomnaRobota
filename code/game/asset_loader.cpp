@@ -233,11 +233,13 @@ void LoadAssets(Game *game)
                                                LoadShader("../data/shaders/terrain.frag"));
     GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
                                                  LoadShader("../data/shaders/fragment.frag"));
+    GLuint lineShader = CreateShaderProgram(LoadShader("../data/shaders/line.vert"),
+                                            LoadShader("../data/shaders/fragment2.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    ShaderSetVec3(lightSourceShader, "u_lightColor", glm::vec3(1.0f));
+    ShaderSetVec3(lightSourceShader, "u_color", glm::vec3(1.0f));
 
     ShaderSetInt(postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     ShaderSetInt(postProcessShader, "u_inverted", 0);
@@ -250,6 +252,7 @@ void LoadAssets(Game *game)
     game->shaders.push_back(postProcessShader);
     game->shaders.push_back(terrainShader);
     game->shaders.push_back(animationShader);
+    game->shaders.push_back(lineShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -271,6 +274,7 @@ void LoadAssets(Game *game)
     game->particleShader = particleShader;
     game->terrainShader = terrainShader;
     game->animationShader = animationShader;
+    game->lineShader = lineShader;
 
     //MESHES
 #ifdef LOAD_ASSETS

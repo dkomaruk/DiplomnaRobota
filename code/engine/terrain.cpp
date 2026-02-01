@@ -52,7 +52,7 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
     }
     stbi_image_free(image);
 
-    std::vector<float> vertices;
+    std::vector<TerrainVertex> vertices;
 
     int numOfVerticesX = 0;
     int numOfVerticesZ = 0;
@@ -69,15 +69,16 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
         numOfVerticesZ = 0;
         for(int j = 0; j < t.mapWidth; j += meshStep)
         {
+            TerrainVertex vertex = {};
+            vertex.position.x = ((float)i * t.mapScale) - center.x;
+            vertex.position.y = (float)t.heightmap[(int)(j + t.mapWidth * i)];
+            vertex.position.z = ((float)j * t.mapScale) - center.y;
+            vertex.uv.x = (float)j / (t.mapWidth - 1);
+            vertex.uv.y = (float)i / (t.mapHeight - 1);
+
+            vertices.push_back(vertex);
+
             numOfVerticesZ++;
-
-            float x = ((float)i * t.mapScale) - center.x;
-            float y = (float)t.heightmap[(int)(j + t.mapWidth * i)];
-            float z = ((float)j * t.mapScale) - center.y;
-            float u = (float)j / (t.mapWidth - 1);
-            float v = (float)i / (t.mapHeight - 1);
-
-            vertices.insert(vertices.end(), {x, y, z, u, v});
         }
     }
 
@@ -97,12 +98,8 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
     glEnable(GL_PRIMITIVE_RESTART);
     glPrimitiveRestartIndex(restartIndex);
 
-    AttribInfo attribs[2] = {
-        {0, 3, GL_FLOAT, sizeof(float) * 5, (void *)0},
-        {1, 2, GL_FLOAT, sizeof(float) * 5, (void *)(sizeof(float) *3)}
-    };
-
-    t.mesh = CreateMesh(vertices, indices, attribs, 2);
+    t.mesh = CreateMesh(&vertices[0], vertices.size(), terrainVertexAttribs[0].stride, &indices[0],
+                        indices.size(), terrainVertexAttribs, ArrayCount(terrainVertexAttribs));
     t.mesh.drawMode = GL_TRIANGLE_STRIP;
 
     return t;
@@ -157,6 +154,11 @@ glm::vec3 FindApproximateIntersectionPoint(Terrain *terrain, glm::vec3 origin, g
 glm::vec3 GetRayTerrainIntersection(Terrain *terrain, glm::vec3 rayOrigin, glm::vec3 rayDirection, float maxDist)
 {
     glm::vec3 result = glm::vec3(0.0f);
+
+    if(rayOrigin.y < GetTerrainHeight(terrain, rayOrigin.x, rayOrigin.z))
+    {
+        return result;
+    }
 
     float t = 0.0;
     float prevT = 0.0f;

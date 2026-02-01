@@ -1,5 +1,7 @@
 #include "infantry.h"
 
+#include "model.h"
+
 #include "defines.h"
 #include "game.h"
 #include "shader.h"

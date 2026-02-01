@@ -353,6 +353,7 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
     ShaderSetMatrix4(game->particleShader, "u_view", game->view);
+    ShaderSetMatrix4(game->lineShader, "u_view", game->view);
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
 }

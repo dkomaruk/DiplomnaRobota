@@ -1,10 +1,11 @@
 #ifndef ENTITY_H
 
-#include "mesh.h"
-
 #include <glm/vec3.hpp>
 
 struct Game;
+
+struct Mesh;
+struct Model;
 
 enum EntityType
 {
