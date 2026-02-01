@@ -1,16 +1,11 @@
 # Current
-## 2026-01-08/17 S2 Improved Text Rendering
-- [x] Particle System
-  - [x] Gradient generator for color ramp during particle lifetime
-  - [x] Add particle system settings preset saving/loading
-  - [x] Curve editor for controlling parameters over lifetime of the particle
-  - [x] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
+
+## 2026-02-01 S6 ???
 
 # Next
 
 # Upcoming
 - [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
-- [ ] Skeletal Animations
 - [ ] Further Text Improvements
   - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
   - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
@@ -18,11 +13,8 @@
       - Surfaces, created with TTF_RenderText_Blended, will contain signed distance value in their alpha channel
     - [ ] Need a custom shader to use this signed distance value
       - <https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf>
-- [ ] Heightmaps For Terrain Rendering
+- [ ] Improve Terrain Rendering
   - [ ] Check how WARNO/Total War snaps unites to terrain and how it orients them on slopes and hills
-  - [ ] Make a grid system where units have their Y coordinate set to the Y coordinate of the terrain in the position they are located.
-  - [ ] <https://gamedev.stackexchange.com/questions/24572/how-does-terrain-following-work-on-height-map?rq=1>
-
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
 - [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
@@ -66,6 +58,32 @@
   - Alt: send state snapshot
 
 # Log
+
+## 2026-01-22/27 S5 Skeletal Animation
+- [x] Skeletal Animation
+  - [x] Use Assimp to load meshes, bones and animations
+  - [x] Assign bone ids and weights to vertices before uploading them to the GPU
+  - [x] Update animations
+    - [x] Each frame advance the current animation by deltaTime
+    - [x] Go through the node hierarchy from the top
+    - [x] If the node is animated, interpolate between current and next keyframes (position, rotation, scale) and create a transformation matrix. Otherwise a default node transform is used (which is a relative position from its parent).
+    - [x] Join current node transformation matrix and accumulated parent transformation matrix to get global transformation matrix at that node
+    - [x] If node is a bone, the global transform is multiplied with the inverse bind pose matrix to move from model space into bone space. This resulting matrix is then associated with this bone and applied to vertices influenced by it in the vertex shader (if a vertex is influenced by more than one bone, the matrices of those bones are blended together using bone weights as a blend factor)
+    - [x] Pass the final matrix of the node to its children to repeat the same process
+
+## 2026-01-17/22 S4 Terrain Rendering
+- [x] Terrain Rendering
+  - [x] Load a heightmap texture, make a mesh out of it
+  - [x] Sample heightmap at normalized world coordinates to get Y coordinate at XZ point
+    - [x] Use bilinear interpolation to sample the coordinate between four pixels in the heightmap
+  - [x] <https://gamedev.stackexchange.com/questions/24572/how-does-terrain-following-work-on-height-map?rq=1>
+
+## 2026-01-08/17 S3 Particle System
+- [x] Particle System
+  - [x] Gradient generator for color ramp during particle lifetime
+  - [x] Add particle system settings preset saving/loading
+  - [x] Curve editor for controlling parameters over lifetime of the particle
+  - [x] Transparency issue: <https://community.khronos.org/t/proper-rendering-for-particles/44223/4>
 
 ## 2025-12-29/2026-01-08 S2 Improved Text Rendering
 - [x] Improve text rendering
