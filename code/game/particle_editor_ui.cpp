@@ -211,10 +211,7 @@ void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &f
     }
 
     settings.velocityOverLifetime = j.value("velocityOverLifetime", ds->velocityOverLifetime);
-    if(j.count("colorOverLifetime"))
-    {
-        settings.colorOverLifetime = j.value("colorOverLifetime", ds->colorOverLifetime);
-    }
+    settings.colorOverLifetime = j.value("colorOverLifetime", ds->colorOverLifetime);
 
     const ImGG::Gradient &gradient = settings.gradientWgt.gradient();
 

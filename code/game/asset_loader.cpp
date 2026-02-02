@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "infantry.h"
 #include "mesh.h"
+#include "model.h"
 #include "framebuffer.h"
 
 #include "string_utils.h"
@@ -221,10 +222,14 @@ void LoadAssets(Game *game)
                                         LoadShader("../data/shaders/fragment.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
                                                    LoadShader("../data/shaders/fragment2.frag"));
+    GLuint skinnedOutlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
+                                                      LoadShader("../data/shaders/fragment2.frag"));
     GLuint uiTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
                                               LoadShader("../data/shaders/uiText.frag"));
     GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
                                                LoadShader("../data/shaders/picking.frag"));
+    GLuint skinnedPickingShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
+                                                      LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                    LoadShader("../data/shaders/fragment3.frag"));
     GLuint particleShader = CreateShaderProgram(LoadShader("../data/shaders/particle.vert"),
@@ -240,6 +245,7 @@ void LoadAssets(Game *game)
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
     ShaderSetVec3(lightSourceShader, "u_color", glm::vec3(1.0f));
+    ShaderSetVec3(skinnedOutlineShader, "u_color", glm::vec3(1.0f));
 
     ShaderSetInt(postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     ShaderSetInt(postProcessShader, "u_inverted", 0);
@@ -248,7 +254,9 @@ void LoadAssets(Game *game)
 
     game->shaders.push_back(shader);
     game->shaders.push_back(lightSourceShader);
+    game->shaders.push_back(skinnedOutlineShader);
     game->shaders.push_back(pickingShader);
+    game->shaders.push_back(skinnedPickingShader);
     game->shaders.push_back(postProcessShader);
     game->shaders.push_back(terrainShader);
     game->shaders.push_back(animationShader);
@@ -269,7 +277,9 @@ void LoadAssets(Game *game)
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
+    game->skinnedOutlineShader = skinnedOutlineShader;
     game->pickingShader = pickingShader;
+    game->skinnedPickingShader = skinnedPickingShader;
     game->uiTextShader = uiTextShader;
     game->particleShader = particleShader;
     game->terrainShader = terrainShader;
@@ -280,7 +290,7 @@ void LoadAssets(Game *game)
 #ifdef LOAD_ASSETS
     //Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
-    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->mainShader, aiProcess_Triangulate);
+    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
     {
@@ -289,6 +299,7 @@ void LoadAssets(Game *game)
         strcpy(soldierEntity->textId, "soldier");
         soldierEntity->position.y += 0.5f;
         game->sceneEntities.push_back(soldierEntity);
+        game->soldierEntity0 = soldierEntity;
         game->soldierEntity = soldierEntity;
     }
 
@@ -375,7 +386,8 @@ void LoadAssets(Game *game)
     glm::vec3 dirAmbient = glm::vec3(0.05f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
     //glm::vec3 dirSpecular = glm::vec3(0.8f, 0.7f, 0.0f);
-    DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
+    //DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
+    DirectionalLight dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, dirLight);
     ShaderSetDirLight(game->animationShader, dirLight);
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
@@ -438,7 +450,7 @@ void LoadAssets(Game *game)
     }
 #endif
 
-    game->terrain = CreateTerrain("../data/heightmap.png", 6.0f, 1.0f);
+    game->terrain = CreateTerrain("../data/heightmap.png", 10.0f, 1.0f, 0.1f, 4, 10.0f);
     game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
 
     //PARTICLES

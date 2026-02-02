@@ -13,7 +13,7 @@
 #include <stb_image.h>
 
 //Loads a 16-bit PNG heightmap and generates a terrain mesh
-Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep)
+Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep, float yShift)
 {
     Terrain t = {};
 
@@ -37,7 +37,7 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
     t.mapWidth = (int)(fullMapWidth * mapPortion);
     t.mapHeight = (int)(fullMapHeight * mapPortion);
 
-    t.yShift = 0.0f;
+    t.yShift = yShift;
     t.heightmap = (float *)calloc(t.mapWidth * t.mapHeight, sizeof(float));
     for(int i = 0; i < t.mapHeight; ++i)
     {

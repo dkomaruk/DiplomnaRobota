@@ -169,18 +169,8 @@ Mesh CreateUnitQuadStripes()
     return CreateMesh(&vertices[0], vertices.size(), sizeof(Vertex), vertexAttribs, ArrayCount(vertexAttribs));
 }
 
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLenum drawMode)
+void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLuint shader, GLenum drawMode)
 {
-    GLuint shader = material->shader;
-    if(game->outlinePass)
-    {
-        shader = game->outlineShader;
-    }
-    if(game->pickingPass)
-    {
-        shader = game->pickingShader;
-    }
-
     UseShader(shader);
 
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));

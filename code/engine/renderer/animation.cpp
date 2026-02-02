@@ -1,5 +1,7 @@
 #include "animation.h"
 
+#include "model.h"
+
 /*
 void CountNodes(aiNode *node, int *counter)
 {

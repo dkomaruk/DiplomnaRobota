@@ -155,6 +155,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 {
     Model *result = (Model *)calloc(1, sizeof(Model));
     result->numOfMeshes = -1;
+    result->type = type;
 
     aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
     const aiScene *scene = aiImportFile(filepath, flags);
@@ -303,8 +304,26 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 s
 
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat)
 {
+    GLuint shader = model->material[0].shader;
+    if(model->type == ModelType_Static)
+    {
+        if(game->outlinePass)
+            shader = game->outlineShader;
+        if(game->pickingPass)
+            shader = game->pickingShader;
+    }
+    else if(model->type == ModelType_Animated)
+    {
+        if(game->outlinePass)
+            shader = game->skinnedOutlineShader;
+        if(game->pickingPass)
+            shader = game->skinnedPickingShader;
+
+        ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(model->animData.skinningMatrices[0]), 100);
+    }
+
     for(int i = 0; i < model->numOfMeshes; i++)
     {
-        RenderMesh(game, &model->mesh[i], &model->material[i], modelMat);
+        RenderMesh(game, &model->mesh[i], &model->material[i], modelMat, shader);
     }
 }

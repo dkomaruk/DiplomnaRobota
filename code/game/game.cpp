@@ -253,6 +253,7 @@ void UpdateGame(Game *game)
 
     if(!game->textDemoEnabled)
     {
+#if 0
         if(IsFirstPress(game, SDL_SCANCODE_SPACE))
         {
             int sourceState;
@@ -266,6 +267,7 @@ void UpdateGame(Game *game)
                 alSourcePlay(game->source);
             }
         }
+#endif
         if(IsFirstPress(game, SDL_SCANCODE_U))
         {
             int w = (int)WINDOW_WIDTH;
@@ -351,7 +353,9 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->mainShader, "u_view", game->view);
     ShaderSetMatrix4(game->animationShader, "u_view", game->view);
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
+    ShaderSetMatrix4(game->skinnedOutlineShader, "u_view", game->view);
     ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
+    ShaderSetMatrix4(game->skinnedPickingShader, "u_view", game->view);
     ShaderSetMatrix4(game->particleShader, "u_view", game->view);
     ShaderSetMatrix4(game->lineShader, "u_view", game->view);
 

@@ -19,6 +19,7 @@ void RenderEntity(Entity *self, Game *game)
     if(game->pickingPass)
     {
         ShaderSetUInt(game->pickingShader, "u_objectIndex", self->id);
+        ShaderSetUInt(game->skinnedPickingShader, "u_objectIndex", self->id);
     }
     RenderModel(game, self->models, PrepareModelMatrix(self->position, self->rotation, self->scale));
 }

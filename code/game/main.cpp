@@ -118,6 +118,15 @@ int main(int argc, char *argv[])
     game->soldierEntity->position.x = 0.0f;
     game->soldierEntity->position.z = 0.0f;
 
+    //SKY
+    int flags = TexturePreset_Common;
+    flags = FLAG_TOGGLE(flags, TextureFlag_FlipY);
+    Texture skyTexture = CreateTexture("../data/imgs/extra/sky.png", flags);
+    Mesh quad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
+                                        LoadShader("../data/shaders/environment.frag"));
+
+
     game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
     {
@@ -129,6 +138,7 @@ int main(int argc, char *argv[])
         UpdateGame(game);
 
         UpdateAnimation(&model->animData, game->deltaTime);
+        UpdateAnimation(&game->soldierEntity0->models[0].animData, game->deltaTime);
 
         //UpdateAnimation(&animation, animTime, skinningMatrices);
 
@@ -242,8 +252,8 @@ int main(int argc, char *argv[])
             ShaderSetVec3(game->lightSourceShader, "u_color", glm::vec3(1.0f));
             RenderScene(game);
 
-            UseShader(game->animationShader);
-            ShaderSetMatrix4Array(game->animationShader, "u_skinning", glm::value_ptr(model->animData.skinningMatrices[0]), 100);
+            //UseShader(game->animationShader);
+            //ShaderSetMatrix4Array(game->animationShader, "u_skinning", glm::value_ptr(model->animData.skinningMatrices[0]), 100);
             RenderEntity(game->soldierEntity, game);
             //RenderModel(game, model, glm::mat4(1.0f));
 
@@ -260,6 +270,19 @@ int main(int argc, char *argv[])
             glPolygonMode(GL_FRONT_AND_BACK, terrainDisplayMode);
             RenderTerrain(game);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+            UseShader(shader);
+            glDepthFunc(GL_LEQUAL);
+
+            glm::mat4 projViewInverse = glm::inverse(game->perspectiveProjection * glm::mat4(glm::mat3(game->view)));
+            ShaderSetMatrix4(shader, "u_viewProjInverse", projViewInverse);
+
+            SetTexture(skyTexture.id, 0);
+            ShaderSetInt(shader, "u_skyMap", 0);
+            glBindVertexArray(quad.vao);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glDepthFunc(GL_LESS);
 
             if(game->renderParticles)
             {
