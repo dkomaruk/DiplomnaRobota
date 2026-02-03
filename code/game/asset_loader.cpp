@@ -99,6 +99,10 @@ void LoadParticleSystem(Game *game)
     game->particleTextures[5] = CreateTexture("../data/imgs/animated_smoke/1.png");
     game->particleTextures[6] = CreateTexture("../data/imgs/fire.png");
     game->particleTextures[7] = CreateTexture("../data/imgs/fire2.png");
+    game->particleTextures[8] = CreateTexture("../data/imgs/extra/alpha/circle_05_a.png");
+    game->particleTextures[9] = CreateTexture("../data/imgs/extra/alpha/twirl_04_a.png");
+    game->particleTextures[10] = CreateTexture("../data/imgs/extra/alpha/star_05_a.png");
+    game->particleTextures[11] = CreateTexture("../data/imgs/extra/alpha/effect_02_a.png");
 
     for(int i = 0; i < ArrayCount(game->particleSystems); i++)
     {
@@ -203,7 +207,7 @@ void LoadAssets(Game *game)
     SetupFramebuffers(game);
 
     //FONTS
-    int fontSizes[] = {4, 12, 18, 24, 36, 48};
+    int fontSizes[] = {4, 12, 18, 20, 24, 36, 48};
     int numOfFonts = sizeof(fontSizes) / sizeof(int);
 
     for(int i = 0; i < numOfFonts; i++)
@@ -290,7 +294,8 @@ void LoadAssets(Game *game)
 #ifdef LOAD_ASSETS
     //Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
-    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    //Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
     {
@@ -450,16 +455,17 @@ void LoadAssets(Game *game)
     }
 #endif
 
-    game->terrain = CreateTerrain("../data/heightmap.png", 10.0f, 1.0f, 0.1f, 4, 10.0f);
+    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
     game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
 
     //PARTICLES
     LoadParticleSystem(game);
 
-    game->fpsCounter = CreateText(&game->fonts[18], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader);
-    game->msPerFrame = CreateText(&game->fonts[18], "0 ms/f", glm::vec2(180.0f, 36.0f), game->uiTextShader);
-    game->aliveParticlesText = CreateText(&game->fonts[18], "Alive Particles: 0", glm::vec2(20.0f, 72.0f), game->uiTextShader);
-    game->deadParticlesText = CreateText(&game->fonts[18], "Dead Particles: 0", glm::vec2(20.0f, 108.0f), game->uiTextShader);
+    glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
+    game->fpsCounter = CreateText(&game->fonts[24], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader, textColor);
+    game->msPerFrame = CreateText(&game->fonts[24], "0 ms/f", glm::vec2(220.0f, 36.0f), game->uiTextShader, textColor);
+    game->aliveParticlesText = CreateText(&game->fonts[24], "Alive Particles: 0", glm::vec2(20.0f, 72.0f), game->uiTextShader, textColor);
+    game->deadParticlesText = CreateText(&game->fonts[24], "Dead Particles: 0", glm::vec2(20.0f, 108.0f), game->uiTextShader, textColor);
 
     game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

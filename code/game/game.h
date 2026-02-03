@@ -72,6 +72,8 @@ struct Game
     //Scene
     std::vector<Entity *> sceneEntities;
     std::unordered_set<uint32> selectedIDs;
+    int lastSelectedId = -1;
+
     Entity *testEntity;
     Entity *soldierEntity;
     Entity *soldierEntity0;
@@ -104,7 +106,7 @@ struct Game
 
     Atlas atlas;
 
-    Texture particleTextures[8];
+    Texture particleTextures[12];
     int currentTexture = 1;
 };
 

@@ -12,12 +12,10 @@ void main()
     vec3 dir = normalize(EyeDir);
 
     float orientation = PI;
+
     float phi = atan(dir.z, dir.x) + orientation;
     float theta = acos(dir.y);
-
-    float u = phi / TWO_PI + 0.5;
-    float v = theta / (PI * 0.5);
-    vec2 uv = vec2(u, v);
+    vec2 uv = vec2(phi / TWO_PI + 0.5, theta / (PI * 0.5));
 
     vec3 skyColor = texture(u_skyMap, uv).rgb;
 
@@ -26,14 +24,9 @@ void main()
     float blendStart = horizonAngle - horizonBlurRange;
     float blendFactor = smoothstep(blendStart, horizonAngle, theta);
 
-    if(theta > horizonAngle)
-    {
-        blendFactor = 1.0;
-    }
+    vec3 groundColor = vec3(0.2509, 0.6078, 1.0);
+    float intensity = 2.5;
 
-    vec3 groundColor = vec3(0.15789, 0.11663, 0.11663);
-    //groundColor = vec3(0.4274, 0.9333, 1.0);
-    groundColor = vec3(0.2509, 0.6078, 1.0);
-    vec3 color = mix(skyColor * 2.5, groundColor, blendFactor);
+    vec3 color = mix(skyColor * intensity, groundColor, blendFactor);
     gl_FragColor = vec4(color, 1.0);
 }

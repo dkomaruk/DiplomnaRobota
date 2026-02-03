@@ -172,6 +172,11 @@ void UpdateCamera(Game *game)
     dir = normalize(dir);
 
     float cameraSpeed = camera->speed * game->deltaTime;
+    if(game->keys[SDL_SCANCODE_LSHIFT])
+    {
+        cameraSpeed *= 5.0f;
+    }
+
     if(keyboardState[SDL_SCANCODE_W])
         camera->position += cameraSpeed * dir;
     if(keyboardState[SDL_SCANCODE_S])

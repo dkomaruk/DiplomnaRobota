@@ -25,25 +25,7 @@ void main()
     vec3 outlineColor = vec3(1.0, 1.0, 1.0);
     vec4 sceneColor = texture(u_scene, TexCoords);
 
-    float fullResDepth = texture(u_sceneDepth, TexCoords).r;
-    vec2 _offsets[4];
-    _offsets[0] = vec2(0.0, 0.0);
-    _offsets[1] = vec2(1.0, 0.0) * u_lowResInvSize;
-    _offsets[2] = vec2(0.0, 1.0) * u_lowResInvSize;
-    _offsets[3] = vec2(1.0, 1.0) * u_lowResInvSize;
-    float minDiff = 1000.0;
-    int bestSample = 0;
-    for(int i = 0; i < 4; i++) {
-        float lrDepth = texture(u_smokeDepth, TexCoords + _offsets[i]).r;
-        float diff = abs(lrDepth - fullResDepth);
-
-        if(diff < minDiff) {
-            minDiff = diff;
-            bestSample = i;
-        }
-    }
-
-    vec4 smokeColor = texture(u_smoke, TexCoords + _offsets[bestSample]);
+    vec4 smokeColor = texture(u_smoke, TexCoords);
     sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
 
     if(u_inverted)

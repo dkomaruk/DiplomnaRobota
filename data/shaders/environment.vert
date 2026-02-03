@@ -11,7 +11,6 @@ out vec3 EyeDir;
 void main()
 {
     vec4 screenPos = vec4((texCoords.x * 2.0) - 1.0, (texCoords.y * 2.0) - 1.0, 1.0, 1.0);
-
     vec4 worldPos = u_viewProjInverse * screenPos;
     EyeDir = worldPos.xyz / worldPos.w;
 

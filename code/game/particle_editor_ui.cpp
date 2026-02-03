@@ -299,10 +299,6 @@ std::string SaveFileDialog()
 
 void UpdateParticleEditorUI(Game *game)
 {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
-
     ImGui::Begin("Particle System Editor", 0, ImGuiWindowFlags_AlwaysAutoResize);
 
     ParticleSystemSettings *smoke = &game->smokeSettings;
@@ -314,6 +310,13 @@ void UpdateParticleEditorUI(Game *game)
     }
 
     ImGui::DragFloat("Radius", &smoke->radius, 1.0f, 0.0f, 2000.0f);
+
+    static glm::vec2 resolution = glm::vec2(0.5f, 0.5f);
+    if(ImGui::DragFloat("Particle Resolution", &resolution.x, 0.01f, 0.0f, 2.0f) && (resolution.x >= 0.001f && resolution.y >= 0.001f))
+    {
+        DeleteFramebuffer(&game->smokeFbo);
+        game->smokeFbo = CreateFramebuffer(resolution * glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32);
+    }
 
     if(ImGui::CollapsingHeader("Position"))
     {
@@ -361,7 +364,7 @@ void UpdateParticleEditorUI(Game *game)
 
     ImGui::DragInt("Spawn Rate", &smoke->spawnRate, 1, 0, 1000);
 
-    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0\0"))
+    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0circle\0twirl\0start\0effect\0\0"))
     {
         game->textureID = game->particleTextures[game->currentTexture].id;
     }
@@ -416,6 +419,7 @@ void UpdateParticleEditorUI(Game *game)
         {
             LoadParticleSettings(*smoke, path, smoke->atlas);
             ReallocParticles(game, smoke, oldNumOfParticles);
+            game->lastFrame = SDL_GetPerformanceCounter();
         }
     }
 

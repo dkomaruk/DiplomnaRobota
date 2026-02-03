@@ -52,3 +52,10 @@ Framebuffer CreateFramebuffer(glm::ivec2 size, int colorFlags, int depthFlags)
 
     return fbo;
 }
+
+void DeleteFramebuffer(Framebuffer *fbo)
+{
+    glDeleteFramebuffers(1, &fbo->id);
+    glDeleteTextures(1, &fbo->color.id);
+    glDeleteTextures(1, &fbo->depth.id);
+}

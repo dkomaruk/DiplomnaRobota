@@ -28,6 +28,7 @@ struct Framebuffer
 void SetupFramebuffers(Game *game);
 
 Framebuffer CreateFramebuffer(glm::ivec2 size, int colorFlags, int depthFlags);
+void DeleteFramebuffer(Framebuffer *fbo);
 
 #define FRAMEBUFFER_H
 #endif

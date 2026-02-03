@@ -41,6 +41,7 @@
 #include "animation.cpp"
 #include "particle_system.cpp"
 #include "particle_editor_ui.cpp"
+#include "editor_ui.cpp"
 #include "terrain.cpp"
 #include "framebuffer.cpp"
 #include "primitives/line.cpp"
@@ -142,7 +143,7 @@ int main(int argc, char *argv[])
 
 
         //Update
-        UpdateParticleEditorUI(game);
+        UpdateEditorUI(game);
         UpdateGame(game);
         if(isPaused)
         {
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
             RenderScene(game);
             game->pickingPass = false;
 
-            if(IsFirstClick(game, MOUSE_LEFT))
+            if(IsFirstClick(game, MOUSE_LEFT) && !ImGui::GetIO().WantCaptureMouse)
             {
                 float x, y;
                 if(game->isCursorHidden)
@@ -242,6 +243,8 @@ int main(int argc, char *argv[])
                     game->selectedIDs.insert(pickedID);
                 }
 
+                game->lastSelectedId = pickedID;
+
                 glm::vec3 windowPos = glm::vec3(x, y, 0.0f);
                 glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
                                                    glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
@@ -252,7 +255,7 @@ int main(int argc, char *argv[])
                 glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
                 glm::vec3 rayOrigin = game->camera.position;
 
-                float visibleRayLength = 200.0f;
+                float visibleRayLength = 2000.0f;
 
                 glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, rayOrigin, rayDirection, visibleRayLength);
 
@@ -296,7 +299,6 @@ int main(int argc, char *argv[])
 
             RenderLine(&line);
             RenderTerrain(game);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
             UseShader(shader);
             glDepthFunc(GL_LEQUAL);
@@ -324,6 +326,8 @@ int main(int argc, char *argv[])
                 RenderParticles(game);
                 glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
             }
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
