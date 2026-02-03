@@ -4,19 +4,23 @@
 
 #include "animation.h"
 
+#include <GL/glew.h>
+
 #include <glm/vec3.hpp>
 
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+struct Game;
 struct Mesh;
+struct MaterialPhong;
 
 struct AnimatedModel
 {
     float time;
 
-    Skeleton *skeleton;
+    Skeleton skeleton;
 
     Animation *animations;
     int numOfAnimations;
@@ -24,11 +28,9 @@ struct AnimatedModel
 
     glm::mat4 *skinningMatrices;
     int numOfMatrices;
-
-    aiScene *scene; //TODO: Parse node hierarchy into my own structures to avoid keeping assimp data
 };
 
-struct StaticModel {};
+struct StaticModel { };
 
 enum ModelType
 {
@@ -45,8 +47,8 @@ struct Model
 
     union
     {
-        StaticModel staticData;
-        AnimatedModel animData;
+        StaticModel *staticData;
+        AnimatedModel *animData;
     };
 };
 

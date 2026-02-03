@@ -13,6 +13,7 @@
 //GLM extensions have to be included before any other glm header file for some reason
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/intersect.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
@@ -80,12 +81,13 @@ int main(int argc, char *argv[])
     LoadAssets(game);
 
     //Model *model = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    Model *model = ImportModel("../data/models/soldier/Rifle Run.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *model = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
 
     Line line = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
 
     glm::vec2 target = {0.0f, 0.0f};
     glm::vec2 targetDirection = {0.0f, 0.0f};
+    float targetAngle = 0.0f;
 
     {
         //Need to do this before the game loop because calling glReadPixels for the first time
@@ -120,12 +122,11 @@ int main(int argc, char *argv[])
 
     //SKY
     int flags = TexturePreset_Common;
-    flags = FLAG_TOGGLE(flags, TextureFlag_FlipY);
+    flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
     Texture skyTexture = CreateTexture("../data/imgs/extra/sky.png", flags);
     Mesh quad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                         LoadShader("../data/shaders/environment.frag"));
-
 
     game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
@@ -133,12 +134,23 @@ int main(int argc, char *argv[])
         //Input
         ProcessInput(game);
 
+        static bool isPaused = false;
+        if(IsFirstPress(game, SDL_SCANCODE_L))
+        {
+            isPaused = !isPaused;
+        }
+
+
         //Update
         UpdateParticleEditorUI(game);
         UpdateGame(game);
+        if(isPaused)
+        {
+            game->deltaTime = 0.0f;
+        }
 
-        UpdateAnimation(&model->animData, game->deltaTime);
-        UpdateAnimation(&game->soldierEntity0->models[0].animData, game->deltaTime);
+        UpdateAnimation(model->animData, game->deltaTime);
+        UpdateAnimation(game->soldierEntity0->models[0].animData, game->deltaTime);
 
         //UpdateAnimation(&animation, animTime, skinningMatrices);
 
@@ -157,11 +169,26 @@ int main(int argc, char *argv[])
         angularVelocity -= angularVelocity * 0.3f * game->deltaTime;
         velocity += acceleration * game->deltaTime;
 
-        float x = game->soldierEntity->position.x + targetDirection.x * 10.0f * game->deltaTime;
-        float z = game->soldierEntity->position.z + targetDirection.y * 10.0f * game->deltaTime;
+        float speed = 1.0f;
+        float x = game->soldierEntity->position.x + targetDirection.x * speed * game->deltaTime;
+        float z = game->soldierEntity->position.z + targetDirection.y * speed * game->deltaTime;
         float y = GetTerrainHeight(&game->terrain, x, z);
 
         game->soldierEntity->position = glm::vec3(x, y, z);
+
+        float angleDiff = targetAngle - game->soldierEntity->rotation.y;
+
+        if(angleDiff < -180.0f)
+            angleDiff += 360.0f;
+        if(angleDiff > 180.0f)
+            angleDiff -= 360.0f;
+
+        float rotationStep = 200.0f * game->deltaTime;
+
+        if(glm::abs(angleDiff) <= rotationStep)
+            game->soldierEntity->rotation.y = targetAngle;
+        else
+            game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
 
         if(glm::distance(glm::vec2(x, z), target) < 0.1f)
         {
@@ -238,6 +265,7 @@ int main(int argc, char *argv[])
                 if(glm::length2(targetDirection) > 0.00001f)
                 {
                     targetDirection = glm::normalize(targetDirection);
+                    targetAngle = glm::degrees(glm::atan(targetDirection.x, targetDirection.y));
                 }
             }
 
@@ -246,6 +274,13 @@ int main(int argc, char *argv[])
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
             RenderScene(game);
             game->outlinePass = false;
+
+            static GLenum terrainDisplayMode = GL_FILL;
+            if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+            {
+                terrainDisplayMode = (terrainDisplayMode == GL_LINE) ? GL_FILL : GL_LINE;
+            }
+            glPolygonMode(GL_FRONT_AND_BACK, terrainDisplayMode);
 
             glDepthMask(GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
@@ -259,15 +294,7 @@ int main(int argc, char *argv[])
 
             //RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
 
-            static GLenum terrainDisplayMode = GL_FILL;
-            if(IsFirstPress(game, SDL_SCANCODE_SPACE))
-            {
-                terrainDisplayMode = (terrainDisplayMode == GL_LINE) ? GL_FILL : GL_LINE;
-            }
-
-
             RenderLine(&line);
-            glPolygonMode(GL_FRONT_AND_BACK, terrainDisplayMode);
             RenderTerrain(game);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

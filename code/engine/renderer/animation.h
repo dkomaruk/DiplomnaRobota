@@ -15,30 +15,20 @@
 
 struct AnimatedModel;
 
-struct Bone
+struct Node
 {
-    glm::mat4x4 invBindPose;
-    std::string name;
-    int id;
+    glm::mat4 localTransform;
+    int parentId;
+    int boneId;
 };
-
-//TODO: Copy assimp node hierarchy into a flat array to avoid traversing the whole node tree when updating an animation
-//struct Node
-//{
-//    glm::mat4 localTransform;
-//    std::string name;
-//    int boneId;
-//    int parentId;
-//};
 
 struct Skeleton
 {
-    std::unordered_map<std::string, Bone> boneMap;
+    glm::mat4 *invBindPoses;
     int numOfBones;
 
-    //std::unordered_map<std::string, int> nameToNodeIndex;
-    //Node *nodes;
-    //int numOfNodes;
+    Node *nodes;
+    int numOfNodes;
 };
 
 struct KeyPosition
@@ -75,7 +65,10 @@ struct Animation
 {
     float ticksPerSecond;
     int numOfFrames;
-    std::unordered_map<std::string, AnimationSample> samples;
+
+    int *nodeToSampleId;
+    int numOfSamples;
+    AnimationSample *samples;
 };
 
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m);

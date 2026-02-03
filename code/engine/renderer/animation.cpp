@@ -2,20 +2,6 @@
 
 #include "model.h"
 
-/*
-void CountNodes(aiNode *node, int *counter)
-{
-    if(!node) return;
-
-    *counter += 1;
-
-    for(uint32 childIndex = 0; childIndex < node->mNumChildren; childIndex++)
-    {
-        CountNodes(node->mChildren[childIndex], counter);
-    }
-}
-*/
-
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m)
 {
     glm::mat4 result(
@@ -99,40 +85,31 @@ glm::mat4 GetInterpolatedTransform(AnimationSample* sample, float time)
     return glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(rotation) * glm::scale(glm::mat4(1.0f), scale);
 }
 
-void ProcessNode(float time, aiNode *aiNode, AnimatedModel *model, glm::mat4 parentTransform)
-{
-    Animation *animation = &model->animations[model->currentAnimation];
-    Skeleton *skeleton = model->skeleton;
-
-    glm::mat4 nodeTransform = AssimpMat4ToGLM(aiNode->mTransformation);
-
-    std::string nodeName = aiNode->mName.C_Str();
-    if(animation->samples.count(nodeName))
-    {
-        nodeTransform = GetInterpolatedTransform(&animation->samples[nodeName], time);
-    }
-
-    glm::mat4 globalTransform = parentTransform * nodeTransform;
-
-    if(skeleton->boneMap.count(nodeName))
-    {
-        Bone *bone = &skeleton->boneMap[nodeName];
-        model->skinningMatrices[bone->id] = globalTransform * bone->invBindPose;
-    }
-
-    for(uint32 childIndex = 0; childIndex < aiNode->mNumChildren; childIndex++)
-    {
-        ProcessNode(time, aiNode->mChildren[childIndex], model, globalTransform);
-    }
-}
-
 void UpdateAnimation(AnimatedModel *model, float deltaTime)
 {
     model->time += deltaTime;
 
-    Animation *currentAnimation = &model->animations[model->currentAnimation];
-    float timeInTicks = model->time * currentAnimation->ticksPerSecond;
-    float animationTime = fmod(timeInTicks, (float)currentAnimation->numOfFrames);
+    Animation *animation = &model->animations[model->currentAnimation];
+    Skeleton *skeleton = &model->skeleton;
 
-    ProcessNode(animationTime, model->scene->mRootNode, model, glm::mat4(1.0f));
+    float timeInTicks = model->time * animation->ticksPerSecond;
+    float time = fmod(timeInTicks, (float)animation->numOfFrames);
+
+    glm::mat4 *globalTransforms = (glm::mat4 *)alloca(sizeof(glm::mat4) * skeleton->numOfNodes);
+    for(int i = 0; i < skeleton->numOfNodes; i++)
+    {
+        Node *node = &skeleton->nodes[i];
+
+        int sampleId = animation->nodeToSampleId[i];
+        glm::mat4 nodeTransform = (sampleId != -1) ? GetInterpolatedTransform(&animation->samples[sampleId], time)
+                                                   : node->localTransform;
+
+        globalTransforms[i] = (node->parentId != -1) ? globalTransforms[node->parentId] * nodeTransform
+                                                     : nodeTransform;
+
+        if(node->boneId != -1)
+        {
+            model->skinningMatrices[node->boneId] = globalTransforms[i] * skeleton->invBindPoses[node->boneId];
+        }
+    }
 }

@@ -11,20 +11,15 @@ void main()
 {
     vec3 dir = normalize(EyeDir);
 
-    float phi = atan(dir.z, dir.x) + PI;
+    float orientation = PI;
+    float phi = atan(dir.z, dir.x) + orientation;
     float theta = acos(dir.y);
 
     float u = phi / TWO_PI + 0.5;
     float v = theta / (PI * 0.5);
     vec2 uv = vec2(u, v);
 
-    vec2 du = dFdx(uv);
-    vec2 dv = dFdy(uv);
-
-    if(abs(du.x) > 0.5) du.x = 0.0;
-    if(abs(dv.x) > 0.5) dv.x = 0.0;
-
-    vec3 skyColor = textureGrad(u_skyMap, uv, du, dv).rgb;
+    vec3 skyColor = texture(u_skyMap, uv).rgb;
 
     float horizonAngle = PI * 0.5;
     float horizonBlurRange = 0.03491 * 2.0;
