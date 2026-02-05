@@ -384,6 +384,6 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat)
 
     for(int i = 0; i < model->numOfMeshes; i++)
     {
-        RenderMesh(game, &model->mesh[i], &model->material[i], modelMat, shader);
+        RenderMesh(game, &model->mesh[i], modelMat, shader, &model->material[i]);
     }
 }

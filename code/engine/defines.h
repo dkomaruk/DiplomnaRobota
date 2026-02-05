@@ -6,10 +6,10 @@
     #define WINDOW_WIDTH 1920.0f
     #define WINDOW_HEIGHT 1080.0f
 #else
-    //#define WINDOW_WIDTH 1280.0f
-    //#define WINDOW_HEIGHT 720.0f
-    #define WINDOW_WIDTH 1920.0f
-    #define WINDOW_HEIGHT 1080.0f
+    #define WINDOW_WIDTH 1280.0f
+    #define WINDOW_HEIGHT 720.0f
+    //#define WINDOW_WIDTH 1920.0f
+    //#define WINDOW_HEIGHT 1080.0f
 #endif
 
 typedef int8_t int8;

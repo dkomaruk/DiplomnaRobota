@@ -169,7 +169,7 @@ Mesh CreateUnitQuadStripes()
     return CreateMesh(&vertices[0], vertices.size(), sizeof(Vertex), vertexAttribs, ArrayCount(vertexAttribs));
 }
 
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLuint shader, GLenum drawMode)
+void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model, GLuint shader, MaterialPhong *material, GLenum drawMode)
 {
     UseShader(shader);
 
@@ -178,9 +178,12 @@ void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model
 
     ShaderSetMatrix4(shader, "u_model", model);
 
-    ShaderSetMaterial(shader, material);
-    SetTexture(&material->diffuseTexture, 0);
-    SetTexture(&material->specularTexture, 1);
+    if(material)
+    {
+        ShaderSetMaterial(shader, material);
+        SetTexture(&material->diffuseTexture, 0);
+        SetTexture(&material->specularTexture, 1);
+    }
 
     glBindVertexArray(mesh->vao);
     if(mesh->indicesCount > 0)

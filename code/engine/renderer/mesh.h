@@ -107,7 +107,7 @@ Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
 Mesh CreateUnitQuadStripes();
 Mesh *GetUnitQuad();
 
-void RenderMesh(Game *game, Mesh *mesh, MaterialPhong *material, glm::mat4 model, GLuint shader, GLenum drawMode = GL_TRIANGLES);
+void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model, GLuint shader, MaterialPhong *material = NULL, GLenum drawMode = GL_TRIANGLES);
 void RenderSurface(GLuint shader, Texture *texture, glm::mat4 model);
 
 #define MESH_H

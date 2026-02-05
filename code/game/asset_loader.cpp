@@ -244,12 +244,15 @@ void LoadAssets(Game *game)
                                                  LoadShader("../data/shaders/fragment.frag"));
     GLuint lineShader = CreateShaderProgram(LoadShader("../data/shaders/line.vert"),
                                             LoadShader("../data/shaders/fragment2.frag"));
+    GLuint selectionBoxShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
+                                                    LoadShader("../data/shaders/fragment2.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
     ShaderSetVec3(lightSourceShader, "u_color", glm::vec3(1.0f));
     ShaderSetVec3(skinnedOutlineShader, "u_color", glm::vec3(1.0f));
+    ShaderSetVec3(selectionBoxShader, "u_color", glm::vec3(1.0f));
 
     ShaderSetInt(postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     ShaderSetInt(postProcessShader, "u_inverted", 0);
@@ -277,6 +280,9 @@ void LoadAssets(Game *game)
     game->shaders.push_back(particleShader);
     ShaderSetMatrix4(particleShader, "u_projection", game->perspectiveProjection);
 
+    game->shaders.push_back(selectionBoxShader);
+    ShaderSetMatrix4(selectionBoxShader, "u_projection", game->orthoProjection);
+
     game->mainShader = shader;
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
@@ -289,13 +295,14 @@ void LoadAssets(Game *game)
     game->terrainShader = terrainShader;
     game->animationShader = animationShader;
     game->lineShader = lineShader;
+    game->selectionBoxShader = selectionBoxShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
     //Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
     //aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
-    //Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    //Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
     //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
     {

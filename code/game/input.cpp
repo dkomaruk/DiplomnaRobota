@@ -100,10 +100,16 @@ bool IsFirstPress(Game *game, SDL_Scancode key)
     return game->keys[key] && !game->prevKeys[key];
 }
 
-bool IsFirstClick(Game *game, int button)
+bool IsFirstClick(Game *game, uint32 button)
 {
-    Assert(button < MOUSE_BUTTONS_COUNT);
+    Assert(button < MOUSE_BUTTONS_COUNT)
     return game->mouseButtons[button] && !game->prevMouseButtons[button];
+}
+
+bool IsMouseJustReleased(Game *game, SDL_MouseButtonFlags button)
+{
+    Assert(button < MOUSE_BUTTONS_COUNT)
+    return !game->mouseButtons[button] && game->prevMouseButtons[button];
 }
 
 char *GetMouseButtonName(int button)

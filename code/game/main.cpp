@@ -116,8 +116,8 @@ int main(int argc, char *argv[])
     glm::vec3 acceleration = glm::vec3(0.0f);
     glm::vec3 angularVelocity = glm::vec3(0.0f);
 
-    Entity vampire = CreateEntity(model);
-    game->soldierEntity = &vampire;
+    Entity character = CreateEntity(model);
+    game->soldierEntity = &character;
     game->soldierEntity->position.x = 0.0f;
     game->soldierEntity->position.z = 0.0f;
 
@@ -129,6 +129,11 @@ int main(int argc, char *argv[])
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                         LoadShader("../data/shaders/environment.frag"));
 
+    Mesh *selectionQuad = GetUnitQuad();
+
+    glm::vec2 selectionBoxStart = glm::vec2(0.0f);
+
+    //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
     {
@@ -140,7 +145,6 @@ int main(int argc, char *argv[])
         {
             isPaused = !isPaused;
         }
-
 
         //Update
         UpdateEditorUI(game);
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
             targetDirection = glm::vec2(0, 0);
         }
 
-        //Rendering
+        //RENDERING
         if(!game->textDemoEnabled)
         {
             glEnable(GL_DEPTH_TEST);
@@ -206,6 +210,7 @@ int main(int argc, char *argv[])
             RenderScene(game);
             game->pickingPass = false;
 
+            //OBJECT PICKING
             if(IsFirstClick(game, MOUSE_LEFT) && !ImGui::GetIO().WantCaptureMouse)
             {
                 float x, y;
@@ -213,16 +218,19 @@ int main(int argc, char *argv[])
                 {
                     x = WINDOW_WIDTH / 2.0f;
                     y = WINDOW_HEIGHT / 2.0f;
+                    selectionBoxStart = glm::vec2(x, y);
                 }
                 else
                 {
                     SDL_GetMouseState(&x, &y);
+                    selectionBoxStart = glm::vec2(x, y);
+
                     y = (int)WINDOW_HEIGHT - y;
                 }
 
                 uint64 start = SDL_GetPerformanceCounter();
                 uint8 pixels[3];
-                //This is very expensive, I think AABB ray intersection will be much more cheap
+                //This is very expensive (because we have to wait for the pixel data request to reach the GPU and then for the data to get back), I think AABB ray intersection with spatial partitioning will be much more cheap
                 glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
                 uint32 pickedID = pixels[0];
                 uint64 end = SDL_GetPerformanceCounter();
@@ -246,6 +254,7 @@ int main(int argc, char *argv[])
                 game->lastSelectedId = pickedID;
 
                 glm::vec3 windowPos = glm::vec3(x, y, 0.0f);
+
                 glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
                                                    glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
                 windowPos.z = 1.0f;
@@ -352,6 +361,20 @@ int main(int argc, char *argv[])
 
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            if(game->mouseButtons[MOUSE_LEFT])
+            {
+                float x, y;
+                SDL_GetMouseState(&x, &y);
+
+                glm::vec2 size = glm::vec2(x - selectionBoxStart.x, y - selectionBoxStart.y);
+
+                glm::mat4 modelMat = glm::mat4(1.0f);
+                modelMat = glm::translate(modelMat, glm::vec3(selectionBoxStart.x + (size.x / 2.0f),
+                                                              selectionBoxStart.y + (size.y / 2.0f), 0.0f));
+                modelMat = glm::scale(modelMat, glm::vec3(size.x, size.y, 1.0f));
+                RenderMesh(game, selectionQuad, modelMat, game->selectionBoxShader);
+            }
 
             RenderText(&game->aliveParticlesText);
             RenderText(&game->deadParticlesText);

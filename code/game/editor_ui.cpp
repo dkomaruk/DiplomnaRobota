@@ -23,14 +23,19 @@ void UpdateEditorUI(Game *game)
         Entity *selectedEntity = game->sceneEntities[game->lastSelectedId - 1];
 
         ImGui::LabelText("Text ID", "%s", selectedEntity->textId);
-        ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
-        ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f);
-        ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
 
-        Model *model = selectedEntity->models[0];
-        if(model->type == ModelType_Animated)
+        if(ImGui::CollapsingHeader("Transform"))
         {
-            ImGui::Text("Animation details");
+            ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
+            ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f);
+            ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
+        }
+
+        if(ImGui::CollapsingHeader("Material"))
+        {
+            ImGui::LabelText("Shader ID", "%d", selectedEntity->models[0].material->shader);
+            ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->models[0].material->diffuseTexture.id);
+            ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->models[0].material->specularTexture.id);
         }
     }
 

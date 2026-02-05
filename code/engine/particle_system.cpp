@@ -67,8 +67,7 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         } while(glm::length(dir) > 1.0f);
 
         dir = glm::normalize(dir);
-        float radius = RandomBetween(0.0f, settings->radius);
-        radius = cbrtf(radius);
+        float radius = cbrtf(RandomBetween(0.0f, settings->radius));
         float spawnRadius = 0.5f * 2;
         particle->pos = system->pos + RandomBetween(settings->minOffset, settings->maxOffset) + dir * radius * spawnRadius;
 
