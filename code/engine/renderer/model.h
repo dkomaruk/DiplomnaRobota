@@ -49,6 +49,7 @@ struct AABB
 {
     glm::vec3 min;
     glm::vec3 max;
+    glm::vec3 corners[8];
 };
 
 struct Model
@@ -65,7 +66,6 @@ struct Model
     int numOfNodes;
 
     AABB aabb;
-    Mesh meshAABB;
 
     union
     {
@@ -82,7 +82,8 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
 AABB TransformAABB(AABB *aabb, glm::mat4 transform);
 void MergeAABB(AABB *dest, AABB *src);
 void ExpandAABB(AABB *aabb, glm::vec3 point);
-void GetAABBCorners(AABB *aabb, glm::vec3 *corners);
+void UpdateAABBCorners(AABB *aabb);
+void UpdateAABBMesh(AABB *aabb, Mesh *aabbMesh, bool recalculateCorners = false);
 
 #define MODEL_H
 #endif

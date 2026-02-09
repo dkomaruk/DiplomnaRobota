@@ -90,14 +90,16 @@ glm::mat4 GetInterpolatedTransform(AnimationSample* sample, float time)
     return glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(rotation) * glm::scale(glm::mat4(1.0f), scale);
 }
 
-void UpdateAnimation(Model *model, float deltaTime)
+void UpdateAnimation(Entity *entity, float deltaTime)
 {
+    Model *model = entity->model;
+
     Assert(model->type == ModelType_Animated)
 
     if(!model->animData->numOfAnimations) return;
 
-    model->aabb.min = glm::vec3(FLT_MAX);
-    model->aabb.max = glm::vec3(-FLT_MAX);
+    entity->aabb.min = glm::vec3(FLT_MAX);
+    entity->aabb.max = glm::vec3(-FLT_MAX);
 
     AnimatedModel *animData = model->animData;
     Animation *animation = &animData->animations[animData->currentAnimation];
@@ -127,15 +129,11 @@ void UpdateAnimation(Model *model, float deltaTime)
             if(skeleton->boneAABBs[boneId].min.x <= skeleton->boneAABBs[boneId].max.x)
             {
                 AABB transformedAABB = TransformAABB(&skeleton->boneAABBs[boneId], globalTransforms[nodeIndex]);
-                MergeAABB(&model->aabb, &transformedAABB);
+                MergeAABB(&entity->aabb, &transformedAABB);
             }
         }
     }
 
-    glm::vec3 corners[8];
-    GetAABBCorners(&model->aabb, corners);
-
-    glBindBuffer(GL_ARRAY_BUFFER, model->meshAABB.vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(corners), corners);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    UpdateAABBCorners(&entity->aabb);
+    UpdateAABBMesh(&entity->aabb, &entity->meshAABB, true);
 }

@@ -1,12 +1,11 @@
 #ifndef ENTITY_H
 
+#include "mesh.h"
+#include "model.h"
+
 #include <glm/vec3.hpp>
 
 struct Game;
-
-struct Mesh;
-struct Model;
-struct Node;
 
 enum EntityType
 {
@@ -37,6 +36,9 @@ struct Entity
     TransformOverride turret;
     //int turretId;
     //int gunTipId;
+
+    AABB aabb;
+    Mesh meshAABB;
 
     glm::vec3 position;
     glm::vec3 rotation;

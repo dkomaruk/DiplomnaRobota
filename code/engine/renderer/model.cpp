@@ -176,29 +176,38 @@ void ExpandAABB(AABB *aabb, glm::vec3 point)
     aabb->max = glm::max(aabb->max, point);
 }
 
-void GetAABBCorners(AABB *aabb, glm::vec3 *corners)
+void UpdateAABBCorners(AABB *aabb)
 {
-    corners[0] = {aabb->min.x, aabb->min.y, aabb->min.z};
-    corners[1] = {aabb->max.x, aabb->min.y, aabb->min.z};
-    corners[2] = {aabb->min.x, aabb->max.y, aabb->min.z};
-    corners[3] = {aabb->max.x, aabb->max.y, aabb->min.z};
-    corners[4] = {aabb->min.x, aabb->min.y, aabb->max.z};
-    corners[5] = {aabb->max.x, aabb->min.y, aabb->max.z};
-    corners[6] = {aabb->min.x, aabb->max.y, aabb->max.z};
-    corners[7] = {aabb->max.x, aabb->max.y, aabb->max.z};
+    aabb->corners[0] = {aabb->min.x, aabb->min.y, aabb->min.z};
+    aabb->corners[1] = {aabb->max.x, aabb->min.y, aabb->min.z};
+    aabb->corners[2] = {aabb->min.x, aabb->max.y, aabb->min.z};
+    aabb->corners[3] = {aabb->max.x, aabb->max.y, aabb->min.z};
+    aabb->corners[4] = {aabb->min.x, aabb->min.y, aabb->max.z};
+    aabb->corners[5] = {aabb->max.x, aabb->min.y, aabb->max.z};
+    aabb->corners[6] = {aabb->min.x, aabb->max.y, aabb->max.z};
+    aabb->corners[7] = {aabb->max.x, aabb->max.y, aabb->max.z};
+}
+
+void UpdateAABBMesh(AABB *aabb, Mesh *aabbMesh, bool recalculateCorners)
+{
+    if(recalculateCorners)
+    {
+        UpdateAABBCorners(aabb);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, aabbMesh->vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(aabb->corners), aabb->corners);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 AABB TransformAABB(AABB *aabb, glm::mat4 transform)
 {
-    const int numOfCorners = 8;
-    glm::vec3 corners[numOfCorners];
-
-    GetAABBCorners(aabb, corners);
+    UpdateAABBCorners(aabb);
 
     AABB result = {glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX)};
-    for(int cornerIndex = 0; cornerIndex < numOfCorners; cornerIndex++)
+    for(int cornerIndex = 0; cornerIndex < ArrayCount(aabb->corners); cornerIndex++)
     {
-        ExpandAABB(&result, glm::vec3(transform * glm::vec4(corners[cornerIndex], 1.0f)));
+        ExpandAABB(&result, glm::vec3(transform * glm::vec4(aabb->corners[cornerIndex], 1.0f)));
     }
 
     return result;
@@ -364,17 +373,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     result->aabb.max = glm::vec3(-FLT_MAX);
     FlattenAssimpHierarchy((aiScene *)scene, scene->mRootNode, result, -1, glm::mat4(1.0f), boneMap, nameToNodeIndex);
 
-    glm::vec3 verticesAABB[8];
-    GetAABBCorners(&result->aabb, verticesAABB);
-    uint32 indicesAABB[24] = {
-        0, 1, 1, 3, 3, 2, 2, 0,
-        4, 5, 5, 7, 7, 6, 6, 4,
-        0, 4, 1, 5, 2, 6, 3, 7
-    };
-
-    AttribInfo attrib = {0, 3, GL_FLOAT, sizeof(glm::vec3), (void *)0};
-    result->meshAABB = CreateMesh(&verticesAABB[0], 8, sizeof(glm::vec3), &indicesAABB[0], 24, &attrib, 1, GL_DYNAMIC_DRAW);
-    result->meshAABB.drawMode = GL_LINES;
+    UpdateAABBCorners(&result->aabb);
 
     if(type == ModelType_Animated)
     {
@@ -476,11 +475,6 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
 
         ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(model->animData->skinningMatrices[0]), 100);
     }
-
-    ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
-    glLineWidth(3.0f);
-    RenderMesh(game, &model->meshAABB, modelMat, game->lineShader, 0, model->meshAABB.drawMode);
-    glLineWidth(1.0f);
 
     for(int meshIndex = 0; meshIndex < model->numOfMeshes; meshIndex++)
     {

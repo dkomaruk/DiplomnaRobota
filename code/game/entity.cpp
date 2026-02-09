@@ -21,6 +21,14 @@ void RenderEntity(Entity *self, Game *game)
         ShaderSetUInt(game->pickingShader, "u_objectIndex", self->id);
         ShaderSetUInt(game->skinnedPickingShader, "u_objectIndex", self->id);
     }
+
+    glm::mat4 modelMat = PrepareModelMatrix(self->position, glm::vec3(0.0f), self->scale);
+
+    ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
+    glLineWidth(3.0f);
+    RenderMesh(game, &self->meshAABB, modelMat, game->lineShader, 0, self->meshAABB.drawMode);
+    glLineWidth(1.0f);
+
     RenderModel(game, self->model, PrepareModelMatrix(self->position, self->rotation, self->scale), self->nodeTransforms);
 }
 
@@ -32,6 +40,18 @@ Entity CreateEntity(Model *model)
     //entity.numOfModels = 1;
     entity.Render = RenderEntity;
     entity.type = EntityType_Static;
+
+    entity.aabb = model->aabb;
+    uint32 indicesAABB[24] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 2, 6, 3, 7
+    };
+
+    AttribInfo attrib = {0, 3, GL_FLOAT, sizeof(glm::vec3), (void *)0};
+    entity.meshAABB = CreateMesh(&entity.aabb.corners[0], 8, sizeof(glm::vec3),
+                                  &indicesAABB[0], 24, &attrib, 1, GL_DYNAMIC_DRAW);
+    entity.meshAABB.drawMode = GL_LINES;
 
     //entity.localTransforms = (glm::mat4 *)calloc(model->numOfNodes, sizeof(glm::mat4));
     //for(int nodeIndex = 0; nodeIndex < model->numOfNodes; nodeIndex++)
@@ -66,6 +86,6 @@ void UpdateEntity(Game *game, Entity *entity)
 {
     if(entity->model && entity->model->type == ModelType_Animated)
     {
-        UpdateAnimation(entity->model, game->deltaTime);
+        UpdateAnimation(entity, game->deltaTime);
     }
 }

@@ -1,20 +1,9 @@
 #ifndef ANIMATION_H
 
-#include "defines.h"
-
-#include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/quaternion.hpp>
-
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include <string>
-#include <unordered_map>
-
+struct Entity;
 struct AnimatedModel;
 struct AABB;
+struct Model;
 
 struct Skeleton
 {
@@ -68,7 +57,7 @@ struct Animation
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m);
 glm::vec3 AssimpVec3ToGLM(aiVector3D v);
 
-void UpdateAnimation(Model *model, float deltaTime);
+void UpdateAnimation(Entity *entity, float deltaTime);
 
 #define ANIMATION_H
 #endif

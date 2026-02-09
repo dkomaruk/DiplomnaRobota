@@ -2,6 +2,8 @@
 
 #include "particle_editor_ui.h"
 
+#include "model.h"
+
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
@@ -27,7 +29,13 @@ void UpdateEditorUI(Game *game)
         if(ImGui::CollapsingHeader("Transform"))
         {
             ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
-            ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f);
+            if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
+            {
+                glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
+                selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
+                UpdateAABBCorners(&selectedEntity->aabb);
+                UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
+            }
             ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
         }
 
