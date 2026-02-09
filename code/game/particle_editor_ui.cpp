@@ -66,6 +66,8 @@ void SaveParticleSettings(const ParticleSystemSettings& settings, const std::str
     j["lifetime"] = settings.lifetime;
     j["limitedLife"] = settings.limitedLife;
 
+    j["axisAlignedBillboard"] = settings.axisAlignedBillboard;
+
     j["radius"] = settings.radius;
 
     j["minRotation"] = settings.minRotation;
@@ -147,6 +149,8 @@ void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &f
     settings.spawnRate = j.value("spawnRate", ds->spawnRate);
     settings.lifetime = j.value("lifetime", ds->lifetime);
     settings.limitedLife = j.value("limitedLife", ds->limitedLife);
+
+    settings.axisAlignedBillboard = j.value("axisAlignedBillboard", ds->axisAlignedBillboard);
 
     settings.radius = j.value("radius", ds->radius);
 
@@ -309,6 +313,8 @@ void UpdateParticleEditorUI(Game *game)
         ImGui::InputFloat("Existence Seconds", &smoke->lifetime);
     }
 
+    ImGui::Checkbox("Velocity Aligned Billboard", &smoke->axisAlignedBillboard);
+
     ImGui::DragFloat("Radius", &smoke->radius, 1.0f, 0.0f, 2000.0f);
 
     static glm::vec2 resolution = glm::vec2(0.5f, 0.5f);
@@ -364,7 +370,7 @@ void UpdateParticleEditorUI(Game *game)
 
     ImGui::DragInt("Spawn Rate", &smoke->spawnRate, 1, 0, 1000);
 
-    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0circle\0twirl\0start\0effect\0\0"))
+    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0circle\0twirl\0start\0effect\0trace\0\0"))
     {
         game->textureID = game->particleTextures[game->currentTexture].id;
     }

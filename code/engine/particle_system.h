@@ -78,6 +78,8 @@ struct ParticleSystemSettings
     float lifetime = 10.0f;
     bool limitedLife = true;
 
+    bool axisAlignedBillboard = false;
+
     float radius = 1.0f;
 
     float minRotation = 0.0f;
@@ -132,6 +134,7 @@ struct ParticleSystem
     Timer prewarmTimer;
 
     glm::vec3 pos;
+    glm::mat3 rotation = glm::mat3(1.0f);
 
     ParticleSystemSettings *settings;
 };

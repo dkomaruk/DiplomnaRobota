@@ -74,9 +74,10 @@ void SpawnParticles(Game *game, ParticleSystem *system)
         particle->scale = RandomBetween(settings->minScale, settings->maxScale);
         particle->scaleVelocity = RandomBetween(settings->minScaleVelocity, settings->maxScaleVelocity);
 
-        particle->initialVelocity = RandomBetween(settings->minVelocity, settings->maxVelocity);
+        glm::vec3 localVelocity = RandomBetween(settings->minVelocity, settings->maxVelocity);
+        particle->initialVelocity = system->rotation * localVelocity;
         particle->velocity = particle->initialVelocity;
-        particle->acceleration = RandomBetween(settings->minAccel, settings->maxAccel);
+        particle->acceleration = system->rotation * RandomBetween(settings->minAccel, settings->maxAccel);
 
         particle->rotation = glm::radians(RandomBetween(settings->minRotation, settings->maxRotation));
         particle->rotationVelocity = glm::radians(RandomBetween(settings->minRotationSpeed, settings->maxRotationSpeed));
@@ -272,6 +273,18 @@ void RenderParticles(Game *game)
 
     ShaderSetInt(game->particleShader, "u_atlas", 1);
     SetTexture(game->textureID, 1);
+
+    ShaderSetInt(game->particleShader, "u_axisAlignedBillboard", game->smokeSettings.axisAlignedBillboard);
+    if(game->smokeSettings.axisAlignedBillboard)
+    {
+        glm::vec3 direction = game->particleSystems->particles[0].velocity;
+        if(glm::length2(direction) <= 0.0001f)
+        {
+            direction = glm::vec3(0.0f, 1.0f, 0.0f);
+        }
+
+        ShaderSetVec3(game->particleShader, "u_direction", direction);
+    }
 
     glBindVertexArray(game->particlesQuad.vao);
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->aliveParticles);
