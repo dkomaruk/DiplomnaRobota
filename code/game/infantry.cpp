@@ -6,6 +6,7 @@
 #include "game.h"
 #include "shader.h"
 
+/*
 void RenderInfantry(Entity *e, Game *game)
 {
     Assert(e->type == EntityType_Infantry)
@@ -44,3 +45,4 @@ InfantrySquad CreateInfantrySquad(Model *soldierModels, int numOfModels, int squ
 
     return squad;
 }
+*/

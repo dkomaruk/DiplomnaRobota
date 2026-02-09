@@ -2,9 +2,12 @@
 
 #include "mesh.h"
 #include "texture.h"
+#include "shader.h"
 #include "game.h"
 
 #include <SDL3/SDL.h>
+
+#include <glm/gtc/type_ptr.hpp>
 
 #include <stb_image.h>
 
@@ -112,11 +115,20 @@ std::vector<SkinnedVertex> LoadAnimatedVerticesData(aiMesh *mesh, Skeleton *skel
         {
             int vertexId = aBone->mWeights[weightIndex].mVertexId;
             Assert((uint32)vertexId < mesh->mNumVertices)
+
+            //The bone with the largest influence on this vertex gets to extend its AABB with vertex position
+            float weight = aBone->mWeights[weightIndex].mWeight;
+            if(weight > 0.5f)
+            {
+                glm::vec3 vertexInBoneSpace = AssimpVec3ToGLM(aBone->mOffsetMatrix * mesh->mVertices[vertexId]);
+                ExpandAABB(&skeleton->boneAABBs[boneId], vertexInBoneSpace);
+            }
+
             for(int i = 0; i < 4; i++)
             {
                 if(vertices[vertexId].boneId[i] < 0)
                 {
-                    vertices[vertexId].weight[i] = aBone->mWeights[weightIndex].mWeight;
+                    vertices[vertexId].weight[i] = weight;
                     vertices[vertexId].boneId[i] = boneId;
                     break;
                 }
@@ -152,7 +164,48 @@ void CountNodes(aiNode *node, int *counter, std::unordered_map<std::string, int>
     }
 }
 
-void FlattenAssimpHierarchy(aiNode *aNode, Skeleton *skeleton, int parentId,
+void MergeAABB(AABB *dest, AABB *src)
+{
+    dest->min = glm::min(dest->min, src->min);
+    dest->max = glm::max(dest->max, src->max);
+}
+
+void ExpandAABB(AABB *aabb, glm::vec3 point)
+{
+    aabb->min = glm::min(aabb->min, point);
+    aabb->max = glm::max(aabb->max, point);
+}
+
+void GetAABBCorners(AABB *aabb, glm::vec3 *corners)
+{
+    corners[0] = {aabb->min.x, aabb->min.y, aabb->min.z};
+    corners[1] = {aabb->max.x, aabb->min.y, aabb->min.z};
+    corners[2] = {aabb->min.x, aabb->max.y, aabb->min.z};
+    corners[3] = {aabb->max.x, aabb->max.y, aabb->min.z};
+    corners[4] = {aabb->min.x, aabb->min.y, aabb->max.z};
+    corners[5] = {aabb->max.x, aabb->min.y, aabb->max.z};
+    corners[6] = {aabb->min.x, aabb->max.y, aabb->max.z};
+    corners[7] = {aabb->max.x, aabb->max.y, aabb->max.z};
+}
+
+AABB TransformAABB(AABB *aabb, glm::mat4 transform)
+{
+    const int numOfCorners = 8;
+    glm::vec3 corners[numOfCorners];
+
+    GetAABBCorners(aabb, corners);
+
+    AABB result = {glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX)};
+    for(int cornerIndex = 0; cornerIndex < numOfCorners; cornerIndex++)
+    {
+        ExpandAABB(&result, glm::vec3(transform * glm::vec4(corners[cornerIndex], 1.0f)));
+    }
+
+    return result;
+}
+
+void FlattenAssimpHierarchy(aiScene *scene, aiNode *aNode, Model *model,
+                            int parentId, glm::mat4 parentTransform,
                             std::unordered_map<std::string, int> &boneMap,
                             std::unordered_map<std::string, int> &nameToNodeIndex)
 {
@@ -161,16 +214,40 @@ void FlattenAssimpHierarchy(aiNode *aNode, Skeleton *skeleton, int parentId,
     std::string nodeName = aNode->mName.C_Str();
 
     Node node = {};
-    node.boneId = boneMap.count(nodeName) ? boneMap[nodeName] : -1;
     node.parentId = parentId;
     node.localTransform = AssimpMat4ToGLM(aNode->mTransformation);
+    node.name = (char *)aNode->mName.C_Str();
 
     int nodeId = nameToNodeIndex[nodeName];
-    skeleton->nodes[nodeId] = node;
+    model->nodes[nodeId] = node;
+
+    glm::mat4 nodeTransform = parentTransform * node.localTransform;
+
+    for(uint32 nodeMeshIndex = 0; nodeMeshIndex < aNode->mNumMeshes; nodeMeshIndex++)
+    {
+        uint32 meshIndex = aNode->mMeshes[nodeMeshIndex];
+        model->meshToNodeId[meshIndex] = nodeId;
+
+        aiAABB aiAABB = scene->mMeshes[meshIndex]->mAABB;
+        AABB meshAABB = {AssimpVec3ToGLM(aiAABB.mMin), AssimpVec3ToGLM(aiAABB.mMax)};
+
+        AABB transformedAABB = TransformAABB(&meshAABB, nodeTransform);
+        MergeAABB(&model->aabb, &transformedAABB);
+    }
+
+    if(model->type == ModelType_Animated)
+    {
+        int boneId = boneMap.count(nodeName) ? boneMap[nodeName] : -1;
+        if(boneId >= 0)
+        {
+            model->animData->skeleton.nodeToBoneId[nodeId] = boneId;
+        }
+    }
 
     for(uint32 childIndex = 0; childIndex < aNode->mNumChildren; childIndex++)
     {
-        FlattenAssimpHierarchy(aNode->mChildren[childIndex], skeleton, nodeId, boneMap, nameToNodeIndex);
+        FlattenAssimpHierarchy(scene, aNode->mChildren[childIndex], model, nodeId,
+                               nodeTransform, boneMap, nameToNodeIndex);
     }
 }
 
@@ -181,7 +258,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     result->type = type;
 
     aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
-    const aiScene *scene = aiImportFile(filepath, flags);
+    const aiScene *scene = aiImportFile(filepath, flags | aiProcess_GenBoundingBoxes);
     if(!scene)
     {
         SDL_Log("Failed to load %s. Error: %s", filepath, aiGetErrorString());
@@ -194,7 +271,8 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
     result->numOfMeshes = scene->mNumMeshes;
     result->mesh = (Mesh *)calloc(result->numOfMeshes, sizeof(Mesh));
-    result->material = (MaterialPhong *)calloc(scene->mNumMeshes, sizeof(MaterialPhong));
+    result->material = (MaterialPhong *)calloc(result->numOfMeshes, sizeof(MaterialPhong));
+    result->meshToNodeId = (int *)calloc(result->numOfMeshes, sizeof(int));
 
     int numOfBones = 0;
     std::unordered_map<std::string, int> boneMap;
@@ -214,24 +292,31 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
         }
     }
 
+    int numOfNodes = 0;
+    std::unordered_map<std::string, int> nameToNodeIndex;
+    CountNodes(scene->mRootNode, &numOfNodes, nameToNodeIndex);
+
     if(type == ModelType_Animated)
     {
         result->animData = (AnimatedModel *)calloc(1, sizeof(AnimatedModel));
 
         result->animData->skeleton.numOfBones = numOfBones;
         result->animData->skeleton.invBindPoses = (glm::mat4 *)calloc(numOfBones, sizeof(glm::mat4));
+        result->animData->skeleton.boneAABBs = (AABB *)calloc(numOfBones, sizeof(AABB));
+        for(int boneIndex = 0; boneIndex < numOfBones; boneIndex++)
+        {
+            result->animData->skeleton.boneAABBs[boneIndex].min = glm::vec3(FLT_MAX);
+            result->animData->skeleton.boneAABBs[boneIndex].max = glm::vec3(-FLT_MAX);
+        }
+
+        result->animData->skeleton.nodeToBoneId = (int *)calloc(numOfNodes, sizeof(int));
+        memset(result->animData->skeleton.nodeToBoneId, -1, sizeof(int) * numOfNodes);
 
         result->animData->numOfAnimations = scene->mNumAnimations;
         result->animData->animations = (Animation *)calloc(result->animData->numOfAnimations, sizeof(Animation));
 
         result->animData->numOfMatrices = numOfBones;
         result->animData->skinningMatrices = (glm::mat4 *)calloc(numOfBones, sizeof(glm::mat4));
-
-        //result->animData->scene = (aiScene *)scene;
-    }
-    else
-    {
-        result->staticData = (StaticModel *)calloc(1, sizeof(StaticModel));
     }
 
     std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
@@ -273,6 +358,24 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
         result->material[meshIndex] = phongMaterial;
     }
 
+    result->numOfNodes = numOfNodes;
+    result->nodes = (Node *)calloc(numOfNodes, sizeof(Node));
+    result->aabb.min = glm::vec3(FLT_MAX);
+    result->aabb.max = glm::vec3(-FLT_MAX);
+    FlattenAssimpHierarchy((aiScene *)scene, scene->mRootNode, result, -1, glm::mat4(1.0f), boneMap, nameToNodeIndex);
+
+    glm::vec3 verticesAABB[8];
+    GetAABBCorners(&result->aabb, verticesAABB);
+    uint32 indicesAABB[24] = {
+        0, 1, 1, 3, 3, 2, 2, 0,
+        4, 5, 5, 7, 7, 6, 6, 4,
+        0, 4, 1, 5, 2, 6, 3, 7
+    };
+
+    AttribInfo attrib = {0, 3, GL_FLOAT, sizeof(glm::vec3), (void *)0};
+    result->meshAABB = CreateMesh(&verticesAABB[0], 8, sizeof(glm::vec3), &indicesAABB[0], 24, &attrib, 1, GL_DYNAMIC_DRAW);
+    result->meshAABB.drawMode = GL_LINES;
+
     if(type == ModelType_Animated)
     {
         AnimatedModel *animData = result->animData;
@@ -280,14 +383,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
         {
             animData->skinningMatrices[i] = glm::mat4(1.0f);
         }
-
-        int numOfNodes = 0;
-        std::unordered_map<std::string, int> nameToNodeIndex;
-        CountNodes(scene->mRootNode, &numOfNodes, nameToNodeIndex);
-
-        animData->skeleton.numOfNodes = numOfNodes;
-        animData->skeleton.nodes = (Node *)calloc(numOfNodes, sizeof(Node));
-        FlattenAssimpHierarchy(scene->mRootNode, &animData->skeleton, -1, boneMap, nameToNodeIndex);
 
         for(uint32 animationIndex = 0; animationIndex < scene->mNumAnimations; animationIndex++)
         {
@@ -297,8 +392,8 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
             animation->ticksPerSecond = (float)anim->mTicksPerSecond;
             animation->numOfFrames = (int)anim->mDuration;
 
-            animation->nodeToSampleId = (int *)calloc(animData->skeleton.numOfNodes, sizeof(int));
-            memset(animation->nodeToSampleId, -1, sizeof(int) * animData->skeleton.numOfNodes);
+            animation->nodeToSampleId = (int *)calloc(numOfNodes, sizeof(int));
+            memset(animation->nodeToSampleId, -1, sizeof(int) * numOfNodes);
 
             animation->numOfSamples = anim->mNumChannels;
             animation->samples = (AnimationSample *)calloc(animation->numOfSamples, sizeof(AnimationSample));
@@ -362,7 +457,7 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 s
     return model;
 }
 
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat)
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms)
 {
     GLuint shader = model->material[0].shader;
     if(model->type == ModelType_Static)
@@ -382,8 +477,18 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat)
         ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(model->animData->skinningMatrices[0]), 100);
     }
 
-    for(int i = 0; i < model->numOfMeshes; i++)
+    ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
+    glLineWidth(3.0f);
+    RenderMesh(game, &model->meshAABB, modelMat, game->lineShader, 0, model->meshAABB.drawMode);
+    glLineWidth(1.0f);
+
+    for(int meshIndex = 0; meshIndex < model->numOfMeshes; meshIndex++)
     {
-        RenderMesh(game, &model->mesh[i], modelMat, shader, &model->material[i]);
+        glm::mat4 meshModelMatrix = modelMat;
+        if(nodeTransforms)
+        {
+            meshModelMatrix = modelMat * nodeTransforms[model->meshToNodeId[meshIndex]];
+        }
+        RenderMesh(game, &model->mesh[meshIndex], meshModelMatrix, shader, &model->material[meshIndex]);
     }
 }

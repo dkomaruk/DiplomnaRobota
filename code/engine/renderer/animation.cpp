@@ -14,6 +14,11 @@ glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m)
     return result;
 }
 
+glm::vec3 AssimpVec3ToGLM(aiVector3D v)
+{
+    return glm::vec3(v.x, v.y, v.z);
+}
+
 int GetPosKeyIndex(float time, AnimationSample *sample)
 {
     for(int i = 0; i < sample->numOfPositions - 1; i++)
@@ -85,31 +90,52 @@ glm::mat4 GetInterpolatedTransform(AnimationSample* sample, float time)
     return glm::translate(glm::mat4(1.0f), translation) * glm::mat4_cast(rotation) * glm::scale(glm::mat4(1.0f), scale);
 }
 
-void UpdateAnimation(AnimatedModel *model, float deltaTime)
+void UpdateAnimation(Model *model, float deltaTime)
 {
-    model->time += deltaTime;
+    Assert(model->type == ModelType_Animated)
 
-    Animation *animation = &model->animations[model->currentAnimation];
-    Skeleton *skeleton = &model->skeleton;
+    if(!model->animData->numOfAnimations) return;
 
-    float timeInTicks = model->time * animation->ticksPerSecond;
+    model->aabb.min = glm::vec3(FLT_MAX);
+    model->aabb.max = glm::vec3(-FLT_MAX);
+
+    AnimatedModel *animData = model->animData;
+    Animation *animation = &animData->animations[animData->currentAnimation];
+    Skeleton *skeleton = &animData->skeleton;
+
+    animData->time += deltaTime;
+    float timeInTicks = animData->time * animation->ticksPerSecond;
     float time = fmod(timeInTicks, (float)animation->numOfFrames);
 
-    glm::mat4 *globalTransforms = (glm::mat4 *)alloca(sizeof(glm::mat4) * skeleton->numOfNodes);
-    for(int i = 0; i < skeleton->numOfNodes; i++)
+    glm::mat4 *globalTransforms = (glm::mat4 *)alloca(sizeof(glm::mat4) * model->numOfNodes);
+    for(int nodeIndex = 0; nodeIndex < model->numOfNodes; nodeIndex++)
     {
-        Node *node = &skeleton->nodes[i];
+        Node *node = &model->nodes[nodeIndex];
 
-        int sampleId = animation->nodeToSampleId[i];
+        int sampleId = animation->nodeToSampleId[nodeIndex];
         glm::mat4 nodeTransform = (sampleId != -1) ? GetInterpolatedTransform(&animation->samples[sampleId], time)
                                                    : node->localTransform;
 
-        globalTransforms[i] = (node->parentId != -1) ? globalTransforms[node->parentId] * nodeTransform
-                                                     : nodeTransform;
+        globalTransforms[nodeIndex] = (node->parentId != -1) ? globalTransforms[node->parentId] * nodeTransform
+                                                             : nodeTransform;
 
-        if(node->boneId != -1)
+        int boneId = skeleton->nodeToBoneId[nodeIndex];
+        if(boneId != -1)
         {
-            model->skinningMatrices[node->boneId] = globalTransforms[i] * skeleton->invBindPoses[node->boneId];
+            animData->skinningMatrices[boneId] = globalTransforms[nodeIndex] * skeleton->invBindPoses[boneId];
+
+            if(skeleton->boneAABBs[boneId].min.x <= skeleton->boneAABBs[boneId].max.x)
+            {
+                AABB transformedAABB = TransformAABB(&skeleton->boneAABBs[boneId], globalTransforms[nodeIndex]);
+                MergeAABB(&model->aabb, &transformedAABB);
+            }
         }
     }
+
+    glm::vec3 corners[8];
+    GetAABBCorners(&model->aabb, corners);
+
+    glBindBuffer(GL_ARRAY_BUFFER, model->meshAABB.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(corners), corners);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

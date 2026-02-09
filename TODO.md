@@ -1,6 +1,7 @@
 # Current
 
-## 2026-02-01 S6 ???
+## 2026-02-05 S6 Model transform hierarchy
+- [ ] Models need to keep the node hierarchy in order to transform separate parts of the model (and make children of that part move along)
 
 # Next
 

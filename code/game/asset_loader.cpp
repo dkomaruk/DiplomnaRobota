@@ -103,6 +103,7 @@ void LoadParticleSystem(Game *game)
     game->particleTextures[9] = CreateTexture("../data/imgs/extra/alpha/twirl_04_a.png");
     game->particleTextures[10] = CreateTexture("../data/imgs/extra/alpha/star_05_a.png");
     game->particleTextures[11] = CreateTexture("../data/imgs/extra/alpha/effect_02_a.png");
+    game->particleTextures[12] = CreateTexture("../data/imgs/extra/alpha/trace_01_a.png");
 
     for(int i = 0; i < ArrayCount(game->particleSystems); i++)
     {
@@ -246,6 +247,8 @@ void LoadAssets(Game *game)
                                             LoadShader("../data/shaders/fragment2.frag"));
     GLuint selectionBoxShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
                                                     LoadShader("../data/shaders/fragment2.frag"));
+    GLuint aabbShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
+                                            LoadShader("../data/shaders/fragment2.frag"));
 
     ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -443,17 +446,36 @@ void LoadAssets(Game *game)
     ShaderSetInt(game->mainShader, "u_pointLightCount", maxPointLights);
     ShaderSetInt(game->animationShader, "u_pointLightCount", maxPointLights);
 
+    //for(int i = 0; i < 2; i++)
+    //{
+    //    InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
+    //    *squad = CreateInfantrySquad(cubeMesh, 1, 10);
+    //    //*squad = CreateInfantrySquad(soldier, 1, 10);
+    //    squad->scale = glm::vec3(0.5f);
+    //    squad->position.z = -10.0f / 2.0f;
+    //    squad->position.x = -10.0f / 2.0f;
+    //    squad->position.y -= i;
+
+    //    game->sceneEntities.push_back(squad);
+    //}
+
     for(int i = 0; i < 2; i++)
     {
-        InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
-        *squad = CreateInfantrySquad(cubeMesh, 1, 10);
-        //*squad = CreateInfantrySquad(soldier, 1, 10);
-        squad->scale = glm::vec3(0.5f);
-        squad->position.z = -10.0f / 2.0f;
-        squad->position.x = -10.0f / 2.0f;
-        squad->position.y -= i;
+        for(int j = 0; j < 10; j++)
+        {
+            Entity *entity = (Entity *)calloc(1, sizeof(Entity));
+            *entity = CreateEntity(cubeMesh);
 
-        game->sceneEntities.push_back(squad);
+            entity->scale = glm::vec3(0.5f);
+            entity->position.z = -10.0f / 2.0f;
+            entity->position.x = -10.0f / 2.0f;
+            entity->position.y -= i;
+
+            glm::vec3 offset = glm::vec3(j, 0.0f, j);
+            entity->position += offset;
+
+            game->sceneEntities.push_back(entity);
+        }
     }
 
     for(uint16 i = 0; i < game->sceneEntities.size(); i++)
@@ -462,7 +484,7 @@ void LoadAssets(Game *game)
     }
 #endif
 
-    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
+    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 1, 22.0f);
     game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
 
     //PARTICLES

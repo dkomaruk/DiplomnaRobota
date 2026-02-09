@@ -197,6 +197,16 @@ void UpdateGame(Game *game)
 
     UpdateCamera(game);
 
+    static bool isPaused = false;
+    if(IsFirstPress(game, SDL_SCANCODE_L))
+    {
+        isPaused = !isPaused;
+    }
+    if(isPaused)
+    {
+        game->deltaTime = 0.0f;
+    }
+
     if(keyboardState[SDL_SCANCODE_ESCAPE])
     {
         game->isRunning = false;
@@ -206,6 +216,8 @@ void UpdateGame(Game *game)
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
         Entity *entity = game->sceneEntities[i];
+        UpdateEntity(game, entity);
+
         switch(entity->type)
         {
             case EntityType_Infantry:
@@ -226,7 +238,6 @@ void UpdateGame(Game *game)
         }
 
     }
-
 
     Camera *camera = &game->camera;
     glm::vec3 forward = normalize(camera->direction);
@@ -312,7 +323,7 @@ void UpdateGame(Game *game)
     }
 
 #ifdef LOAD_ASSETS
-    game->testEntity->rotation.y = (float)SDL_GetTicks() / 25.0f;
+    game->testEntity->rotation.y += 90.0f * game->deltaTime;
 #endif
 
     if(IsFirstPress(game, SDL_SCANCODE_T))

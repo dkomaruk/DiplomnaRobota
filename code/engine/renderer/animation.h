@@ -14,21 +14,15 @@
 #include <unordered_map>
 
 struct AnimatedModel;
-
-struct Node
-{
-    glm::mat4 localTransform;
-    int parentId;
-    int boneId;
-};
+struct AABB;
 
 struct Skeleton
 {
     glm::mat4 *invBindPoses;
+    AABB *boneAABBs;
     int numOfBones;
 
-    Node *nodes;
-    int numOfNodes;
+    int *nodeToBoneId;
 };
 
 struct KeyPosition
@@ -72,7 +66,9 @@ struct Animation
 };
 
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m);
-void UpdateAnimation(AnimatedModel *model, float deltaTime);
+glm::vec3 AssimpVec3ToGLM(aiVector3D v);
+
+void UpdateAnimation(Model *model, float deltaTime);
 
 #define ANIMATION_H
 #endif

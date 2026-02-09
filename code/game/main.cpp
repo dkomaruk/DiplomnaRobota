@@ -69,6 +69,14 @@
 
 #include <expat.h>
 
+void RenderRectUI(Game *game, glm::vec2 pos, glm::vec2 size, GLuint shader)
+{
+    glm::mat4 modelMat = glm::mat4(1.0f);
+    modelMat = glm::translate(modelMat, glm::vec3(pos.x + (size.x / 2.0f), pos.y + (size.y / 2.0f), 0.0f));
+    modelMat = glm::scale(modelMat, glm::vec3(size.x, size.y, 1.0f));
+    RenderMesh(game, GetUnitQuad(), modelMat, shader);
+}
+
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -101,11 +109,30 @@ int main(int argc, char *argv[])
     }
 
     //Model *abramsTurret = ImportModel2("../data/models/abrams/abrams.fbx", game->mainShader);
-    //Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, aiProcess_PreTransformVertices);
-    //if(!abramsTurret)
-    //{
-    //    SDL_Log("Failed to load abrams.fbx");
-    //}
+    Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
+    if(!abrams)
+    {
+        SDL_Log("Failed to load abrams.fbx");
+    }
+
+    Entity tank = CreateEntity(abrams);
+    for(int i = 0; i < tank.model->numOfNodes; i++)
+    {
+        char *nodeName = tank.model->nodes[i].name;
+        if(nodeName && strcmp(nodeName, "Tourelle_01") == 0)
+        {
+            tank.turret.nodeId = i;
+            tank.turret.transform = tank.model->nodes[i].localTransform;
+        }
+        //else if(nodeName && strcmp(nodeName, "Fx_Tourelle1_Tir_01") == 0)
+        //{
+        //    tank.gunTipId = i;
+        //}
+    }
+
+    tank.id = game->sceneEntities.back()->id + 1;
+    strcpy(tank.textId, "tank");
+    game->sceneEntities.push_back(&tank);
 
     //Entity tankTurret = CreateEntity(abramsTurret);
     //tankTurret.position.y += 5.0f;
@@ -120,6 +147,8 @@ int main(int argc, char *argv[])
     game->soldierEntity = &character;
     game->soldierEntity->position.x = 0.0f;
     game->soldierEntity->position.z = 0.0f;
+    game->soldierEntity->id = game->sceneEntities.back()->id + 1;
+    game->sceneEntities.push_back(game->soldierEntity);
 
     //SKY
     int flags = TexturePreset_Common;
@@ -140,24 +169,23 @@ int main(int argc, char *argv[])
         //Input
         ProcessInput(game);
 
-        static bool isPaused = false;
-        if(IsFirstPress(game, SDL_SCANCODE_L))
-        {
-            isPaused = !isPaused;
-        }
-
         //Update
         UpdateEditorUI(game);
         UpdateGame(game);
-        if(isPaused)
-        {
-            game->deltaTime = 0.0f;
-        }
 
-        UpdateAnimation(model->animData, game->deltaTime);
-        UpdateAnimation(game->soldierEntity0->models[0].animData, game->deltaTime);
+        glm::mat4 transform = glm::mat4(1.0f);
+        transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
+        transform = glm::rotate(transform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
 
-        //UpdateAnimation(&animation, animTime, skinningMatrices);
+        tank.turret.transform = transform * tank.model->nodes[tank.turret.nodeId].localTransform;
+        UpdateTransforms(&tank);
+
+        //glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank.position, tank.rotation, tank.scale);
+        //glm::mat4 tipWorldMat = tankWorldMatrix * tank.nodeTransforms[tank.gunTipId];
+        //game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+        //glm::mat4 tipRotation = glm::mat3(tipWorldMat);
+        //game->particleSystems[0].rotation = tipRotation;
 
         //tankTurret.position += velocity * game->deltaTime + 0.5f * acceleration * Square(game->deltaTime);
         //tankTurret.rotation += angularVelocity * game->deltaTime;
@@ -301,7 +329,7 @@ int main(int argc, char *argv[])
 
             //UseShader(game->animationShader);
             //ShaderSetMatrix4Array(game->animationShader, "u_skinning", glm::value_ptr(model->animData.skinningMatrices[0]), 100);
-            RenderEntity(game->soldierEntity, game);
+            //RenderEntity(game->soldierEntity, game);
             //RenderModel(game, model, glm::mat4(1.0f));
 
             //RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
@@ -368,12 +396,7 @@ int main(int argc, char *argv[])
                 SDL_GetMouseState(&x, &y);
 
                 glm::vec2 size = glm::vec2(x - selectionBoxStart.x, y - selectionBoxStart.y);
-
-                glm::mat4 modelMat = glm::mat4(1.0f);
-                modelMat = glm::translate(modelMat, glm::vec3(selectionBoxStart.x + (size.x / 2.0f),
-                                                              selectionBoxStart.y + (size.y / 2.0f), 0.0f));
-                modelMat = glm::scale(modelMat, glm::vec3(size.x, size.y, 1.0f));
-                RenderMesh(game, selectionQuad, modelMat, game->selectionBoxShader);
+                RenderRectUI(game, selectionBoxStart, size, game->selectionBoxShader);
             }
 
             RenderText(&game->aliveParticlesText);

@@ -6,6 +6,7 @@ struct Game;
 
 struct Mesh;
 struct Model;
+struct Node;
 
 enum EntityType
 {
@@ -17,14 +18,25 @@ struct Entity;
 
 typedef void RenderEntityFunc(Entity *self, Game *game);
 
+struct TransformOverride
+{
+    int nodeId = -1;
+    glm::mat4 transform;
+};
+
 struct Entity
 {
     uint16 id;
     uint16 type;
     char textId[25];
 
-    Model *models;
-    int numOfModels;
+    Model *model;
+    //int numOfModels;
+    //glm::mat4 *localTransforms;
+    glm::mat4 *nodeTransforms;
+    TransformOverride turret;
+    //int turretId;
+    //int gunTipId;
 
     glm::vec3 position;
     glm::vec3 rotation;
@@ -33,8 +45,9 @@ struct Entity
     RenderEntityFunc *Render;
 };
 
-Entity CreateEntity(Mesh *meshes, int numOfMeshes=1);
 Entity CreateEntity(Model *model);
+void UpdateEntity(Game *game, Entity *entity);
+void UpdateTransforms(Entity *entity);
 
 #define ENTITY_H
 #endif

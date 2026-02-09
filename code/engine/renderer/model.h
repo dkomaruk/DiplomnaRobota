@@ -38,12 +38,34 @@ enum ModelType
     ModelType_Animated
 };
 
+struct Node
+{
+    glm::mat4 localTransform;
+    int parentId;
+    char *name;
+};
+
+struct AABB
+{
+    glm::vec3 min;
+    glm::vec3 max;
+};
+
 struct Model
 {
     uint16 type;
-    Mesh *mesh;
+
     MaterialPhong *material;
+    Mesh *mesh;
     int numOfMeshes;
+
+    int *meshToNodeId;
+
+    Node *nodes;
+    int numOfNodes;
+
+    AABB aabb;
+    Mesh meshAABB;
 
     union
     {
@@ -55,7 +77,12 @@ struct Model
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0, uint16 type = ModelType_Static, float scale = 1.0f);
 
 glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat);
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms = NULL);
+
+AABB TransformAABB(AABB *aabb, glm::mat4 transform);
+void MergeAABB(AABB *dest, AABB *src);
+void ExpandAABB(AABB *aabb, glm::vec3 point);
+void GetAABBCorners(AABB *aabb, glm::vec3 *corners);
 
 #define MODEL_H
 #endif

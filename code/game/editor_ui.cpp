@@ -33,9 +33,9 @@ void UpdateEditorUI(Game *game)
 
         if(ImGui::CollapsingHeader("Material"))
         {
-            ImGui::LabelText("Shader ID", "%d", selectedEntity->models[0].material->shader);
-            ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->models[0].material->diffuseTexture.id);
-            ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->models[0].material->specularTexture.id);
+            ImGui::LabelText("Shader ID", "%d", selectedEntity->model->material->shader);
+            ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->model->material->diffuseTexture.id);
+            ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->model->material->specularTexture.id);
         }
     }
 

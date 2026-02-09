@@ -35,7 +35,7 @@ struct Game
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
     GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, pickingShader, skinnedPickingShader,
            postProcessShader, uiTextShader, particleShader, terrainShader, animationShader, lineShader,
-           selectionBoxShader;
+           selectionBoxShader, aabbShader;
 
     bool outlinePass, pickingPass;
     float outlineThickness = 2.0f;
@@ -107,7 +107,7 @@ struct Game
 
     Atlas atlas;
 
-    Texture particleTextures[12];
+    Texture particleTextures[13];
     int currentTexture = 1;
 };
 
