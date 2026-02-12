@@ -1,6 +1,7 @@
 #include "particle_editor_ui.h"
 
 #include "particle_system.h"
+#include "file.h"
 
 #include "math_utils.h"
 
@@ -11,9 +12,6 @@
 
 #include <json.hpp>
 #include <fstream>
-
-#include <windows.h>
-#include <commdlg.h>
 
 using json = nlohmann::json;
 
@@ -267,40 +265,6 @@ void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOf
     }
 }
 
-std::string OpenFileDialog()
-{
-    char fileName[MAX_PATH] = "";
-
-    OPENFILENAME ofn = {};
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = nullptr;
-    ofn.lpstrFilter = "JSON Files\0*.json\0All Files\0*.*\0";
-    ofn.lpstrFile = fileName;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-
-    if(GetOpenFileNameA(&ofn))
-        return std::string(fileName);
-    return "";
-}
-
-std::string SaveFileDialog()
-{
-    char fileName[MAX_PATH] = "";
-
-    OPENFILENAME ofn = {};
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = nullptr;
-    ofn.lpstrFilter = "JSON Files\0*.json\0All Files\0*.*\0";
-    ofn.lpstrFile = fileName;
-    ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_OVERWRITEPROMPT;
-
-    if(GetSaveFileNameA(&ofn))
-        return std::string(fileName);
-    return "";
-}
-
 void UpdateParticleEditorUI(Game *game)
 {
     ImGui::Begin("Particle System Editor", 0, ImGuiWindowFlags_AlwaysAutoResize);
@@ -412,15 +376,17 @@ void UpdateParticleEditorUI(Game *game)
         ImGui::InputInt("Frames", &smoke->animationFPS);
     }
 
+    FileFilter filters[] = {{"JSON Files", "*.json"}};
     if(ImGui::Button("Save"))
     {
-        std::string path = SaveFileDialog();
+        std::string path = SaveFileDialog(filters, ArrayCount(filters));
         if(!path.empty())
             SaveParticleSettings(*smoke, path);
+        game->lastFrame = SDL_GetPerformanceCounter();
     }
     if(ImGui::Button("Load"))
     {
-        std::string path = OpenFileDialog();
+        std::string path = OpenFileDialog(filters, ArrayCount(filters));
         if(!path.empty())
         {
             LoadParticleSettings(*smoke, path, smoke->atlas);

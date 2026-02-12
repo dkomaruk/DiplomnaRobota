@@ -4,6 +4,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <glm/vec2.hpp>
+
 #define MOUSE_BUTTONS_COUNT 5
 #define MOUSE_LEFT 0
 #define MOUSE_MIDDLE 1
@@ -11,9 +13,29 @@
 #define MOUSE_SIDE1 3
 #define MOUSE_SIDE2 4
 
+#define KEY_UP 0
+#define KEY_DOWN 1
+
 struct Game;
 
-void ProcessInput(Game *game);
+struct Input
+{
+    int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
+
+    int mouseButtons[MOUSE_BUTTONS_COUNT], prevMouseButtons[MOUSE_BUTTONS_COUNT];
+    bool isCursorHidden;
+
+    bool shouldQuit;
+
+    glm::vec2 mousePos;
+    glm::vec2 mouseDelta;
+    glm::vec2 mouseWheelDelta;
+
+    std::string typedText = "";
+    bool isBackspacePressed;
+};
+
+void ProcessInput(Input *input);
 
 bool IsFirstPress(Game *game, SDL_Scancode key);
 

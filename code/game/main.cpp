@@ -10,7 +10,7 @@
 //TODO: Replace with a less heavy library
 #include <json.hpp>
 
-//GLM extensions have to be included before any other glm header file for some reason
+//GLM extensions have to be included before any other glm header file for some reason, otherwise it doesn't compile
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -19,21 +19,19 @@
 #include "stb_image_write.cpp"
 
 #include "input.cpp"
-
 #include "infantry.cpp"
 #include "entity.cpp"
 #include "game.cpp"
-
 #include "audio.cpp"
 #include "asset_loader.cpp"
-
 #include "timer.cpp"
 #include "text.cpp"
 #include "text_demo.cpp"
-
 #include "light.cpp"
 #include "camera.cpp"
+#include "file.cpp"
 #include "shader.cpp"
+#include "aabb.cpp"
 #include "texture.cpp"
 #include "image.cpp"
 #include "mesh.cpp"
@@ -98,6 +96,7 @@ int main(int argc, char *argv[])
     glm::vec2 targetDirection = {0.0f, 0.0f};
     float targetAngle = 0.0f;
 
+#if 0
     {
         //Need to do this before the game loop because calling glReadPixels for the first time
         //for some reason causes a huge freeze (174 ms unoptimized compilation). Subsequent calls are 10-12 ms
@@ -107,6 +106,7 @@ int main(int argc, char *argv[])
         glReadPixels((int)0, (int)0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+#endif
 
     //Model *abramsTurret = ImportModel2("../data/models/abrams/abrams.fbx", game->mainShader);
     Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
@@ -123,6 +123,11 @@ int main(int argc, char *argv[])
         {
             tank.turret.nodeId = i;
             tank.turret.transform = tank.model->nodes[i].localTransform;
+        }
+        else if(nodeName && strcmp(nodeName, "Axe_Canon_01") == 0)
+        {
+            tank.gun.nodeId = i;
+            tank.gun.transform = tank.model->nodes[i].localTransform;
         }
         //else if(nodeName && strcmp(nodeName, "Fx_Tourelle1_Tir_01") == 0)
         //{
@@ -167,17 +172,41 @@ int main(int argc, char *argv[])
     while(game->isRunning)
     {
         //Input
-        ProcessInput(game);
+        ProcessInput(&game->input);
+
+        Input tempInputCopy = game->input;
 
         //Update
         UpdateEditorUI(game);
         UpdateGame(game);
 
-        glm::mat4 transform = glm::mat4(1.0f);
-        transform = glm::translate(transform, glm::vec3(0.0f, 0.0f, (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
-        transform = glm::rotate(transform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
+        if(IsFirstPress(game, SDL_SCANCODE_DELETE))
+        {
+            game->sceneEntities.erase(
+                std::remove_if(game->sceneEntities.begin(), game->sceneEntities.end(), [&](Entity *entity) {
+                    if(game->selectedIDs.count(entity->id))
+                    {
+                        DeleteEntity(entity);
+                        return true;
+                    }
+                    return false;
+                }),
+                game->sceneEntities.end()
+            );
 
-        tank.turret.transform = transform * tank.model->nodes[tank.turret.nodeId].localTransform;
+            game->selectedIDs.clear();
+            game->lastSelectedId = -1;
+        }
+
+        glm::mat4 turretTransform = glm::mat4(1.0f);
+        turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f, 0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
+        turretTransform = glm::rotate(turretTransform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
+        tank.turret.transform = tank.model->nodes[tank.turret.nodeId].localTransform * turretTransform;
+
+        glm::mat4 gunTransform = glm::mat4(1.0f);
+        gunTransform = glm::rotate(gunTransform, glm::radians(sinf(SDL_GetTicks() / 500.0f) * 20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        tank.gun.transform = tank.model->nodes[tank.gun.nodeId].localTransform * gunTransform;
+
         UpdateTransforms(&tank);
 
         //glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank.position, tank.rotation, tank.scale);
@@ -233,16 +262,19 @@ int main(int argc, char *argv[])
         {
             glEnable(GL_DEPTH_TEST);
 
+#if 0
             game->pickingPass = true;
             glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
             RenderScene(game);
             game->pickingPass = false;
+#endif
 
             //OBJECT PICKING
             if(IsFirstClick(game, MOUSE_LEFT) && !ImGui::GetIO().WantCaptureMouse)
             {
+                uint64 start = SDL_GetPerformanceCounter();
                 float x, y;
-                if(game->isCursorHidden)
+                if(game->input.isCursorHidden)
                 {
                     x = WINDOW_WIDTH / 2.0f;
                     y = WINDOW_HEIGHT / 2.0f;
@@ -256,6 +288,7 @@ int main(int argc, char *argv[])
                     y = (int)WINDOW_HEIGHT - y;
                 }
 
+#if 0
                 uint64 start = SDL_GetPerformanceCounter();
                 uint8 pixels[3];
                 //This is very expensive (because we have to wait for the pixel data request to reach the GPU and then for the data to get back), I think AABB ray intersection with spatial partitioning will be much more cheap
@@ -263,24 +296,9 @@ int main(int argc, char *argv[])
                 uint32 pickedID = pixels[0];
                 uint64 end = SDL_GetPerformanceCounter();
                 SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
+#endif
 
-                if(!pickedID || !game->keys[SDL_SCANCODE_LSHIFT])
-                {
-                    game->selectedIDs.clear();
-                }
-
-                bool isAlreadyPicked = game->selectedIDs.count(pickedID);
-                if(isAlreadyPicked && game->keys[SDL_SCANCODE_LSHIFT])
-                {
-                    game->selectedIDs.erase(pickedID);
-                }
-                else
-                {
-                    game->selectedIDs.insert(pickedID);
-                }
-
-                game->lastSelectedId = pickedID;
-
+                //uint64 start = SDL_GetPerformanceCounter();
                 glm::vec3 windowPos = glm::vec3(x, y, 0.0f);
 
                 glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
@@ -289,8 +307,53 @@ int main(int argc, char *argv[])
                 glm::vec3 rayFar = glm::unProject(windowPos, game->view, game->perspectiveProjection,
                                                   glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
 
-                glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
                 glm::vec3 rayOrigin = game->camera.position;
+                glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
+
+                int closestId = -1;
+                float closestDistance = FLT_MAX;
+
+                for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
+                {
+                    Entity *entity = game->sceneEntities[entityIndex];
+
+                    AABB transformedAABB = {glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.min, 1.0f)),
+                                            glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
+
+                    glm::vec3 intersectionPoint;
+                    bool result = RayBoxIntersection(&transformedAABB, rayOrigin, rayDirection, &intersectionPoint);
+
+                    if(result)
+                    {
+                        float distance = glm::length2(intersectionPoint - rayOrigin);
+                        if(distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closestId = entity->id;
+                        }
+                    }
+                }
+
+                if((closestId < 0) || !game->input.keys[SDL_SCANCODE_LSHIFT])
+                {
+                    game->selectedIDs.clear();
+                }
+
+                if(closestId >= 0)
+                {
+                    uint16 pickedId = (uint16)closestId;
+                    bool isAlreadyPicked = game->selectedIDs.count(pickedId);
+                    if(isAlreadyPicked && game->input.keys[SDL_SCANCODE_LSHIFT])
+                    {
+                        game->selectedIDs.erase(pickedId);
+                    }
+                    else
+                    {
+                        game->selectedIDs.insert(pickedId);
+                    }
+                }
+
+                game->lastSelectedId = closestId;
 
                 float visibleRayLength = 2000.0f;
 
@@ -307,6 +370,8 @@ int main(int argc, char *argv[])
                     targetDirection = glm::normalize(targetDirection);
                     targetAngle = glm::degrees(glm::atan(targetDirection.x, targetDirection.y));
                 }
+                uint64 end = SDL_GetPerformanceCounter();
+                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
             }
 
             game->outlinePass = true;
@@ -390,7 +455,7 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(game->mouseButtons[MOUSE_LEFT])
+            if(game->input.mouseButtons[MOUSE_LEFT])
             {
                 float x, y;
                 SDL_GetMouseState(&x, &y);

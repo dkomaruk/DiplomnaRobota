@@ -16,20 +16,20 @@ void RenderEntity(Entity *self, Game *game)
 {
     if(!self->model /*|| !self->numOfModels*/) return;
 
+#if 0
     if(game->pickingPass)
     {
         ShaderSetUInt(game->pickingShader, "u_objectIndex", self->id);
         ShaderSetUInt(game->skinnedPickingShader, "u_objectIndex", self->id);
     }
-
-    glm::mat4 modelMat = PrepareModelMatrix(self->position, glm::vec3(0.0f), self->scale);
+#endif
 
     ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
-    glLineWidth(3.0f);
-    RenderMesh(game, &self->meshAABB, modelMat, game->lineShader, 0, self->meshAABB.drawMode);
+    glLineWidth(2.0f);
+    RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
     glLineWidth(1.0f);
 
-    RenderModel(game, self->model, PrepareModelMatrix(self->position, self->rotation, self->scale), self->nodeTransforms);
+    RenderModel(game, self->model, self->modelMat, self->nodeTransforms);
 }
 
 Entity CreateEntity(Model *model)
@@ -65,15 +65,26 @@ Entity CreateEntity(Model *model)
     return entity;
 }
 
+void DeleteEntity(Entity *entity)
+{
+    free(entity->nodeTransforms);
+    free(entity);
+}
+
 void UpdateTransforms(Entity *entity)
 {
     for (int nodeIndex = 0; nodeIndex < entity->model->numOfNodes; ++nodeIndex) {
         Node *node = &entity->model->nodes[nodeIndex];
         //glm::mat4 nodeTransform = entity->localTransforms[nodeIndex];
 
+        glm::mat4 nodeTransform;
+        if(entity->turret.nodeId == nodeIndex)
+            nodeTransform = entity->turret.transform;
+        else if(entity->gun.nodeId == nodeIndex)
+            nodeTransform = entity->gun.transform;
+        else
+            nodeTransform = entity->model->nodes[nodeIndex].localTransform;
 
-        glm::mat4 nodeTransform = (entity->turret.nodeId == nodeIndex) ? entity->turret.transform
-                                                                       : entity->model->nodes[nodeIndex].localTransform;
         if(node->parentId != -1)
         {
             nodeTransform = entity->nodeTransforms[node->parentId] * nodeTransform;
@@ -84,8 +95,16 @@ void UpdateTransforms(Entity *entity)
 
 void UpdateEntity(Game *game, Entity *entity)
 {
-    if(entity->model && entity->model->type == ModelType_Animated)
+    if(entity->model && (entity->model->type == ModelType_Animated))
     {
         UpdateAnimation(entity, game->deltaTime);
     }
+
+    entity->modelMatPosScale = PrepareModelMatrix(entity->position, glm::vec3(0.0f), entity->scale);
+    entity->modelMat = PrepareModelMatrix(entity);
+}
+
+glm::mat4 PrepareModelMatrix(Entity *entity)
+{
+    return PrepareModelMatrix(entity->position, entity->rotation, entity->scale);
 }

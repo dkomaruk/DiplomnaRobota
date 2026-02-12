@@ -34,6 +34,7 @@ struct Entity
     //glm::mat4 *localTransforms;
     glm::mat4 *nodeTransforms;
     TransformOverride turret;
+    TransformOverride gun;
     //int turretId;
     //int gunTipId;
 
@@ -44,12 +45,19 @@ struct Entity
     glm::vec3 rotation;
     glm::vec3 scale = glm::vec3(1.0f);
 
+    glm::mat4 modelMat;
+    glm::mat4 modelMatPosScale;
+
     RenderEntityFunc *Render;
 };
 
 Entity CreateEntity(Model *model);
+void DeleteEntity(Entity *entity);
+
 void UpdateEntity(Game *game, Entity *entity);
 void UpdateTransforms(Entity *entity);
+
+glm::mat4 PrepareModelMatrix(Entity *entity);
 
 #define ENTITY_H
 #endif

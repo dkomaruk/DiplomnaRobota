@@ -484,7 +484,7 @@ void LoadAssets(Game *game)
     }
 #endif
 
-    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 1, 22.0f);
+    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
     game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
 
     //PARTICLES

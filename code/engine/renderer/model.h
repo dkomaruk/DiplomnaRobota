@@ -2,6 +2,7 @@
 
 #include "defines.h"
 
+#include "aabb.h"
 #include "animation.h"
 
 #include <GL/glew.h>
@@ -35,7 +36,8 @@ struct StaticModel { };
 enum ModelType
 {
     ModelType_Static,
-    ModelType_Animated
+    ModelType_Animated,
+    ModelType_DetermineOnLoad
 };
 
 struct Node
@@ -43,13 +45,6 @@ struct Node
     glm::mat4 localTransform;
     int parentId;
     char *name;
-};
-
-struct AABB
-{
-    glm::vec3 min;
-    glm::vec3 max;
-    glm::vec3 corners[8];
 };
 
 struct Model
@@ -78,12 +73,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0, uint16 type 
 
 glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms = NULL);
-
-AABB TransformAABB(AABB *aabb, glm::mat4 transform);
-void MergeAABB(AABB *dest, AABB *src);
-void ExpandAABB(AABB *aabb, glm::vec3 point);
-void UpdateAABBCorners(AABB *aabb);
-void UpdateAABBMesh(AABB *aabb, Mesh *aabbMesh, bool recalculateCorners = false);
 
 #define MODEL_H
 #endif

@@ -57,10 +57,7 @@ struct Game
     glm::mat4 view, perspectiveProjection, orthoProjection;
 
     //Input
-    int prevKeys[SDL_SCANCODE_COUNT], keys[SDL_SCANCODE_COUNT];
-
-    int mouseButtons[MOUSE_BUTTONS_COUNT], prevMouseButtons[MOUSE_BUTTONS_COUNT];
-    bool isCursorHidden;
+    Input input;
 
     //Timing
     float deltaTime;
@@ -72,7 +69,7 @@ struct Game
 
     //Scene
     std::vector<Entity *> sceneEntities;
-    std::unordered_set<uint32> selectedIDs;
+    std::unordered_set<uint16> selectedIDs;
     int lastSelectedId = -1;
 
     Entity *testEntity;

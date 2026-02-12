@@ -33,7 +33,6 @@ bool InitGame(Game *game)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    //NOTE: This causes horrible performance with lots of particles on the screen
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
@@ -93,7 +92,7 @@ bool InitGame(Game *game)
 
     SDL_HideCursor();
     SDL_SetWindowRelativeMouseMode(game->window, true);
-    game->isCursorHidden = true;
+    game->input.isCursorHidden = true;
 
     stbi_set_flip_vertically_on_load(true);
     stbi_flip_vertically_on_write(true);
@@ -164,26 +163,46 @@ Game *GetGame()
 
 void UpdateCamera(Game *game)
 {
+    Input *input = &game->input;
     Camera *camera = &game->camera;
-    int *keyboardState = game->keys;
 
     glm::vec3 dir = camera->direction;
     //dir.y = 0.0f;
     dir = normalize(dir);
 
     float cameraSpeed = camera->speed * game->deltaTime;
-    if(game->keys[SDL_SCANCODE_LSHIFT])
+    if(input->keys[SDL_SCANCODE_LSHIFT])
     {
         cameraSpeed *= 5.0f;
     }
 
-    if(keyboardState[SDL_SCANCODE_W])
+    //Camera orientation
+    if(input->isCursorHidden)
+    {
+        camera->yaw += input->mouseDelta.x * camera->sensitivity;
+        camera->pitch -= input->mouseDelta.y * camera->sensitivity;
+        camera->pitch = SDL_clamp(camera->pitch, camera->maxPitch.x, camera->maxPitch.y);
+
+        camera->direction.x = cos(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
+        camera->direction.y = sin(glm::radians(camera->pitch));
+        camera->direction.z = sin(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
+        camera->direction = normalize(camera->direction);
+    }
+
+    //Camera zoom
+    camera->fov -= input->mouseWheelDelta.y;
+    camera->fov = SDL_clamp(camera->fov, 1.0f, 45.0f);
+
+    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+
+    //Camera movement
+    if(input->keys[SDL_SCANCODE_W])
         camera->position += cameraSpeed * dir;
-    if(keyboardState[SDL_SCANCODE_S])
+    if(input->keys[SDL_SCANCODE_S])
         camera->position -= cameraSpeed * dir;
-    if(keyboardState[SDL_SCANCODE_A])
+    if(input->keys[SDL_SCANCODE_A])
         camera->position -= normalize(cross(dir, camera->up)) * cameraSpeed;
-    if(keyboardState[SDL_SCANCODE_D])
+    if(input->keys[SDL_SCANCODE_D])
         camera->position += normalize(cross(dir, camera->up)) * cameraSpeed;
 
     //camera->position.y = 1.0f;
@@ -193,7 +212,10 @@ void UpdateCamera(Game *game)
 
 void UpdateGame(Game *game)
 {
-    int *keyboardState = game->keys;
+    if(game->input.shouldQuit)
+    {
+        game->isRunning = false;
+    }
 
     UpdateCamera(game);
 
@@ -207,7 +229,9 @@ void UpdateGame(Game *game)
         game->deltaTime = 0.0f;
     }
 
-    if(keyboardState[SDL_SCANCODE_ESCAPE])
+    Input *input = &game->input;
+
+    if(input->keys[SDL_SCANCODE_ESCAPE])
     {
         game->isRunning = false;
         return;
@@ -253,14 +277,14 @@ void UpdateGame(Game *game)
     alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
     alListenerfv(AL_ORIENTATION, listenerOri);
 
-    if(game->keys[SDL_SCANCODE_DOWN])
+    if(input->keys[SDL_SCANCODE_DOWN])
     {
         game->outlineThickness -= 5.0f * game->deltaTime;
         game->outlineThickness = SDL_max(game->outlineThickness, 0.0f);
 
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
-    if(game->keys[SDL_SCANCODE_UP])
+    if(input->keys[SDL_SCANCODE_UP])
     {
         game->outlineThickness += 5.0f * game->deltaTime;
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
@@ -298,7 +322,7 @@ void UpdateGame(Game *game)
         }
         if(IsFirstPress(game, SDL_SCANCODE_P))
         {
-            if(game->isCursorHidden)
+            if(input->isCursorHidden)
             {
                 SDL_ShowCursor();
                 SDL_SetWindowRelativeMouseMode(game->window, false);
@@ -309,7 +333,7 @@ void UpdateGame(Game *game)
                 SDL_SetWindowRelativeMouseMode(game->window, true);
             }
 
-            game->isCursorHidden = !game->isCursorHidden;
+            input->isCursorHidden = !input->isCursorHidden;
         }
     }
 
@@ -376,4 +400,10 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->lineShader, "u_view", game->view);
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
+
+
+    input->mouseDelta = glm::vec2(0.0f);
+    input->mouseWheelDelta = glm::vec2(0.0f);
+    input->typedText = "";
+    input->isBackspacePressed = false;
 }

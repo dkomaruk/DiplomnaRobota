@@ -164,55 +164,6 @@ void CountNodes(aiNode *node, int *counter, std::unordered_map<std::string, int>
     }
 }
 
-void MergeAABB(AABB *dest, AABB *src)
-{
-    dest->min = glm::min(dest->min, src->min);
-    dest->max = glm::max(dest->max, src->max);
-}
-
-void ExpandAABB(AABB *aabb, glm::vec3 point)
-{
-    aabb->min = glm::min(aabb->min, point);
-    aabb->max = glm::max(aabb->max, point);
-}
-
-void UpdateAABBCorners(AABB *aabb)
-{
-    aabb->corners[0] = {aabb->min.x, aabb->min.y, aabb->min.z};
-    aabb->corners[1] = {aabb->max.x, aabb->min.y, aabb->min.z};
-    aabb->corners[2] = {aabb->min.x, aabb->max.y, aabb->min.z};
-    aabb->corners[3] = {aabb->max.x, aabb->max.y, aabb->min.z};
-    aabb->corners[4] = {aabb->min.x, aabb->min.y, aabb->max.z};
-    aabb->corners[5] = {aabb->max.x, aabb->min.y, aabb->max.z};
-    aabb->corners[6] = {aabb->min.x, aabb->max.y, aabb->max.z};
-    aabb->corners[7] = {aabb->max.x, aabb->max.y, aabb->max.z};
-}
-
-void UpdateAABBMesh(AABB *aabb, Mesh *aabbMesh, bool recalculateCorners)
-{
-    if(recalculateCorners)
-    {
-        UpdateAABBCorners(aabb);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, aabbMesh->vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(aabb->corners), aabb->corners);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-AABB TransformAABB(AABB *aabb, glm::mat4 transform)
-{
-    UpdateAABBCorners(aabb);
-
-    AABB result = {glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX)};
-    for(int cornerIndex = 0; cornerIndex < ArrayCount(aabb->corners); cornerIndex++)
-    {
-        ExpandAABB(&result, glm::vec3(transform * glm::vec4(aabb->corners[cornerIndex], 1.0f)));
-    }
-
-    return result;
-}
-
 void FlattenAssimpHierarchy(aiScene *scene, aiNode *aNode, Model *model,
                             int parentId, glm::mat4 parentTransform,
                             std::unordered_map<std::string, int> &boneMap,
@@ -264,7 +215,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 {
     Model *result = (Model *)calloc(1, sizeof(Model));
     result->numOfMeshes = -1;
-    result->type = type;
 
     aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
     const aiScene *scene = aiImportFile(filepath, flags | aiProcess_GenBoundingBoxes);
@@ -274,9 +224,14 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
         return result;
     }
 
-    std::string dirPath = filepath;
-    size_t found = dirPath.find_last_of("\\/");
-    dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
+    if(type == ModelType_DetermineOnLoad)
+    {
+        result->type = (uint16)((scene->mNumAnimations == 0) ? ModelType_Static : ModelType_Animated);
+    }
+    else
+    {
+        result->type = type;
+    }
 
     result->numOfMeshes = scene->mNumMeshes;
     result->mesh = (Mesh *)calloc(result->numOfMeshes, sizeof(Mesh));
@@ -305,7 +260,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     std::unordered_map<std::string, int> nameToNodeIndex;
     CountNodes(scene->mRootNode, &numOfNodes, nameToNodeIndex);
 
-    if(type == ModelType_Animated)
+    if(result->type == ModelType_Animated)
     {
         result->animData = (AnimatedModel *)calloc(1, sizeof(AnimatedModel));
 
@@ -328,6 +283,11 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
         result->animData->skinningMatrices = (glm::mat4 *)calloc(numOfBones, sizeof(glm::mat4));
     }
 
+
+    std::string dirPath = filepath;
+    size_t found = dirPath.find_last_of("\\/");
+    dirPath = (found == std::string::npos) ? dirPath : dirPath.substr(0, found);
+
     std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
     std::vector<Texture> diffuseTextures, specularTextures;
 
@@ -345,13 +305,13 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
             }
         }
 
-        if(type == ModelType_Static)
+        if(result->type == ModelType_Static)
         {
             std::vector<Vertex> vertices = LoadStaticVerticesData(mesh);
             result->mesh[meshIndex] = CreateMesh(&vertices[0], vertices.size(), sizeof(Vertex),
                                                  &indices[0], indices.size());
         }
-        else if(type == ModelType_Animated)
+        else if(result->type == ModelType_Animated)
         {
             std::vector<SkinnedVertex> vertices = LoadAnimatedVerticesData(mesh, &result->animData->skeleton, boneMap);
             result->mesh[meshIndex] = CreateMesh(&vertices[0], vertices.size(), sizeof(SkinnedVertex), &indices[0],
@@ -375,7 +335,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
     UpdateAABBCorners(&result->aabb);
 
-    if(type == ModelType_Animated)
+    if(result->type == ModelType_Animated)
     {
         AnimatedModel *animData = result->animData;
         for(int i = 0; i < animData->numOfMatrices; i++)

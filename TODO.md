@@ -1,8 +1,5 @@
 # Current
 
-## 2026-02-05 S6 Model transform hierarchy
-- [ ] Models need to keep the node hierarchy in order to transform separate parts of the model (and make children of that part move along)
-
 # Next
 
 # Upcoming
@@ -59,6 +56,9 @@
   - Alt: send state snapshot
 
 # Log
+
+## 2026-02-05/07 S6 Model transform hierarchy
+- [x] Models need to keep the node hierarchy in order to transform separate parts of the model (and make children of that part move along)
 
 ## 2026-01-22/27 S5 Skeletal Animation
 - [x] Skeletal Animation

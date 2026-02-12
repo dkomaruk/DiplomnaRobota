@@ -1,7 +1,7 @@
 #include "editor_ui.h"
 
 #include "particle_editor_ui.h"
-
+#include "file.h"
 #include "model.h"
 
 #include <imgui.h>
@@ -20,30 +20,70 @@ void UpdateEditorUI(Game *game)
     UpdateParticleEditorUI(game);
 
     ImGui::Begin("Selected Entity", 0, ImGuiWindowFlags_AlwaysAutoResize);
-    if(game->lastSelectedId > 0 && (game->sceneEntities.size() >= game->lastSelectedId))
+    if(game->lastSelectedId > 0)
     {
-        Entity *selectedEntity = game->sceneEntities[game->lastSelectedId - 1];
+        int id = game->lastSelectedId;
+        auto it = std::find_if(game->sceneEntities.begin(), game->sceneEntities.end(), [id](Entity *entity) {
+            return entity->id == id;
+        });
 
-        ImGui::LabelText("Text ID", "%s", selectedEntity->textId);
-
-        if(ImGui::CollapsingHeader("Transform"))
+        if(it != game->sceneEntities.end())
         {
-            ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
-            if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
+            Entity *selectedEntity = *it;
+            ImGui::LabelText("Text ID", "%s", selectedEntity->textId);
+
+            if(ImGui::CollapsingHeader("Transform"))
             {
-                glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
-                selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
-                UpdateAABBCorners(&selectedEntity->aabb);
-                UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
+                ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
+                if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
+                {
+                    glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
+                    selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
+                    UpdateAABBCorners(&selectedEntity->aabb);
+                    UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
+                }
+                ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
             }
-            ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
-        }
 
-        if(ImGui::CollapsingHeader("Material"))
+            if(ImGui::CollapsingHeader("Material"))
+            {
+                ImGui::LabelText("Shader ID", "%d", selectedEntity->model->material->shader);
+                ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->model->material->diffuseTexture.id);
+                ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->model->material->specularTexture.id);
+            }
+        }
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Import Model", 0, ImGuiWindowFlags_AlwaysAutoResize);
+
+    static float importScale = 1.0f;
+    ImGui::InputFloat("Import Scale", &importScale);
+
+    if(ImGui::Button("Import"))
+    {
+        FileFilter filters[] = {{"FBX Files", "*.fbx"}, {"GLB Files", "*.glb"}, {"OBJ Files", "*.obj"}};
+        std::string path = OpenFileDialog(filters, ArrayCount(filters));
+        if(!path.empty())
         {
-            ImGui::LabelText("Shader ID", "%d", selectedEntity->model->material->shader);
-            ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->model->material->diffuseTexture.id);
-            ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->model->material->specularTexture.id);
+            Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
+                                        ModelType_DetermineOnLoad, importScale);
+
+            if(model->type == ModelType_Static)
+                model->material->shader = game->mainShader;
+            else if(model->type == ModelType_Animated)
+                model->material->shader = game->animationShader;
+            else
+                InvalidCodepath
+
+            Entity *entity = (Entity *)calloc(1, sizeof(Entity));
+            *entity = CreateEntity(model);
+
+            entity->id = game->sceneEntities.back()->id + 1;
+            game->sceneEntities.push_back(entity);
+
+            game->lastFrame = SDL_GetPerformanceCounter();
         }
     }
 

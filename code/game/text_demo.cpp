@@ -31,6 +31,8 @@ void InitTextDemo(Game *game)
 void UpdateTextDemo(Game *game)
 {
     TextDemo *demo = &game->textDemo;
+    Input *input = &game->input;
+
     if(!demo->isInitialized)
     {
         InitTextDemo(game);
@@ -58,7 +60,19 @@ void UpdateTextDemo(Game *game)
         UpdateText(&demo->textStatus, status);
     }
 
-    if(game->keys[SDL_SCANCODE_UP])
+    if(input->isBackspacePressed && game->textDemo.typingText && game->textDemo.textInputBuffer.length())
+    {
+        game->textDemo.textChanged = true;
+        game->textDemo.textInputBuffer.pop_back();
+    }
+
+    if(input->typedText.length())
+    {
+        game->textDemo.textChanged = true;
+        game->textDemo.textInputBuffer += input->typedText;
+    }
+
+    if(input->keys[SDL_SCANCODE_UP])
     {
         for(int i = 0; i < 100; i++)
         {
@@ -80,7 +94,7 @@ void UpdateTextDemo(Game *game)
         sprintf(buffer, "%d (hello worlds)", demo->helloWorldsCounter);
         UpdateText(&demo->helloWorldsCounterDisplay, buffer);
     }
-    if(game->keys[SDL_SCANCODE_DOWN])
+    if(input->keys[SDL_SCANCODE_DOWN])
     {
         for(int i = 0; i < 100; i++)
         {
