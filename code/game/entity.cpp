@@ -24,12 +24,15 @@ void RenderEntity(Entity *self, Game *game)
     }
 #endif
 
-    ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
-    glLineWidth(2.0f);
-    RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
-    glLineWidth(1.0f);
+    if(game->renderAABB)
+    {
+        ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
+        glLineWidth(2.0f);
+        RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
+        glLineWidth(1.0f);
+    }
 
-    RenderModel(game, self->model, self->modelMat, self->nodeTransforms);
+    RenderModel(game, self->model, self->modelMat, self->nodeTransforms, self->skinningMatrices);
 }
 
 Entity CreateEntity(Model *model)
@@ -61,6 +64,17 @@ Entity CreateEntity(Model *model)
 
     entity.nodeTransforms = (glm::mat4 *)calloc(model->numOfNodes, sizeof(glm::mat4));
     UpdateTransforms(&entity);
+
+    if(model->type == ModelType_Animated)
+    {
+        entity.numOfMatrices = model->animData->skeleton.numOfBones;
+        entity.skinningMatrices = (glm::mat4 *)calloc(entity.numOfMatrices, sizeof(glm::mat4));
+
+        for(int i = 0; i < entity.numOfMatrices; i++)
+        {
+            entity.skinningMatrices[i] = glm::mat4(1.0f);
+        }
+    }
 
     return entity;
 }

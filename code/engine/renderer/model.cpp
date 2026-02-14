@@ -278,9 +278,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
         result->animData->numOfAnimations = scene->mNumAnimations;
         result->animData->animations = (Animation *)calloc(result->animData->numOfAnimations, sizeof(Animation));
-
-        result->animData->numOfMatrices = numOfBones;
-        result->animData->skinningMatrices = (glm::mat4 *)calloc(numOfBones, sizeof(glm::mat4));
     }
 
 
@@ -338,10 +335,6 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     if(result->type == ModelType_Animated)
     {
         AnimatedModel *animData = result->animData;
-        for(int i = 0; i < animData->numOfMatrices; i++)
-        {
-            animData->skinningMatrices[i] = glm::mat4(1.0f);
-        }
 
         for(uint32 animationIndex = 0; animationIndex < scene->mNumAnimations; animationIndex++)
         {
@@ -416,7 +409,7 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 s
     return model;
 }
 
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms)
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms, glm::mat4 *skinningMatrices)
 {
     GLuint shader = model->material[0].shader;
     if(model->type == ModelType_Static)
@@ -433,7 +426,7 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
         if(game->pickingPass)
             shader = game->skinnedPickingShader;
 
-        ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(model->animData->skinningMatrices[0]), 100);
+        ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), 100);
     }
 
     for(int meshIndex = 0; meshIndex < model->numOfMeshes; meshIndex++)

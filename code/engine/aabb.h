@@ -16,6 +16,7 @@ void MergeAABB(AABB *dest, AABB *src);
 void ExpandAABB(AABB *aabb, glm::vec3 point);
 
 bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3 *intersection);
+bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 inverseRayDirection, float *intersectionDistance);
 
 void UpdateAABBCorners(AABB *aabb);
 void UpdateAABBMesh(AABB *aabb, Mesh *aabbMesh, bool recalculateCorners = false);

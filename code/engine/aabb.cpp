@@ -1,5 +1,9 @@
 #include "aabb.h"
 
+#include <glm/gtx/component_wise.hpp>
+
+#include <algorithm>
+
 void MergeAABB(AABB *dest, AABB *src)
 {
     dest->min = glm::min(dest->min, src->min);
@@ -47,110 +51,38 @@ AABB TransformAABB(AABB *aabb, glm::mat4 transform)
     return result;
 }
 
-/*
-bool RayBoxIntersection(float minB[NUMDIM], float maxB[NUMDIM], float origin[NUMDIM], float dir[NUMDIM], float coord[NUMDIM])
+enum IntersectionQuadrant
 {
-	char inside = true;
-	char quadrant[NUMDIM];
-	register int i;
-	float maxT[NUMDIM];
-	float candidatePlane[NUMDIM];
-
-	for(i=0; i < NUMDIM; i++)
-    {
-		if(origin[i] < minB[i])
-        {
-			quadrant[i] = LEFT;
-			candidatePlane[i] = minB[i];
-			inside = false;
-		}
-        else if(origin[i] > maxB[i])
-        {
-			quadrant[i] = RIGHT;
-			candidatePlane[i] = maxB[i];
-			inside = false;
-		}
-        else
-        {
-			quadrant[i] = MIDDLE;
-		}
-
-    }
-
-	if(inside)
-    {
-		coord = origin;
-		return true;
-	}
-
-	for(i = 0; i < NUMDIM; i++)
-    {
-		if(quadrant[i] != MIDDLE && dir[i] != 0.)
-			maxT[i] = (candidatePlane[i] - origin[i]) / dir[i];
-		else
-			maxT[i] = -1.;
-    }
-
-
-	int whichPlane = 0;
-	for(i = 1; i < NUMDIM; i++)
-    {
-		if(maxT[whichPlane] < maxT[i])
-			whichPlane = i;
-    }
-
-	if(maxT[whichPlane] < 0.) return false;
-
-	for(i = 0; i < NUMDIM; i++)
-    {
-		if(whichPlane != i)
-        {
-			coord[i] = origin[i] + maxT[whichPlane] * dir[i];
-			if(coord[i] < minB[i] || coord[i] > maxB[i])
-				return false;
-		}
-        else
-        {
-			coord[i] = candidatePlane[i];
-		}
-    }
-
-	return true;
-}
-*/
-enum
-{
-    RIGHT,
-    LEFT,
-    MIDDLE
+    IntersectionQuadrant_Right,
+    IntersectionQuadrant_Left,
+    IntersectionQuadrant_Middle
 };
 
 bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3 *intersection)
 {
-	bool isInside = true;
-	int quadrant[3];
-	float maxT[3];
-	float candidatePlane[3];
+    glm::vec3 candidatePlane;
+	glm::ivec3 quadrant;
+    glm::vec3 tMax;
 
+	bool isInside = true;
 	for(int i = 0; i < 3; i++)
     {
 		if(rayOrigin[i] < aabb->min[i])
         {
-			quadrant[i] = LEFT;
+			quadrant[i] = IntersectionQuadrant_Left;
 			candidatePlane[i] = aabb->min[i];
 			isInside = false;
 		}
         else if(rayOrigin[i] > aabb->max[i])
         {
-			quadrant[i] = RIGHT;
+			quadrant[i] = IntersectionQuadrant_Right;
 			candidatePlane[i] = aabb->max[i];
 			isInside = false;
 		}
         else
         {
-			quadrant[i] = MIDDLE;
+			quadrant[i] = IntersectionQuadrant_Middle;
 		}
-
     }
 
 	if(isInside)
@@ -161,29 +93,28 @@ bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 rayDirection,
 
 	for(int i = 0; i < 3; i++)
     {
-		if(quadrant[i] != MIDDLE && rayDirection[i] != 0.0f)
-			maxT[i] = (candidatePlane[i] - rayOrigin[i]) / rayDirection[i];
+		if((quadrant[i] != IntersectionQuadrant_Middle) && (rayDirection[i] != 0.0f))
+			tMax[i] = (candidatePlane[i] - rayOrigin[i]) / rayDirection[i];
 		else
-			maxT[i] = -1.0f;
+			tMax[i] = -1.0f;
     }
 
-
-	int whichPlane = 0;
+	int planeIndex = 0;
 	for(int i = 1; i < 3; i++)
     {
-		if(maxT[whichPlane] < maxT[i])
-			whichPlane = i;
+		if(tMax[planeIndex] < tMax[i])
+			planeIndex = i;
     }
 
-	if(maxT[whichPlane] < 0.0f) return false;
+	if(tMax[planeIndex] < 0.0f) return false;
 
     glm::vec3 intersectionPoint;
 	for(int i = 0; i < 3; i++)
     {
-		if(whichPlane != i)
+		if(planeIndex != i)
         {
-			intersectionPoint[i] = rayOrigin[i] + maxT[whichPlane] * rayDirection[i];
-			if(intersectionPoint[i] < aabb->min[i] || intersectionPoint[i] > aabb->max[i])
+			intersectionPoint[i] = rayOrigin[i] + tMax[planeIndex] * rayDirection[i];
+			if((intersectionPoint[i] < aabb->min[i]) || (intersectionPoint[i] > aabb->max[i]))
             {
                 *intersection = intersectionPoint;
 				return false;
@@ -196,5 +127,26 @@ bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 rayDirection,
     }
 
     *intersection = intersectionPoint;
+
 	return true;
+}
+
+bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 inverseRayDirection, float *intersectionDistance)
+{
+    glm::vec3 t0 = (aabb->min - rayOrigin) * inverseRayDirection;
+    glm::vec3 t1 = (aabb->max - rayOrigin) * inverseRayDirection;
+
+    glm::vec3 tMin = glm::min(t0, t1);
+    glm::vec3 tMax = glm::max(t0, t1);
+
+    float tEnterPlane = std::max(std::max(tMin.x, tMin.y), tMin.z);
+    float tExitPlane  = std::min(std::min(tMax.x, tMax.y), tMax.z);
+
+    if(tEnterPlane <= tExitPlane && tExitPlane >= 0.0f)
+    {
+        *intersectionDistance = tEnterPlane;
+        return true;
+    }
+
+    return false;
 }

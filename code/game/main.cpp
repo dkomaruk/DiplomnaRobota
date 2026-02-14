@@ -309,6 +309,7 @@ int main(int argc, char *argv[])
 
                 glm::vec3 rayOrigin = game->camera.position;
                 glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
+                glm::vec3 inverseRayDirection = 1.0f / rayDirection;
 
                 int closestId = -1;
                 float closestDistance = FLT_MAX;
@@ -320,15 +321,25 @@ int main(int argc, char *argv[])
                     AABB transformedAABB = {glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.min, 1.0f)),
                                             glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
 
-                    glm::vec3 intersectionPoint;
-                    bool result = RayBoxIntersection(&transformedAABB, rayOrigin, rayDirection, &intersectionPoint);
+                    //glm::vec3 intersectionPoint;
+                    //bool result = RayBoxIntersection(&transformedAABB, rayOrigin, rayDirection, &intersectionPoint);
+                    //if(result)
+                    //{
+                    //    float distance = glm::length2(intersectionPoint - rayOrigin);
+                    //    if(distance < closestDistance)
+                    //    {
+                    //        closestDistance = distance;
+                    //        closestId = entity->id;
+                    //    }
+                    //}
 
+                    float intersectionDist;
+                    bool result = RayBoxIntersection(&transformedAABB, rayOrigin, inverseRayDirection, &intersectionDist);
                     if(result)
                     {
-                        float distance = glm::length2(intersectionPoint - rayOrigin);
-                        if(distance < closestDistance)
+                        if(intersectionDist < closestDistance)
                         {
-                            closestDistance = distance;
+                            closestDistance = intersectionDist;
                             closestId = entity->id;
                         }
                     }
@@ -353,6 +364,9 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                uint64 end = SDL_GetPerformanceCounter();
+                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
+
                 game->lastSelectedId = closestId;
 
                 float visibleRayLength = 2000.0f;
@@ -370,8 +384,6 @@ int main(int argc, char *argv[])
                     targetDirection = glm::normalize(targetDirection);
                     targetAngle = glm::degrees(glm::atan(targetDirection.x, targetDirection.y));
                 }
-                uint64 end = SDL_GetPerformanceCounter();
-                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
             }
 
             game->outlinePass = true;
@@ -455,7 +467,7 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(game->input.mouseButtons[MOUSE_LEFT])
+            if(game->input.mouseButtons[MOUSE_LEFT] && !ImGui::GetIO().WantCaptureMouse)
             {
                 float x, y;
                 SDL_GetMouseState(&x, &y);

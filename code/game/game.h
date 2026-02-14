@@ -75,6 +75,7 @@ struct Game
     Entity *testEntity;
     Entity *soldierEntity;
     Entity *soldierEntity0;
+    Entity *cubeEntity;
 
     Terrain terrain;
 
@@ -84,6 +85,9 @@ struct Game
 
     //Fonts
     std::map<int, Font> fonts;
+
+    //Debug
+    bool renderAABB = true;
 
     //Game temp stuff
     bool textDemoEnabled;

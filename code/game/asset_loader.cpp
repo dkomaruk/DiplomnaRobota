@@ -302,11 +302,7 @@ void LoadAssets(Game *game)
 
     //MESHES
 #ifdef LOAD_ASSETS
-    //Model *soldier = ImportModel("../data/models/soldier/soldier.obj", game->mainShader, aiProcess_Triangulate);
-    //aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 0.01f);
     Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    //Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    //Model *soldier = ImportModel("../data/models/soldier/soldier.glb", game->mainShader, aiProcess_Triangulate);
     if(soldier->numOfMeshes != -1)
     {
         Entity *soldierEntity = (Entity *)malloc(sizeof(Entity));
@@ -319,7 +315,7 @@ void LoadAssets(Game *game)
     }
 
     Model *test = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
-                             aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+                              aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
 
     Entity *testEntity = (Entity *)malloc(sizeof(Entity));
     *testEntity = CreateEntity(test);
@@ -386,6 +382,7 @@ void LoadAssets(Game *game)
     cubeEntity->position.y -= 0.5f;
     cubeEntity->scale -= glm::vec3(0.5f);
     game->sceneEntities.push_back(cubeEntity);
+    game->cubeEntity = cubeEntity;
 
     Entity *cubeEntity2 = (Entity *)malloc(sizeof(Entity));
     *cubeEntity2 = CreateEntity(cubeMesh);

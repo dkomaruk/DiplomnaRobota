@@ -30,13 +30,14 @@ struct Entity
     char textId[25];
 
     Model *model;
-    //int numOfModels;
-    //glm::mat4 *localTransforms;
     glm::mat4 *nodeTransforms;
     TransformOverride turret;
     TransformOverride gun;
-    //int turretId;
-    //int gunTipId;
+
+    glm::mat4 *skinningMatrices;
+    int numOfMatrices;
+    int currentAnimation;
+    float time;
 
     AABB aabb;
     Mesh meshAABB;

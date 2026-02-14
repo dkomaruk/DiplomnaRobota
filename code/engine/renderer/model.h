@@ -19,16 +19,10 @@ struct MaterialPhong;
 
 struct AnimatedModel
 {
-    float time;
-
     Skeleton skeleton;
 
     Animation *animations;
     int numOfAnimations;
-    int currentAnimation;
-
-    glm::mat4 *skinningMatrices;
-    int numOfMatrices;
 };
 
 struct StaticModel { };
@@ -72,7 +66,8 @@ struct Model
 Model *ImportModel(char *filepath, GLuint shader, uint32 flags = 0, uint16 type = ModelType_Static, float scale = 1.0f);
 
 glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms = NULL);
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat,
+                 glm::mat4 *nodeTransforms = 0, glm::mat4 *skinningMatrices = 0);
 
 #define MODEL_H
 #endif

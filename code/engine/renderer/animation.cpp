@@ -102,11 +102,11 @@ void UpdateAnimation(Entity *entity, float deltaTime)
     entity->aabb.max = glm::vec3(-FLT_MAX);
 
     AnimatedModel *animData = model->animData;
-    Animation *animation = &animData->animations[animData->currentAnimation];
+    Animation *animation = &animData->animations[entity->currentAnimation];
     Skeleton *skeleton = &animData->skeleton;
 
-    animData->time += deltaTime;
-    float timeInTicks = animData->time * animation->ticksPerSecond;
+    entity->time += deltaTime;
+    float timeInTicks = entity->time * animation->ticksPerSecond;
     float time = fmod(timeInTicks, (float)animation->numOfFrames);
 
     glm::mat4 *globalTransforms = (glm::mat4 *)alloca(sizeof(glm::mat4) * model->numOfNodes);
@@ -124,7 +124,7 @@ void UpdateAnimation(Entity *entity, float deltaTime)
         int boneId = skeleton->nodeToBoneId[nodeIndex];
         if(boneId != -1)
         {
-            animData->skinningMatrices[boneId] = globalTransforms[nodeIndex] * skeleton->invBindPoses[boneId];
+            entity->skinningMatrices[boneId] = globalTransforms[nodeIndex] * skeleton->invBindPoses[boneId];
 
             if(skeleton->boneAABBs[boneId].min.x <= skeleton->boneAABBs[boneId].max.x)
             {

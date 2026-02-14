@@ -334,7 +334,7 @@ void UpdateParticleEditorUI(Game *game)
 
     ImGui::DragInt("Spawn Rate", &smoke->spawnRate, 1, 0, 1000);
 
-    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0circle\0twirl\0start\0effect\0trace\0\0"))
+    if(ImGui::Combo("Texture", &game->currentTexture, "smoke\0smoke2\0smoke3\0smoke4\0smoke5\0smoke6\0fire\0fire2\0circle\0twirl\0star\0effect\0trace\0\0"))
     {
         game->textureID = game->particleTextures[game->currentTexture].id;
     }

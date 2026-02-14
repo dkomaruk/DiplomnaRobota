@@ -15,6 +15,12 @@ void UpdateEditorUI(Game *game)
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    ImGui::Begin("Debug Settings", 0, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::Checkbox("Display entity AABB", &game->renderAABB);
+
+    ImGui::End();
+
     //ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 420.0f, 0.0f), ImGuiCond_Always);
     //ImGui::SetNextWindowSize(ImVec2(420.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
     UpdateParticleEditorUI(game);

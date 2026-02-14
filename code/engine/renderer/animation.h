@@ -1,5 +1,7 @@
 #ifndef ANIMATION_H
 
+#include <glm/gtx/quaternion.hpp>
+
 struct Entity;
 struct AnimatedModel;
 struct AABB;
