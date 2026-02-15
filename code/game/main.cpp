@@ -119,14 +119,15 @@ float PointPlaneDistance(Plane *plane, glm::vec3 point)
 
 bool FrustumAABBIntersectionTest(Plane* planes, AABB *aabb)
 {
+    glm::vec3 center = (aabb->max + aabb->min) * 0.5f;
+    glm::vec3 extents = aabb->max - center;
+
     for(int i = 0; i < 6; i++)
     {
-        glm::vec3 p = aabb->min;
-        if(planes[i].normal.x >= 0) p.x = aabb->max.x;
-        if(planes[i].normal.y >= 0) p.y = aabb->max.y;
-        if(planes[i].normal.z >= 0) p.z = aabb->max.z;
+        float projectionLength = glm::dot(extents, glm::abs(planes[i].normal));
+        float distanceToPlane = PointPlaneDistance(&planes[i], center);
 
-        if(PointPlaneDistance(&planes[i], p) < 0)
+        if(distanceToPlane < -projectionLength)
             return false;
     }
 
@@ -481,17 +482,26 @@ int main(int argc, char *argv[])
 
             //RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
 
-            //RenderLine(&line);
-            for(int i = 0; i < ArrayCount(frustumLines); i++)
+            if(game->renderPickingRay)
             {
-                RenderLine(&frustumLines[i]);
+                RenderLine(&line);
             }
-            for(int i = 0; i < ArrayCount(frustumNormals); i++)
+            if(game->renderSelectionFrustum)
             {
-                RenderLine(&frustumNormals[i]);
+                for(int i = 0; i < ArrayCount(frustumLines); i++)
+                {
+                    RenderLine(&frustumLines[i]);
+                }
+                for(int i = 0; i < ArrayCount(frustumNormals); i++)
+                {
+                    RenderLine(&frustumNormals[i]);
+                }
             }
 
-            RenderTerrain(game);
+            if(game->renderTerrain)
+            {
+                RenderTerrain(game);
+            }
 
             UseShader(shader);
             glDepthFunc(GL_LEQUAL);
@@ -552,7 +562,7 @@ int main(int argc, char *argv[])
             }
 
             if(IsMouseJustReleased(game, MOUSE_LEFT) &&
-               (glm::abs(selectionBoxSize.x) > 5 && glm::abs(selectionBoxSize.y) > 5))
+               (glm::abs(selectionBoxSize.x) > 5 || glm::abs(selectionBoxSize.y) > 5))
             {
                 glm::vec2 mouse = tempInputCopy.mousePos;
 

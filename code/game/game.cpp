@@ -77,14 +77,12 @@ bool InitGame(Game *game)
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO &io = ImGui::GetIO(); (void)io;
 
     ImGui::StyleColorsDark();
 
-
     ImGui_ImplSDL3_InitForOpenGL(game->window, context);
     ImGui_ImplOpenGL3_Init("#version 460");
-
 
     SDL_Time ticks;
     SDL_GetCurrentTime(&ticks);

@@ -88,6 +88,9 @@ struct Game
 
     //Debug
     bool renderAABB = true;
+    bool renderTerrain = true;
+    bool renderSelectionFrustum = true;
+    bool renderPickingRay = true;
 
     //Game temp stuff
     bool textDemoEnabled;

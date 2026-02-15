@@ -17,7 +17,10 @@ void UpdateEditorUI(Game *game)
 
     ImGui::Begin("Debug Settings", 0, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Checkbox("Display entity AABB", &game->renderAABB);
+    ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
+    ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
+    ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
+    ImGui::Checkbox("Display Terrain", &game->renderTerrain);
 
     ImGui::End();
 
@@ -25,6 +28,7 @@ void UpdateEditorUI(Game *game)
     //ImGui::SetNextWindowSize(ImVec2(420.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
     UpdateParticleEditorUI(game);
 
+    ImGui::SetNextWindowSizeConstraints(ImVec2(200, 20), ImVec2(FLT_MAX, FLT_MAX));
     ImGui::Begin("Selected Entity", 0, ImGuiWindowFlags_AlwaysAutoResize);
     if(game->lastSelectedId > 0)
     {
