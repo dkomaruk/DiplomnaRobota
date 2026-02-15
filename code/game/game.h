@@ -38,7 +38,7 @@ struct Game
            selectionBoxShader, aabbShader;
 
     bool outlinePass, pickingPass;
-    float outlineThickness = 2.0f;
+    float outlineThickness = 1.0f;
 
     //Framebuffers
     //TODO: Move these framebuffers out into a struct

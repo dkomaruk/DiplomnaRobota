@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                if((closestId < 0) || !game->input.keys[SDL_SCANCODE_LSHIFT])
+                if(/*(closestId < 0) ||*/ !game->input.keys[SDL_SCANCODE_LSHIFT])
                 {
                     game->selectedIDs.clear();
                 }
@@ -555,7 +555,7 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(game->input.mouseButtons[MOUSE_LEFT] && !ImGui::GetIO().WantCaptureMouse)
+            if(game->input.mouseButtons[MOUSE_LEFT] && !ImGui::GetIO().WantCaptureMouse && !game->input.isCursorHidden)
             {
                 selectionBoxSize = tempInputCopy.mousePos - selectionBoxStart;
                 RenderRectUI(game, selectionBoxStart, selectionBoxSize, game->selectionBoxShader);
@@ -627,8 +627,7 @@ int main(int argc, char *argv[])
                 UpdateLine(&frustumNormals[FrustumPlane_Near], nBL, nBL + selectionPlanes[FrustumPlane_Near].normal * rayLength);
                 UpdateLine(&frustumNormals[FrustumPlane_Far], nBR, nBR + selectionPlanes[FrustumPlane_Far].normal * rayLength);
 
-                game->selectedIDs.clear();
-
+                std::vector<uint16> pickedIDs;
                 for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
                 {
                     Entity *entity = game->sceneEntities[entityIndex];
@@ -638,7 +637,39 @@ int main(int argc, char *argv[])
 
                     if(FrustumAABBIntersectionTest(selectionPlanes, &transformedAABB))
                     {
-                        game->selectedIDs.insert(entity->id);
+                        pickedIDs.push_back(entity->id);
+                    }
+                }
+
+                if(!game->input.keys[SDL_SCANCODE_LSHIFT])
+                {
+                    game->selectedIDs.clear();
+                    game->selectedIDs.insert(pickedIDs.begin(), pickedIDs.end());
+                }
+                else
+                {
+                    bool hasNewEntities = false;
+                    for(int pickedIndex = 0; pickedIndex < pickedIDs.size(); pickedIndex++)
+                    {
+                        if(!game->selectedIDs.count(pickedIDs[pickedIndex]))
+                        {
+                            hasNewEntities = true;
+                            break;
+                        }
+                    }
+
+                    if(hasNewEntities)
+                    {
+                        //Append
+                        game->selectedIDs.insert(pickedIDs.begin(), pickedIDs.end());
+                    }
+                    else
+                    {
+                        //Deselect
+                        for(int pickedIndex = 0; pickedIndex < pickedIDs.size(); pickedIndex++)
+                        {
+                            game->selectedIDs.erase(pickedIDs[pickedIndex]);
+                        }
                     }
                 }
             }
