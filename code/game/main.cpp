@@ -6,6 +6,9 @@
 #include <windows.h>
 #include <commdlg.h>
 
+#undef near
+#undef far
+
 //Has to be included at the start because of compilation errors otherwise
 //TODO: Replace with a less heavy library
 #include <json.hpp>
@@ -75,6 +78,61 @@ void RenderRectUI(Game *game, glm::vec2 pos, glm::vec2 size, GLuint shader)
     RenderMesh(game, GetUnitQuad(), modelMat, shader);
 }
 
+enum FrustumPoint
+{
+    FrustumPoint_BottomLeft,
+    FrustumPoint_BottomRight,
+    FrustumPoint_UpperLeft,
+    FrustumPoint_UpperRight,
+};
+
+enum FrustumPlane
+{
+    FrustumPlane_Left,
+    FrustumPlane_Right,
+    FrustumPlane_Up,
+    FrustumPlane_Bottom,
+    FrustumPlane_Near,
+    FrustumPlane_Far
+};
+
+struct Plane
+{
+    float d;
+    glm::vec3 normal;
+};
+
+Plane CreatePlane(glm::vec3 a, glm::vec3 b, glm::vec3 c)
+{
+    Plane result = {};
+
+    result.normal = glm::normalize(glm::cross(b - a, c - a));
+    result.d = -glm::dot(result.normal, a);
+
+    return result;
+}
+
+float PointPlaneDistance(Plane *plane, glm::vec3 point)
+{
+    return glm::dot(plane->normal, point) + plane->d;
+}
+
+bool FrustumAABBIntersectionTest(Plane* planes, AABB *aabb)
+{
+    for(int i = 0; i < 6; i++)
+    {
+        glm::vec3 p = aabb->min;
+        if(planes[i].normal.x >= 0) p.x = aabb->max.x;
+        if(planes[i].normal.y >= 0) p.y = aabb->max.y;
+        if(planes[i].normal.z >= 0) p.z = aabb->max.z;
+
+        if(PointPlaneDistance(&planes[i], p) < 0)
+            return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -91,6 +149,18 @@ int main(int argc, char *argv[])
     Model *model = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
 
     Line line = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    Line frustumLines[4];
+    for(int i = 0; i < ArrayCount(frustumLines); i++)
+    {
+        frustumLines[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
+    }
+
+    Line frustumNormals[6];
+    for(int i = 0; i < ArrayCount(frustumNormals); i++)
+    {
+        frustumNormals[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
 
     glm::vec2 target = {0.0f, 0.0f};
     glm::vec2 targetDirection = {0.0f, 0.0f};
@@ -166,6 +236,7 @@ int main(int argc, char *argv[])
     Mesh *selectionQuad = GetUnitQuad();
 
     glm::vec2 selectionBoxStart = glm::vec2(0.0f);
+    glm::vec2 selectionBoxSize = glm::vec2(0.0f);
 
     //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();
@@ -273,19 +344,18 @@ int main(int argc, char *argv[])
             if(IsFirstClick(game, MOUSE_LEFT) && !ImGui::GetIO().WantCaptureMouse)
             {
                 uint64 start = SDL_GetPerformanceCounter();
-                float x, y;
+                glm::vec2 mousePos;
                 if(game->input.isCursorHidden)
                 {
-                    x = WINDOW_WIDTH / 2.0f;
-                    y = WINDOW_HEIGHT / 2.0f;
-                    selectionBoxStart = glm::vec2(x, y);
+                    mousePos /= glm::vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
+                    selectionBoxStart = mousePos;
                 }
                 else
                 {
-                    SDL_GetMouseState(&x, &y);
-                    selectionBoxStart = glm::vec2(x, y);
+                    mousePos = tempInputCopy.mousePos;
+                    selectionBoxStart = mousePos;
 
-                    y = (int)WINDOW_HEIGHT - y;
+                    mousePos.y = (int)WINDOW_HEIGHT - mousePos.y;
                 }
 
 #if 0
@@ -299,7 +369,7 @@ int main(int argc, char *argv[])
 #endif
 
                 //uint64 start = SDL_GetPerformanceCounter();
-                glm::vec3 windowPos = glm::vec3(x, y, 0.0f);
+                glm::vec3 windowPos = glm::vec3(mousePos, 0.0f);
 
                 glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
                                                    glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
@@ -411,14 +481,22 @@ int main(int argc, char *argv[])
 
             //RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
 
-            RenderLine(&line);
+            //RenderLine(&line);
+            for(int i = 0; i < ArrayCount(frustumLines); i++)
+            {
+                RenderLine(&frustumLines[i]);
+            }
+            for(int i = 0; i < ArrayCount(frustumNormals); i++)
+            {
+                RenderLine(&frustumNormals[i]);
+            }
+
             RenderTerrain(game);
 
             UseShader(shader);
             glDepthFunc(GL_LEQUAL);
 
-            glm::mat4 projViewInverse = glm::inverse(game->perspectiveProjection * glm::mat4(glm::mat3(game->view)));
-            ShaderSetMatrix4(shader, "u_viewProjInverse", projViewInverse);
+            ShaderSetMatrix4(shader, "u_viewProjInverse", game->projViewInverse);
 
             SetTexture(skyTexture.id, 0);
             ShaderSetInt(shader, "u_skyMap", 0);
@@ -469,11 +547,90 @@ int main(int argc, char *argv[])
 
             if(game->input.mouseButtons[MOUSE_LEFT] && !ImGui::GetIO().WantCaptureMouse)
             {
-                float x, y;
-                SDL_GetMouseState(&x, &y);
+                selectionBoxSize = tempInputCopy.mousePos - selectionBoxStart;
+                RenderRectUI(game, selectionBoxStart, selectionBoxSize, game->selectionBoxShader);
+            }
 
-                glm::vec2 size = glm::vec2(x - selectionBoxStart.x, y - selectionBoxStart.y);
-                RenderRectUI(game, selectionBoxStart, size, game->selectionBoxShader);
+            if(IsMouseJustReleased(game, MOUSE_LEFT) &&
+               (glm::abs(selectionBoxSize.x) > 5 && glm::abs(selectionBoxSize.y) > 5))
+            {
+                glm::vec2 mouse = tempInputCopy.mousePos;
+
+                mouse.y = WINDOW_HEIGHT - mouse.y;
+                selectionBoxStart.y = WINDOW_HEIGHT - selectionBoxStart.y;
+
+                glm::vec2 min = glm::vec2(glm::min(selectionBoxStart.x, mouse.x),
+                                          glm::min(selectionBoxStart.y, mouse.y));
+                glm::vec2 max = glm::vec2(glm::max(selectionBoxStart.x, mouse.x),
+                                          glm::max(selectionBoxStart.y, mouse.y));
+
+                glm::vec4 viewport = glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+                glm::vec2 positions[] = {
+                    glm::vec2(min.x, min.y), //Bottom left
+                    glm::vec2(max.x, min.y),
+                    glm::vec2(min.x, max.y),
+                    glm::vec2(max.x, max.y),
+                };
+
+                glm::vec3 nearPoints[4], farPoints[4];
+                for(int i = 0; i < ArrayCount(positions); i++)
+                {
+                    glm::vec3 rayNear = glm::unProject(glm::vec3(positions[i], 0.0f), game->view, game->perspectiveProjection, viewport);
+                    glm::vec3 rayFar = glm::unProject(glm::vec3(positions[i], 1.0f), game->view, game->perspectiveProjection, viewport);
+
+                    glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
+                    glm::vec3 rayOrigin = game->camera.position + rayDirection * 0.5f;
+
+                    nearPoints[i] = rayOrigin;
+                    farPoints[i] = rayOrigin + rayDirection * 2000.0f;
+
+                    UpdateLine(&frustumLines[i], nearPoints[i], farPoints[i]);
+                }
+
+                glm::vec3 nBL = nearPoints[FrustumPoint_BottomLeft];
+                glm::vec3 nUL = nearPoints[FrustumPoint_UpperLeft];
+                glm::vec3 nBR = nearPoints[FrustumPoint_BottomRight];
+                glm::vec3 nUR = nearPoints[FrustumPoint_UpperRight];
+
+                glm::vec3 fBL = farPoints[FrustumPoint_BottomLeft];
+                glm::vec3 fUL = farPoints[FrustumPoint_UpperLeft];
+                glm::vec3 fBR = farPoints[FrustumPoint_BottomRight];
+                glm::vec3 fUR = farPoints[FrustumPoint_UpperRight];
+
+                //float rayLength = 2000.0f;
+                float rayLength = 0.1f;
+
+                Plane selectionPlanes[6];
+
+                selectionPlanes[FrustumPlane_Left] = CreatePlane(nUL, nBL, fBL);
+                selectionPlanes[FrustumPlane_Right] = CreatePlane(nBR, nUR, fUR);
+                selectionPlanes[FrustumPlane_Up] = CreatePlane(nUR, nUL, fUL);
+                selectionPlanes[FrustumPlane_Bottom] = CreatePlane(nBL, nBR, fBR);
+                selectionPlanes[FrustumPlane_Near] = CreatePlane(nBL, nUL, nUR);
+                selectionPlanes[FrustumPlane_Far] = CreatePlane(fUR, fUL, fBL);
+
+                UpdateLine(&frustumNormals[FrustumPlane_Left], nUL, nUL + selectionPlanes[FrustumPlane_Left].normal * rayLength);
+                UpdateLine(&frustumNormals[FrustumPlane_Right], nUR, nUR + selectionPlanes[FrustumPlane_Right].normal * rayLength);
+                UpdateLine(&frustumNormals[FrustumPlane_Up], nUR, nUR + selectionPlanes[FrustumPlane_Up].normal * rayLength);
+                UpdateLine(&frustumNormals[FrustumPlane_Bottom], nBL, nBL + selectionPlanes[FrustumPlane_Bottom].normal * rayLength);
+                UpdateLine(&frustumNormals[FrustumPlane_Near], nBL, nBL + selectionPlanes[FrustumPlane_Near].normal * rayLength);
+                UpdateLine(&frustumNormals[FrustumPlane_Far], nBR, nBR + selectionPlanes[FrustumPlane_Far].normal * rayLength);
+
+                game->selectedIDs.clear();
+
+                for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
+                {
+                    Entity *entity = game->sceneEntities[entityIndex];
+
+                    AABB transformedAABB = {glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.min, 1.0f)),
+                                            glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
+
+                    if(FrustumAABBIntersectionTest(selectionPlanes, &transformedAABB))
+                    {
+                        game->selectedIDs.insert(entity->id);
+                    }
+                }
             }
 
             RenderText(&game->aliveParticlesText);

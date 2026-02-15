@@ -218,6 +218,7 @@ void UpdateGame(Game *game)
     }
 
     UpdateCamera(game);
+    game->projViewInverse = glm::inverse(game->perspectiveProjection * glm::mat4(glm::mat3(game->view)));
 
     static bool isPaused = false;
     if(IsFirstPress(game, SDL_SCANCODE_L))

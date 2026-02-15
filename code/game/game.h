@@ -54,7 +54,7 @@ struct Game
 
     //Camera
     Camera camera;
-    glm::mat4 view, perspectiveProjection, orthoProjection;
+    glm::mat4 view, perspectiveProjection, orthoProjection, projViewInverse;
 
     //Input
     Input input;

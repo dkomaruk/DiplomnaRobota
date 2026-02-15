@@ -1,6 +1,7 @@
 #include "animation.h"
 
 #include "model.h"
+#include "entity.h"
 
 glm::mat4 AssimpMat4ToGLM(aiMatrix4x4 m)
 {

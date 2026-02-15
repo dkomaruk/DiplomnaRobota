@@ -83,7 +83,7 @@ bool IsFirstClick(Game *game, uint32 button)
     return game->input.mouseButtons[button] && !game->input.prevMouseButtons[button];
 }
 
-bool IsMouseJustReleased(Game *game, SDL_MouseButtonFlags button)
+bool IsMouseJustReleased(Game *game, uint32 button)
 {
     Assert(button < MOUSE_BUTTONS_COUNT)
     return !game->input.mouseButtons[button] && game->input.prevMouseButtons[button];
