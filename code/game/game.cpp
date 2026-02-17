@@ -2,6 +2,7 @@
 
 #include "text.h"
 #include "infantry.h"
+#include "frustum.h"
 #include "shader.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
@@ -236,6 +237,45 @@ void UpdateGame(Game *game)
         return;
     }
 
+    if(IsFirstClick(game, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
+    {
+        glm::vec2 mousePos = input->isCursorHidden ? WINDOW_CENTER : input->mousePos;
+        game->selectionBox.start = mousePos;
+
+        mousePos.y = (int)WINDOW_HEIGHT - mousePos.y;
+        Ray pickingRay = CastPickingRay(game, mousePos);
+        SelectSingleObject(game, &pickingRay);
+
+        float visibleRayLength = 2000.0f;
+        glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
+
+#ifdef DEBUG
+        UpdateLine(&game->pickingRay, pickingRay.origin,
+                   pickingRay.origin + pickingRay.direction * visibleRayLength);
+#endif
+
+        game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
+        game->targetDirection = game->target - glm::vec2(game->soldierEntity->position.x,
+                                                         game->soldierEntity->position.z);
+
+        //Prevents silent division by zero in the glm::normalize and NaN in the targetDirection as a result
+        if(glm::length2(game->targetDirection) > 0.00001f)
+        {
+            game->targetDirection = glm::normalize(game->targetDirection);
+            game->targetAngle = glm::degrees(glm::atan(game->targetDirection.x, game->targetDirection.y));
+        }
+    }
+
+    if(game->input.mouseButtons[MOUSE_LEFT] && !input->isMouseCapturedByImgui && !game->input.isCursorHidden)
+    {
+        game->selectionBox.size = input->mousePos - game->selectionBox.start;
+    }
+
+    if(IsMouseJustReleased(game, MOUSE_LEFT) && RECT_HAS_SIZE(game->selectionBox.size))
+    {
+        SelectMultipleObjects(game);
+    }
+
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
         Entity *entity = game->sceneEntities[i];
@@ -314,7 +354,7 @@ void UpdateGame(Game *game)
             int bytesPerPixel = 3;
 
             uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
+            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
             glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
             stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
             free(pixels);
@@ -393,8 +433,6 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->animationShader, "u_view", game->view);
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->skinnedOutlineShader, "u_view", game->view);
-    ShaderSetMatrix4(game->pickingShader, "u_view", game->view);
-    ShaderSetMatrix4(game->skinnedPickingShader, "u_view", game->view);
     ShaderSetMatrix4(game->particleShader, "u_view", game->view);
     ShaderSetMatrix4(game->lineShader, "u_view", game->view);
 

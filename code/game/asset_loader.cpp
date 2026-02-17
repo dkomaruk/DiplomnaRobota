@@ -231,10 +231,6 @@ void LoadAssets(Game *game)
                                                       LoadShader("../data/shaders/fragment2.frag"));
     GLuint uiTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
                                               LoadShader("../data/shaders/uiText.frag"));
-    GLuint pickingShader = CreateShaderProgram(LoadShader("../data/shaders/picking.vert"),
-                                               LoadShader("../data/shaders/picking.frag"));
-    GLuint skinnedPickingShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
-                                                      LoadShader("../data/shaders/picking.frag"));
     GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
                                                    LoadShader("../data/shaders/fragment3.frag"));
     GLuint particleShader = CreateShaderProgram(LoadShader("../data/shaders/particle.vert"),
@@ -265,8 +261,6 @@ void LoadAssets(Game *game)
     game->shaders.push_back(shader);
     game->shaders.push_back(lightSourceShader);
     game->shaders.push_back(skinnedOutlineShader);
-    game->shaders.push_back(pickingShader);
-    game->shaders.push_back(skinnedPickingShader);
     game->shaders.push_back(postProcessShader);
     game->shaders.push_back(terrainShader);
     game->shaders.push_back(animationShader);
@@ -291,8 +285,6 @@ void LoadAssets(Game *game)
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
     game->skinnedOutlineShader = skinnedOutlineShader;
-    game->pickingShader = pickingShader;
-    game->skinnedPickingShader = skinnedPickingShader;
     game->uiTextShader = uiTextShader;
     game->particleShader = particleShader;
     game->terrainShader = terrainShader;

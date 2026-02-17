@@ -5,6 +5,7 @@
 
 #include "game.h"
 #include "shader.h"
+#include "ray.h"
 
 #include <GL/glew.h>
 
@@ -151,11 +152,11 @@ glm::vec3 FindApproximateIntersectionPoint(Terrain *terrain, glm::vec3 origin, g
     return origin + dir * ((low + high) * 0.5f);
 }
 
-glm::vec3 GetRayTerrainIntersection(Terrain *terrain, glm::vec3 rayOrigin, glm::vec3 rayDirection, float maxDist)
+glm::vec3 GetRayTerrainIntersection(Terrain *terrain, Ray *pickingRay, float maxDist)
 {
     glm::vec3 result = glm::vec3(0.0f);
 
-    if(rayOrigin.y < GetTerrainHeight(terrain, rayOrigin.x, rayOrigin.z))
+    if(pickingRay->origin.y < GetTerrainHeight(terrain, pickingRay->origin.x, pickingRay->origin.z))
     {
         return result;
     }
@@ -165,7 +166,7 @@ glm::vec3 GetRayTerrainIntersection(Terrain *terrain, glm::vec3 rayOrigin, glm::
 
     while(t < maxDist)
     {
-        glm::vec3 p = rayOrigin + rayDirection * t;
+        glm::vec3 p = pickingRay->origin + pickingRay->direction * t;
 
         float h = GetTerrainHeight(terrain, p.x, p.z);
         if(p.y < h)
@@ -173,7 +174,7 @@ glm::vec3 GetRayTerrainIntersection(Terrain *terrain, glm::vec3 rayOrigin, glm::
             //if the next point is below the heightmap, we passed the intersection point
             //and have to search between prevT and t to find the point which is
             //approximately close to the exact spot of the intersection
-            return FindApproximateIntersectionPoint(terrain, rayOrigin, rayDirection, prevT, t, 4);
+            return FindApproximateIntersectionPoint(terrain, pickingRay->origin, pickingRay->direction, prevT, t, 4);
         }
 
         prevT = t;

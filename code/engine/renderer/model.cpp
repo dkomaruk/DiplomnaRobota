@@ -412,20 +412,13 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 s
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms, glm::mat4 *skinningMatrices)
 {
     GLuint shader = model->material[0].shader;
-    if(model->type == ModelType_Static)
+    if(game->outlinePass)
     {
-        if(game->outlinePass)
-            shader = game->outlineShader;
-        if(game->pickingPass)
-            shader = game->pickingShader;
+        shader = (model->type == ModelType_Static) ?  game->outlineShader : game->skinnedOutlineShader;
     }
-    else if(model->type == ModelType_Animated)
-    {
-        if(game->outlinePass)
-            shader = game->skinnedOutlineShader;
-        if(game->pickingPass)
-            shader = game->skinnedPickingShader;
 
+    if(model->type == ModelType_Animated)
+    {
         ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), 100);
     }
 
@@ -436,6 +429,7 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
         {
             meshModelMatrix = modelMat * nodeTransforms[model->meshToNodeId[meshIndex]];
         }
+
         RenderMesh(game, &model->mesh[meshIndex], meshModelMatrix, shader, &model->material[meshIndex]);
     }
 }

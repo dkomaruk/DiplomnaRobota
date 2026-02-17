@@ -70,6 +70,8 @@ void ProcessInput(Input *input)
             } break;
         }
     }
+
+    input->isMouseCapturedByImgui = ImGui::GetIO().WantCaptureMouse;
 }
 
 bool IsFirstPress(Game *game, SDL_Scancode key)

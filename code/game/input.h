@@ -24,6 +24,7 @@ struct Input
 
     int mouseButtons[MOUSE_BUTTONS_COUNT], prevMouseButtons[MOUSE_BUTTONS_COUNT];
     bool isCursorHidden;
+    bool isMouseCapturedByImgui;
 
     bool shouldQuit;
 

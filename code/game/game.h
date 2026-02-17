@@ -7,6 +7,9 @@
 #include "text_demo.h"
 #include "particle_system.h"
 #include "terrain.h"
+#include "selection.h"
+#include "ray.h"
+#include "line.h"
 #include "framebuffer.h"
 
 #include "defines.h"
@@ -33,17 +36,14 @@ struct Game
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, pickingShader, skinnedPickingShader,
-           postProcessShader, uiTextShader, particleShader, terrainShader, animationShader, lineShader,
-           selectionBoxShader, aabbShader;
+    GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, postProcessShader, uiTextShader,
+           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader;
 
-    bool outlinePass, pickingPass;
+    bool outlinePass;
     float outlineThickness = 1.0f;
 
     //Framebuffers
     //TODO: Move these framebuffers out into a struct
-    Framebuffer pickingFbo;
-
     Framebuffer outlineFbo;
     Texture fullSceneTexture, fullSceneDepthTexture;
 
@@ -86,6 +86,17 @@ struct Game
     //Fonts
     std::map<int, Font> fonts;
 
+    //Selection
+    SelectionBox selectionBox;
+
+    glm::vec2 selectionBoxStart = glm::vec2(0.0f);
+    glm::vec2 selectionBoxSize = glm::vec2(0.0f);
+
+    Line pickingRay;
+
+    Line frustumLines[4];
+    Line frustumNormals[6];
+
     //Debug
     bool renderAABB = true;
     bool renderTerrain = true;
@@ -95,6 +106,10 @@ struct Game
     //Game temp stuff
     bool textDemoEnabled;
     TextDemo textDemo;
+
+    glm::vec2 target;
+    glm::vec2 targetDirection;
+    float targetAngle;
 
     //Particle system
     bool renderParticles = true;

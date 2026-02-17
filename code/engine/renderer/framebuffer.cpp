@@ -7,9 +7,6 @@ void SetupFramebuffers(Game *game)
     //Framebuffer
     //https://www.reddit.com/r/GraphicsProgramming/comments/jwkpju/what_is_the_best_way_to_approach_a_multi_pass/
 
-    game->pickingFbo = CreateFramebuffer(glm::ivec2(WINDOW_WIDTH, WINDOW_HEIGHT),
-                                         FboTexturePreset_ColorLinearRGB, FboTexturePreset_Depth32);
-
     //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
     game->outlineFbo = CreateFramebuffer(glm::ivec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGB, 0);
     game->fullSceneTexture = CreateGLTexture(NULL, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT,

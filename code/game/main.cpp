@@ -45,7 +45,12 @@
 #include "editor_ui.cpp"
 #include "terrain.cpp"
 #include "framebuffer.cpp"
-#include "primitives/line.cpp"
+#include "ui.cpp"
+#include "line.cpp"
+#include "frustum.cpp"
+#include "plane.cpp"
+#include "ray.cpp"
+#include "selection.cpp"
 
 #include <GL/glew.h>
 
@@ -70,70 +75,6 @@
 
 #include <expat.h>
 
-void RenderRectUI(Game *game, glm::vec2 pos, glm::vec2 size, GLuint shader)
-{
-    glm::mat4 modelMat = glm::mat4(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(pos.x + (size.x / 2.0f), pos.y + (size.y / 2.0f), 0.0f));
-    modelMat = glm::scale(modelMat, glm::vec3(size.x, size.y, 1.0f));
-    RenderMesh(game, GetUnitQuad(), modelMat, shader);
-}
-
-enum FrustumPoint
-{
-    FrustumPoint_BottomLeft,
-    FrustumPoint_BottomRight,
-    FrustumPoint_UpperLeft,
-    FrustumPoint_UpperRight,
-};
-
-enum FrustumPlane
-{
-    FrustumPlane_Left,
-    FrustumPlane_Right,
-    FrustumPlane_Up,
-    FrustumPlane_Bottom,
-    FrustumPlane_Near,
-    FrustumPlane_Far
-};
-
-struct Plane
-{
-    float d;
-    glm::vec3 normal;
-};
-
-Plane CreatePlane(glm::vec3 a, glm::vec3 b, glm::vec3 c)
-{
-    Plane result = {};
-
-    result.normal = glm::normalize(glm::cross(b - a, c - a));
-    result.d = -glm::dot(result.normal, a);
-
-    return result;
-}
-
-float PointPlaneDistance(Plane *plane, glm::vec3 point)
-{
-    return glm::dot(plane->normal, point) + plane->d;
-}
-
-bool FrustumAABBIntersectionTest(Plane* planes, AABB *aabb)
-{
-    glm::vec3 center = (aabb->max + aabb->min) * 0.5f;
-    glm::vec3 extents = aabb->max - center;
-
-    for(int i = 0; i < 6; i++)
-    {
-        float projectionLength = glm::dot(extents, glm::abs(planes[i].normal));
-        float distanceToPlane = PointPlaneDistance(&planes[i], center);
-
-        if(distanceToPlane < -projectionLength)
-            return false;
-    }
-
-    return true;
-}
-
 int main(int argc, char *argv[])
 {
     srand((uint32)time(0));
@@ -146,40 +87,11 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    //Model *model = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
     Model *model = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
 
-    Line line = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
+    game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
+    CreateFrustumLines(game->frustumLines, game->frustumNormals, game->lineShader);
 
-    Line frustumLines[4];
-    for(int i = 0; i < ArrayCount(frustumLines); i++)
-    {
-        frustumLines[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
-    }
-
-    Line frustumNormals[6];
-    for(int i = 0; i < ArrayCount(frustumNormals); i++)
-    {
-        frustumNormals[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(0.0f, 1.0f, 0.0f));
-    }
-
-    glm::vec2 target = {0.0f, 0.0f};
-    glm::vec2 targetDirection = {0.0f, 0.0f};
-    float targetAngle = 0.0f;
-
-#if 0
-    {
-        //Need to do this before the game loop because calling glReadPixels for the first time
-        //for some reason causes a huge freeze (174 ms unoptimized compilation). Subsequent calls are 10-12 ms
-        //Maybe I should just do ray picking instead of using a framebuffer with IDs
-        glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
-        uint8 pixels[3];
-        glReadPixels((int)0, (int)0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-#endif
-
-    //Model *abramsTurret = ImportModel2("../data/models/abrams/abrams.fbx", game->mainShader);
     Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
     if(!abrams)
     {
@@ -200,24 +112,11 @@ int main(int argc, char *argv[])
             tank.gun.nodeId = i;
             tank.gun.transform = tank.model->nodes[i].localTransform;
         }
-        //else if(nodeName && strcmp(nodeName, "Fx_Tourelle1_Tir_01") == 0)
-        //{
-        //    tank.gunTipId = i;
-        //}
     }
 
     tank.id = game->sceneEntities.back()->id + 1;
     strcpy(tank.textId, "tank");
     game->sceneEntities.push_back(&tank);
-
-    //Entity tankTurret = CreateEntity(abramsTurret);
-    //tankTurret.position.y += 5.0f;
-    //tankTurret.id = game->sceneEntities.back()->id + 1;
-    //game->sceneEntities.push_back(&tankTurret);
-
-    glm::vec3 velocity = glm::vec3(0.0f);
-    glm::vec3 acceleration = glm::vec3(0.0f);
-    glm::vec3 angularVelocity = glm::vec3(0.0f);
 
     Entity character = CreateEntity(model);
     game->soldierEntity = &character;
@@ -234,19 +133,12 @@ int main(int argc, char *argv[])
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                         LoadShader("../data/shaders/environment.frag"));
 
-    Mesh *selectionQuad = GetUnitQuad();
-
-    glm::vec2 selectionBoxStart = glm::vec2(0.0f);
-    glm::vec2 selectionBoxSize = glm::vec2(0.0f);
-
     //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
     {
         //Input
         ProcessInput(&game->input);
-
-        Input tempInputCopy = game->input;
 
         //Update
         UpdateEditorUI(game);
@@ -288,29 +180,14 @@ int main(int argc, char *argv[])
         //glm::mat4 tipRotation = glm::mat3(tipWorldMat);
         //game->particleSystems[0].rotation = tipRotation;
 
-        //tankTurret.position += velocity * game->deltaTime + 0.5f * acceleration * Square(game->deltaTime);
-        //tankTurret.rotation += angularVelocity * game->deltaTime;
-
-        if(IsFirstPress(game, SDL_SCANCODE_R))
-        {
-            velocity = glm::vec3(RandomBetween(-2.0f, 2.0f), 25.0f, RandomBetween(-2.0f, 2.0f));
-            acceleration.y = -9.8f;
-            angularVelocity = glm::vec3(RandomBetween(-180.0f, 180.0f),
-                                        RandomBetween(-180.0f, 180.0f),
-                                        RandomBetween(-180.0f, 180.0f));
-        }
-
-        angularVelocity -= angularVelocity * 0.3f * game->deltaTime;
-        velocity += acceleration * game->deltaTime;
-
         float speed = 1.0f;
-        float x = game->soldierEntity->position.x + targetDirection.x * speed * game->deltaTime;
-        float z = game->soldierEntity->position.z + targetDirection.y * speed * game->deltaTime;
+        float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
+        float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
         float y = GetTerrainHeight(&game->terrain, x, z);
 
         game->soldierEntity->position = glm::vec3(x, y, z);
 
-        float angleDiff = targetAngle - game->soldierEntity->rotation.y;
+        float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
 
         if(angleDiff < -180.0f)
             angleDiff += 360.0f;
@@ -320,142 +197,19 @@ int main(int argc, char *argv[])
         float rotationStep = 200.0f * game->deltaTime;
 
         if(glm::abs(angleDiff) <= rotationStep)
-            game->soldierEntity->rotation.y = targetAngle;
+            game->soldierEntity->rotation.y = game->targetAngle;
         else
             game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
 
-        if(glm::distance(glm::vec2(x, z), target) < 0.1f)
+        if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
         {
-            targetDirection = glm::vec2(0, 0);
+            game->targetDirection = glm::vec2(0, 0);
         }
 
         //RENDERING
         if(!game->textDemoEnabled)
         {
             glEnable(GL_DEPTH_TEST);
-
-#if 0
-            game->pickingPass = true;
-            glBindFramebuffer(GL_FRAMEBUFFER, game->pickingFbo.id);
-            RenderScene(game);
-            game->pickingPass = false;
-#endif
-
-            //OBJECT PICKING
-            if(IsFirstClick(game, MOUSE_LEFT) && !ImGui::GetIO().WantCaptureMouse)
-            {
-                uint64 start = SDL_GetPerformanceCounter();
-                glm::vec2 mousePos;
-                if(game->input.isCursorHidden)
-                {
-                    mousePos /= glm::vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
-                    selectionBoxStart = mousePos;
-                }
-                else
-                {
-                    mousePos = tempInputCopy.mousePos;
-                    selectionBoxStart = mousePos;
-
-                    mousePos.y = (int)WINDOW_HEIGHT - mousePos.y;
-                }
-
-#if 0
-                uint64 start = SDL_GetPerformanceCounter();
-                uint8 pixels[3];
-                //This is very expensive (because we have to wait for the pixel data request to reach the GPU and then for the data to get back), I think AABB ray intersection with spatial partitioning will be much more cheap
-                glReadPixels((int)x, (int)y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-                uint32 pickedID = pixels[0];
-                uint64 end = SDL_GetPerformanceCounter();
-                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
-#endif
-
-                //uint64 start = SDL_GetPerformanceCounter();
-                glm::vec3 windowPos = glm::vec3(mousePos, 0.0f);
-
-                glm::vec3 rayNear = glm::unProject(windowPos, game->view, game->perspectiveProjection,
-                                                   glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
-                windowPos.z = 1.0f;
-                glm::vec3 rayFar = glm::unProject(windowPos, game->view, game->perspectiveProjection,
-                                                  glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT));
-
-                glm::vec3 rayOrigin = game->camera.position;
-                glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
-                glm::vec3 inverseRayDirection = 1.0f / rayDirection;
-
-                int closestId = -1;
-                float closestDistance = FLT_MAX;
-
-                for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
-                {
-                    Entity *entity = game->sceneEntities[entityIndex];
-
-                    AABB transformedAABB = {glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.min, 1.0f)),
-                                            glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
-
-                    //glm::vec3 intersectionPoint;
-                    //bool result = RayBoxIntersection(&transformedAABB, rayOrigin, rayDirection, &intersectionPoint);
-                    //if(result)
-                    //{
-                    //    float distance = glm::length2(intersectionPoint - rayOrigin);
-                    //    if(distance < closestDistance)
-                    //    {
-                    //        closestDistance = distance;
-                    //        closestId = entity->id;
-                    //    }
-                    //}
-
-                    float intersectionDist;
-                    bool result = RayBoxIntersection(&transformedAABB, rayOrigin, inverseRayDirection, &intersectionDist);
-                    if(result)
-                    {
-                        if(intersectionDist < closestDistance)
-                        {
-                            closestDistance = intersectionDist;
-                            closestId = entity->id;
-                        }
-                    }
-                }
-
-                if(/*(closestId < 0) ||*/ !game->input.keys[SDL_SCANCODE_LSHIFT])
-                {
-                    game->selectedIDs.clear();
-                }
-
-                if(closestId >= 0)
-                {
-                    uint16 pickedId = (uint16)closestId;
-                    bool isAlreadyPicked = game->selectedIDs.count(pickedId);
-                    if(isAlreadyPicked && game->input.keys[SDL_SCANCODE_LSHIFT])
-                    {
-                        game->selectedIDs.erase(pickedId);
-                    }
-                    else
-                    {
-                        game->selectedIDs.insert(pickedId);
-                    }
-                }
-
-                uint64 end = SDL_GetPerformanceCounter();
-                SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
-
-                game->lastSelectedId = closestId;
-
-                float visibleRayLength = 2000.0f;
-
-                glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, rayOrigin, rayDirection, visibleRayLength);
-
-                UpdateLine(&line, rayOrigin, rayOrigin + rayDirection * visibleRayLength);
-
-                target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
-                targetDirection = target - glm::vec2(game->soldierEntity->position.x, game->soldierEntity->position.z);
-
-                //Prevents silent division by zero in the glm::normalize and NaN in the targetDirection as a result
-                if(glm::length2(targetDirection) > 0.00001f)
-                {
-                    targetDirection = glm::normalize(targetDirection);
-                    targetAngle = glm::degrees(glm::atan(targetDirection.x, targetDirection.y));
-                }
-            }
 
             game->outlinePass = true;
             glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
@@ -475,28 +229,23 @@ int main(int argc, char *argv[])
             ShaderSetVec3(game->lightSourceShader, "u_color", glm::vec3(1.0f));
             RenderScene(game);
 
-            //UseShader(game->animationShader);
-            //ShaderSetMatrix4Array(game->animationShader, "u_skinning", glm::value_ptr(model->animData.skinningMatrices[0]), 100);
-            //RenderEntity(game->soldierEntity, game);
-            //RenderModel(game, model, glm::mat4(1.0f));
-
-            //RenderModel(game, abramsTurret, PrepareModelMatrix(tankTurret.position, tankTurret.rotation, tankTurret.scale));
-
+#ifdef DEBUG
             if(game->renderPickingRay)
             {
-                RenderLine(&line);
+                RenderLine(&game->pickingRay);
             }
             if(game->renderSelectionFrustum)
             {
-                for(int i = 0; i < ArrayCount(frustumLines); i++)
+                for(int i = 0; i < ArrayCount(game->frustumLines); i++)
                 {
-                    RenderLine(&frustumLines[i]);
+                    RenderLine(&game->frustumLines[i]);
                 }
-                for(int i = 0; i < ArrayCount(frustumNormals); i++)
+                for(int i = 0; i < ArrayCount(game->frustumNormals); i++)
                 {
-                    RenderLine(&frustumNormals[i]);
+                    RenderLine(&game->frustumNormals[i]);
                 }
             }
+#endif
 
             if(game->renderTerrain)
             {
@@ -555,123 +304,9 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(game->input.mouseButtons[MOUSE_LEFT] && !ImGui::GetIO().WantCaptureMouse && !game->input.isCursorHidden)
+            if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size))
             {
-                selectionBoxSize = tempInputCopy.mousePos - selectionBoxStart;
-                RenderRectUI(game, selectionBoxStart, selectionBoxSize, game->selectionBoxShader);
-            }
-
-            if(IsMouseJustReleased(game, MOUSE_LEFT) &&
-               (glm::abs(selectionBoxSize.x) > 5 || glm::abs(selectionBoxSize.y) > 5))
-            {
-                glm::vec2 mouse = tempInputCopy.mousePos;
-
-                mouse.y = WINDOW_HEIGHT - mouse.y;
-                selectionBoxStart.y = WINDOW_HEIGHT - selectionBoxStart.y;
-
-                glm::vec2 min = glm::vec2(glm::min(selectionBoxStart.x, mouse.x),
-                                          glm::min(selectionBoxStart.y, mouse.y));
-                glm::vec2 max = glm::vec2(glm::max(selectionBoxStart.x, mouse.x),
-                                          glm::max(selectionBoxStart.y, mouse.y));
-
-                glm::vec4 viewport = glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-                glm::vec2 positions[] = {
-                    glm::vec2(min.x, min.y), //Bottom left
-                    glm::vec2(max.x, min.y),
-                    glm::vec2(min.x, max.y),
-                    glm::vec2(max.x, max.y),
-                };
-
-                glm::vec3 nearPoints[4], farPoints[4];
-                for(int i = 0; i < ArrayCount(positions); i++)
-                {
-                    glm::vec3 rayNear = glm::unProject(glm::vec3(positions[i], 0.0f), game->view, game->perspectiveProjection, viewport);
-                    glm::vec3 rayFar = glm::unProject(glm::vec3(positions[i], 1.0f), game->view, game->perspectiveProjection, viewport);
-
-                    glm::vec3 rayDirection = glm::normalize(rayFar - rayNear);
-                    glm::vec3 rayOrigin = game->camera.position + rayDirection * 0.5f;
-
-                    nearPoints[i] = rayOrigin;
-                    farPoints[i] = rayOrigin + rayDirection * 2000.0f;
-
-                    UpdateLine(&frustumLines[i], nearPoints[i], farPoints[i]);
-                }
-
-                glm::vec3 nBL = nearPoints[FrustumPoint_BottomLeft];
-                glm::vec3 nUL = nearPoints[FrustumPoint_UpperLeft];
-                glm::vec3 nBR = nearPoints[FrustumPoint_BottomRight];
-                glm::vec3 nUR = nearPoints[FrustumPoint_UpperRight];
-
-                glm::vec3 fBL = farPoints[FrustumPoint_BottomLeft];
-                glm::vec3 fUL = farPoints[FrustumPoint_UpperLeft];
-                glm::vec3 fBR = farPoints[FrustumPoint_BottomRight];
-                glm::vec3 fUR = farPoints[FrustumPoint_UpperRight];
-
-                //float rayLength = 2000.0f;
-                float rayLength = 0.1f;
-
-                Plane selectionPlanes[6];
-
-                selectionPlanes[FrustumPlane_Left] = CreatePlane(nUL, nBL, fBL);
-                selectionPlanes[FrustumPlane_Right] = CreatePlane(nBR, nUR, fUR);
-                selectionPlanes[FrustumPlane_Up] = CreatePlane(nUR, nUL, fUL);
-                selectionPlanes[FrustumPlane_Bottom] = CreatePlane(nBL, nBR, fBR);
-                selectionPlanes[FrustumPlane_Near] = CreatePlane(nBL, nUL, nUR);
-                selectionPlanes[FrustumPlane_Far] = CreatePlane(fUR, fUL, fBL);
-
-                UpdateLine(&frustumNormals[FrustumPlane_Left], nUL, nUL + selectionPlanes[FrustumPlane_Left].normal * rayLength);
-                UpdateLine(&frustumNormals[FrustumPlane_Right], nUR, nUR + selectionPlanes[FrustumPlane_Right].normal * rayLength);
-                UpdateLine(&frustumNormals[FrustumPlane_Up], nUR, nUR + selectionPlanes[FrustumPlane_Up].normal * rayLength);
-                UpdateLine(&frustumNormals[FrustumPlane_Bottom], nBL, nBL + selectionPlanes[FrustumPlane_Bottom].normal * rayLength);
-                UpdateLine(&frustumNormals[FrustumPlane_Near], nBL, nBL + selectionPlanes[FrustumPlane_Near].normal * rayLength);
-                UpdateLine(&frustumNormals[FrustumPlane_Far], nBR, nBR + selectionPlanes[FrustumPlane_Far].normal * rayLength);
-
-                std::vector<uint16> pickedIDs;
-                for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
-                {
-                    Entity *entity = game->sceneEntities[entityIndex];
-
-                    AABB transformedAABB = {glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.min, 1.0f)),
-                                            glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
-
-                    if(FrustumAABBIntersectionTest(selectionPlanes, &transformedAABB))
-                    {
-                        pickedIDs.push_back(entity->id);
-                    }
-                }
-
-                if(!game->input.keys[SDL_SCANCODE_LSHIFT])
-                {
-                    game->selectedIDs.clear();
-                    game->selectedIDs.insert(pickedIDs.begin(), pickedIDs.end());
-                }
-                else
-                {
-                    bool hasNewEntities = false;
-                    for(int pickedIndex = 0; pickedIndex < pickedIDs.size(); pickedIndex++)
-                    {
-                        if(!game->selectedIDs.count(pickedIDs[pickedIndex]))
-                        {
-                            hasNewEntities = true;
-                            break;
-                        }
-                    }
-
-                    if(hasNewEntities)
-                    {
-                        //Append
-                        game->selectedIDs.insert(pickedIDs.begin(), pickedIDs.end());
-                    }
-                    else
-                    {
-                        //Deselect
-                        for(int pickedIndex = 0; pickedIndex < pickedIDs.size(); pickedIndex++)
-                        {
-                            game->selectedIDs.erase(pickedIDs[pickedIndex]);
-                        }
-                    }
-                }
+                RenderSelectionBox(game, &game->selectionBox);
             }
 
             RenderText(&game->aliveParticlesText);
