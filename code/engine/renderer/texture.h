@@ -24,12 +24,13 @@ enum TextureFlags
 
     TextureFlag_RGBA                       = 0x00'00'01'00,
     TextureFlag_RGB                        = 0x00'00'02'00,
-    TextureFlag_Depth32                    = 0x00'00'04'00,
+    TextureFlag_Depth                      = 0x00'00'04'00, //Size is implementation dependent
+    TextureFlag_Depth32F                   = 0x00'00'08'00,
 
-    TextureFlag_Repeat                     = 0x00'00'08'00,
-    TextureFlag_ClampToEdge                = 0x00'00'10'00,
-    TextureFlag_Mipmaps                    = 0x00'00'20'00,
-    TextureFlag_FlipY                      = 0x00'00'40'00,
+    TextureFlag_Repeat                     = 0x00'00'10'00,
+    TextureFlag_ClampToEdge                = 0x00'00'20'00,
+    TextureFlag_Mipmaps                    = 0x00'00'40'00,
+    TextureFlag_FlipY                      = 0x00'00'80'00,
 };
 
 #define TexturePreset_Common (TextureFlag_Filter_Min_LinLin | \

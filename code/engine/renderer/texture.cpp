@@ -70,7 +70,13 @@ Texture CreateGLTexture(uint8 *image, int width, int height, int flags)
         internalFormat = GL_RGBA;
         format = GL_RGBA;
     }
-    else if(FLAG_IS_SET(flags, TextureFlag_Depth32))
+    else if(FLAG_IS_SET(flags, TextureFlag_Depth))
+    {
+        internalFormat = GL_DEPTH_COMPONENT;
+        format = GL_DEPTH_COMPONENT;
+        type = GL_FLOAT;
+    }
+    else if(FLAG_IS_SET(flags, TextureFlag_Depth32F))
     {
         internalFormat = GL_DEPTH_COMPONENT32F;
         format = GL_DEPTH_COMPONENT;

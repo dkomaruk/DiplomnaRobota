@@ -18,7 +18,7 @@ Line CreateLine(glm::vec3 start, glm::vec3 end, GLuint shader, glm::vec3 color)
 void RenderLine(Line *line)
 {
     UseShader(line->shader);
-    ShaderSetVec3(line->shader, "u_color", line->color);
+    ShaderSetVec4(line->shader, "u_color", glm::vec4(line->color, 1.0f));
     ShaderSetMatrix4(line->shader, "u_model", glm::mat4(1.0f));
 
     glBindVertexArray(line->mesh.vao);

@@ -12,6 +12,7 @@ uniform int u_outlineThickness;
 uniform bool u_inverted;
 uniform bool u_grayscale;
 uniform bool u_showOutline;
+uniform bool u_showParticles;
 
 uniform float u_time;
 
@@ -25,8 +26,11 @@ void main()
     vec3 outlineColor = vec3(1.0, 1.0, 1.0);
     vec4 sceneColor = texture(u_scene, TexCoords);
 
-    vec4 smokeColor = texture(u_smoke, TexCoords);
-    sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
+    if(u_showParticles)
+    {
+        vec4 smokeColor = texture(u_smoke, TexCoords);
+        sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
+    }
 
     if(u_inverted)
     {

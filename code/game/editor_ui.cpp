@@ -3,6 +3,7 @@
 #include "particle_editor_ui.h"
 #include "file.h"
 #include "model.h"
+#include "shader.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -15,21 +16,45 @@ void UpdateEditorUI(Game *game)
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Debug Settings", 0, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize |
+                             (game->input.isCursorHidden ? ImGuiWindowFlags_NoInputs : 0);
+
+    ImGui::Begin("Debug Settings", 0, flags);
 
     ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
     ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
     ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
     ImGui::Checkbox("Display Terrain", &game->renderTerrain);
 
+    if(ImGui::Checkbox("Display Particles", &game->renderParticles))
+    {
+        ShaderSetInt(game->postProcessShader, "u_showParticles", game->renderParticles);
+    }
+
     ImGui::End();
 
     //ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 420.0f, 0.0f), ImGuiCond_Always);
     //ImGui::SetNextWindowSize(ImVec2(420.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
-    UpdateParticleEditorUI(game);
+    UpdateParticleEditorUI(game, flags);
+
+    ImGui::Begin("Lighting settings", 0, flags);
+
+    int lightingChanged = 0;
+    lightingChanged += ImGui::DragFloat3("Ambient", &game->dirLight.ambient[0], 0.05f);
+    lightingChanged += ImGui::DragFloat3("Diffuse", &game->dirLight.diffuse[0], 0.05f);
+    lightingChanged += ImGui::DragFloat3("Specular", &game->dirLight.specular[0], 0.05f);
+    lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.05f);
+
+    if(lightingChanged)
+    {
+        ShaderSetDirLight(game->mainShader, game->dirLight);
+        ShaderSetDirLight(game->animationShader, game->dirLight);
+    }
+
+    ImGui::End();
 
     ImGui::SetNextWindowSizeConstraints(ImVec2(200, 20), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("Selected Entity", 0, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Selected Entity", 0, flags);
     if(game->lastSelectedId > 0)
     {
         int id = game->lastSelectedId;
@@ -66,7 +91,7 @@ void UpdateEditorUI(Game *game)
 
     ImGui::End();
 
-    ImGui::Begin("Import Model", 0, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Import Model", 0, flags);
 
     static float importScale = 1.0f;
     ImGui::InputFloat("Import Scale", &importScale);

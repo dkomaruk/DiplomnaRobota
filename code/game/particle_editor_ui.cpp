@@ -265,9 +265,9 @@ void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOf
     }
 }
 
-void UpdateParticleEditorUI(Game *game)
+void UpdateParticleEditorUI(Game *game, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Particle System Editor", 0, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Particle System Editor", 0, flags);
 
     ParticleSystemSettings *smoke = &game->smokeSettings;
 
@@ -285,7 +285,7 @@ void UpdateParticleEditorUI(Game *game)
     if(ImGui::DragFloat("Particle Resolution", &resolution.x, 0.01f, 0.0f, 2.0f) && (resolution.x >= 0.001f && resolution.y >= 0.001f))
     {
         DeleteFramebuffer(&game->smokeFbo);
-        game->smokeFbo = CreateFramebuffer(resolution * glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32);
+        game->smokeFbo = CreateFramebuffer(resolution * glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32F);
     }
 
     if(ImGui::CollapsingHeader("Position"))

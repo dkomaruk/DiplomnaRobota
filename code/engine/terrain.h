@@ -10,16 +10,23 @@ struct Ray;
 struct Terrain
 {
     float *heightmap;
-    int mapWidth;
-    int mapHeight;
-    int worldWidth;
-    int worldHeight;
+    glm::vec2 mapSize;
+
+    glm::vec2 worldSize;
+
     float yScale;
     float yShift;
     float mapScale;
 
     Mesh mesh;
-    Texture texture;
+    //Texture texture;
+
+    Texture splatMap;
+
+    Texture texture0;
+    Texture texture1;
+    Texture texture2;
+    Texture texture3;
 };
 
 Terrain CreateTerrain(char *heightmapPath, float maxHeight = 6.0f, float mapPortion = 1.0f,

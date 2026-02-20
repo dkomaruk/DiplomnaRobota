@@ -211,22 +211,27 @@ int main(int argc, char *argv[])
         {
             glEnable(GL_DEPTH_TEST);
 
+            glBindBuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
+            glViewport(0, 0, game->shadowMapFbo.depth.x, game->shadowMapFbo.depth.y);
+            RenderScene(game);
+
             game->outlinePass = true;
             glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+            glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
             RenderScene(game);
             game->outlinePass = false;
 
-            static GLenum terrainDisplayMode = GL_FILL;
+            static GLenum polygonMode = GL_FILL;
             if(IsFirstPress(game, SDL_SCANCODE_SPACE))
             {
-                terrainDisplayMode = (terrainDisplayMode == GL_LINE) ? GL_FILL : GL_LINE;
+                polygonMode = (polygonMode == GL_LINE) ? GL_FILL : GL_LINE;
             }
-            glPolygonMode(GL_FRONT_AND_BACK, terrainDisplayMode);
+            glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
 
             glDepthMask(GL_TRUE);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
-            ShaderSetVec3(game->lightSourceShader, "u_color", glm::vec3(1.0f));
+            ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
             RenderScene(game);
 
 #ifdef DEBUG
@@ -304,7 +309,8 @@ int main(int argc, char *argv[])
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size))
+            if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
+               !game->input.isMouseCapturedByImgui)
             {
                 RenderSelectionBox(game, &game->selectionBox);
             }

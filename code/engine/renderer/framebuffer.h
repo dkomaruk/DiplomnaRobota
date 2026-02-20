@@ -21,9 +21,12 @@ struct Framebuffer
 #define FboTexturePreset_ColorLinearRGBA (TextureFlag_Filter_Min_Linear | \
                                           TextureFlag_Filter_Mag_Linear | \
                                           TextureFlag_RGBA)
-#define FboTexturePreset_Depth32          (TextureFlag_Filter_Min_Nearest | \
+#define FboTexturePreset_Depth             (TextureFlag_Filter_Min_Nearest | \
                                            TextureFlag_Filter_Mag_Nearest | \
-                                           TextureFlag_Depth32)
+                                           TextureFlag_Depth)
+#define FboTexturePreset_Depth32F          (TextureFlag_Filter_Min_Nearest | \
+                                           TextureFlag_Filter_Mag_Nearest | \
+                                           TextureFlag_Depth32F)
 
 void SetupFramebuffers(Game *game);
 

@@ -26,7 +26,7 @@ void RenderEntity(Entity *self, Game *game)
 
     if(game->renderAABB)
     {
-        ShaderSetVec3(game->lineShader, "u_color", glm::vec3(0.0f, 1.0f, 0.0f));
+        ShaderSetVec4(game->lineShader, "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glLineWidth(2.0f);
         RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
         glLineWidth(1.0f);

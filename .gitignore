@@ -1,8 +1,8 @@
 run.bat
 debug.bat
 data/audio
-data/models/soldier
-data/models/abrams
+data/models
 data/imgs/extra
+data/extra
 .vscode
 build

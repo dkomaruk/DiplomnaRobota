@@ -9,6 +9,7 @@
 #include "terrain.h"
 #include "selection.h"
 #include "ray.h"
+#include "light.h"
 #include "line.h"
 #include "framebuffer.h"
 
@@ -43,18 +44,21 @@ struct Game
     float outlineThickness = 1.0f;
 
     //Framebuffers
-    //TODO: Move these framebuffers out into a struct
     Framebuffer outlineFbo;
     Texture fullSceneTexture, fullSceneDepthTexture;
 
     Framebuffer smokeFbo;
+    Framebuffer shadowMapFbo;
 
     //Post-processing
     Mesh fullscreenQuad;
 
+    //Lighting
+    DirectionalLight dirLight;
+
     //Camera
     Camera camera;
-    glm::mat4 view, perspectiveProjection, orthoProjection, projViewInverse;
+    glm::mat4 view, perspectiveProjection, orthoProjection, orthoProjDirLight, projViewInverse;
 
     //Input
     Input input;

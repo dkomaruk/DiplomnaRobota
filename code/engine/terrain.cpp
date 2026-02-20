@@ -18,34 +18,35 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
 {
     Terrain t = {};
 
-    int fullMapWidth, fullMapHeight, channels;
-    stbi_info(heightmapPath, &fullMapWidth, &fullMapHeight, &channels);
+    int x, y, channels;
+    stbi_info(heightmapPath, &x, &y, &channels);
+
 
     uint8 *image = 0;
     uint16 *image16 = 0;
 
     if(channels == 1)
     {
-        image16 = stbi_load_16(heightmapPath, &fullMapWidth, &fullMapHeight, &channels, 0);
+        image16 = stbi_load_16(heightmapPath, &x, &y, &channels, 0);
         t.yScale = (maxHeight / 65535.0f);
     }
     else
     {
-        image = stbi_load(heightmapPath, &fullMapWidth, &fullMapHeight, &channels, 0);
+        image = stbi_load(heightmapPath, &x, &y, &channels, 0);
         t.yScale = (maxHeight / 256.0f);
     }
 
-    t.mapWidth = (int)(fullMapWidth * mapPortion);
-    t.mapHeight = (int)(fullMapHeight * mapPortion);
+    glm::vec2 fullMapSize = glm::vec2(x, y);
+    t.mapSize = fullMapSize * mapPortion;
 
     t.yShift = yShift;
-    t.heightmap = (float *)calloc(t.mapWidth * t.mapHeight, sizeof(float));
-    for(int i = 0; i < t.mapHeight; ++i)
+    t.heightmap = (float *)calloc((int)(t.mapSize.x * t.mapSize.y), sizeof(float));
+    for(int i = 0; i < t.mapSize.y; ++i)
     {
-        for(int j = 0; j < t.mapWidth; ++j)
+        for(int j = 0; j < t.mapSize.x; ++j)
         {
-            int sampleIndex = j + i * fullMapWidth;
-            int destIndex = j + i * t.mapWidth;
+            int sampleIndex = j + i * (int)fullMapSize.x;
+            int destIndex = j + i * (int)t.mapSize.x;
 
             uint16 sample = (channels == 1) ? image16[sampleIndex] : image[sampleIndex * channels];
             t.heightmap[destIndex] = sample * t.yScale - t.yShift;
@@ -59,26 +60,24 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
     int numOfVerticesZ = 0;
 
     t.mapScale = mapScale;
-    t.worldWidth = (int)((t.mapHeight - 1) * t.mapScale);
-    t.worldHeight = (int)((t.mapWidth - 1) * t.mapScale);
+    t.worldSize = (t.mapSize - 1.0f) * t.mapScale;
 
-    glm::vec2 center = glm::vec2(t.worldWidth, t.worldHeight) / 2.0f;
+    glm::vec2 center = t.worldSize / 2.0f;
 
-    for(int i = 0; i < t.mapHeight; i += meshStep)
+    for(int i = 0; i < t.mapSize.y; i += meshStep)
     {
         numOfVerticesX++;
         numOfVerticesZ = 0;
-        for(int j = 0; j < t.mapWidth; j += meshStep)
+
+        float posX = ((float)i * t.mapScale) - center.x;
+
+        for(int j = 0; j < t.mapSize.x; j += meshStep)
         {
             TerrainVertex vertex = {};
-            vertex.position.x = ((float)i * t.mapScale) - center.x;
-            vertex.position.y = (float)t.heightmap[(int)(j + t.mapWidth * i)];
-            vertex.position.z = ((float)j * t.mapScale) - center.y;
-            vertex.uv.x = (float)j / (t.mapWidth - 1);
-            vertex.uv.y = (float)i / (t.mapHeight - 1);
+            vertex.position = glm::vec3(posX, t.heightmap[(int)(j + t.mapSize.x * i)], (j * t.mapScale) - center.y);
+            vertex.uv = glm::vec2(j, i) / (t.mapSize - 1.0f);
 
             vertices.push_back(vertex);
-
             numOfVerticesZ++;
         }
     }
@@ -108,28 +107,20 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
 
 float GetTerrainHeight(Terrain *terrain, float x, float z)
 {
-    x += terrain->worldWidth / 2.0f;
-    z += terrain->worldHeight / 2.0f;
+    glm::vec2 worldPos = glm::vec2(x, z) + (terrain->worldSize / 2.0f);
 
-    float w = (float)terrain->mapWidth;
-    float h = (float)terrain->mapHeight;
-    float mapX = (x / terrain->worldWidth) * h;
-    float mapZ = (z / terrain->worldHeight) * w;
+    glm::vec2 mapPos = (worldPos / terrain->worldSize) * terrain->mapSize;
+    mapPos = glm::clamp(mapPos, glm::vec2(0.0f), terrain->mapSize - 1.001f);
 
-    mapX = Clamp(0.0f, mapX, (float)terrain->mapHeight - 1.001f);
-    mapZ = Clamp(0.0f, mapZ, (float)terrain->mapWidth - 1.001f);
+    glm::ivec2 mapPos0 = glm::ivec2(mapPos);
+    glm::vec2 weights = glm::fract(mapPos);
 
-    int mapX0 = (int)mapX;
-    int mapZ0 = (int)mapZ;
-    float a = mapX - mapX0;
-    float b = mapZ - mapZ0;
+    float h00 = terrain->heightmap[mapPos0.t + (int)terrain->mapSize.x * mapPos0.s];
+    float h10 = terrain->heightmap[mapPos0.t + (int)terrain->mapSize.x * (mapPos0.s + 1)];
+    float h01 = terrain->heightmap[(mapPos0.t + 1) + (int)terrain->mapSize.x * mapPos0.s];
+    float h11 = terrain->heightmap[(mapPos0.t + 1) + (int)terrain->mapSize.x * (mapPos0.s + 1)];
 
-    float h00 = terrain->heightmap[mapZ0 + terrain->mapWidth * mapX0];
-    float h10 = terrain->heightmap[mapZ0 + terrain->mapWidth * (mapX0 + 1)];
-    float h01 = terrain->heightmap[(mapZ0 + 1) + terrain->mapWidth * mapX0];
-    float h11 = terrain->heightmap[(mapZ0 + 1) + terrain->mapWidth * (mapX0 + 1)];
-
-    return ((1 - a) * (1 - b) * h00) + (a * (1 - b) * h10) + ((1 - a) * b * h01) + (a * b * h11);
+    return glm::mix(glm::mix(h00, h10, weights.x), glm::mix(h01, h11, weights.x), weights.y);
 }
 
 //Approximate intersection of a ray with the terrain mesh which is cheaper
@@ -189,8 +180,17 @@ void RenderTerrain(Game *game)
     glUseProgram(game->terrainShader);
     ShaderSetMatrix4(game->terrainShader, "u_view", game->view);
 
-    SetTexture(game->terrain.texture.id, 0);
-    ShaderSetInt(game->terrainShader, "u_terrainMap", 0);
+    SetTexture(game->terrain.splatMap.id, 0);
+    ShaderSetInt(game->terrainShader, "u_splatMap", 0);
+
+    SetTexture(game->terrain.texture0.id, 1);
+    ShaderSetInt(game->terrainShader, "u_texture0", 1);
+    SetTexture(game->terrain.texture1.id, 2);
+    ShaderSetInt(game->terrainShader, "u_texture1", 2);
+    SetTexture(game->terrain.texture2.id, 3);
+    ShaderSetInt(game->terrainShader, "u_texture2", 3);
+    SetTexture(game->terrain.texture3.id, 4);
+    ShaderSetInt(game->terrainShader, "u_texture3", 4);
 
     glBindVertexArray(game->terrain.mesh.vao);
     glDrawElements(GL_TRIANGLE_STRIP, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);

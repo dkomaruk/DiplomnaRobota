@@ -199,6 +199,24 @@ void LoadAudio(Game *game)
     //alSourcePlay(game->source);
 }
 
+Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position = glm::vec3(0.0f),
+                            glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
+{
+    Entity *newEntity = (Entity *)calloc(1, sizeof(Entity));
+    *newEntity = CreateEntity(model);
+
+    newEntity->position = position;
+    newEntity->rotation = rotation;
+    newEntity->scale = scale;
+
+    strcpy(newEntity->textId, textId);
+    newEntity->id = game->sceneEntities.size() ? (game->sceneEntities.back()->id + 1) : 1;
+
+    game->sceneEntities.push_back(newEntity);
+
+    return newEntity;
+}
+
 void LoadAssets(Game *game)
 {
     //AUDIO
@@ -223,42 +241,43 @@ void LoadAssets(Game *game)
     }
 
     //SHADERS
-    GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
-                                        LoadShader("../data/shaders/fragment.frag"));
-    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/vertex.vert"),
-                                                   LoadShader("../data/shaders/fragment2.frag"));
-    GLuint skinnedOutlineShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
-                                                      LoadShader("../data/shaders/fragment2.frag"));
+    GLuint mainShader = CreateShaderProgram(LoadShader("../data/shaders/main.vert"),
+                                        LoadShader("../data/shaders/main.frag"));
+    GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/main.vert"),
+                                                   LoadShader("../data/shaders/colorFill.frag"));
+    GLuint skinnedOutlineShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
+                                                      LoadShader("../data/shaders/colorFill.frag"));
     GLuint uiTextShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
                                               LoadShader("../data/shaders/uiText.frag"));
-    GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/vertex3.vert"),
-                                                   LoadShader("../data/shaders/fragment3.frag"));
+    GLuint postProcessShader = CreateShaderProgram(LoadShader("../data/shaders/post_processing.vert"),
+                                                   LoadShader("../data/shaders/post_processing.frag"));
     GLuint particleShader = CreateShaderProgram(LoadShader("../data/shaders/particle.vert"),
                                                 LoadShader("../data/shaders/particle.frag"));
     GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
                                                LoadShader("../data/shaders/terrain.frag"));
-    GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/vertex_skinned.vert"),
-                                                 LoadShader("../data/shaders/fragment.frag"));
+    GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
+                                                 LoadShader("../data/shaders/main.frag"));
     GLuint lineShader = CreateShaderProgram(LoadShader("../data/shaders/line.vert"),
-                                            LoadShader("../data/shaders/fragment2.frag"));
+                                            LoadShader("../data/shaders/colorFill.frag"));
     GLuint selectionBoxShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
-                                                    LoadShader("../data/shaders/fragment2.frag"));
+                                                    LoadShader("../data/shaders/colorFill.frag"));
     GLuint aabbShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
-                                            LoadShader("../data/shaders/fragment2.frag"));
+                                            LoadShader("../data/shaders/colorFill.frag"));
 
-    ShaderSetVec2(shader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
+    ShaderSetVec2(mainShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    ShaderSetVec3(lightSourceShader, "u_color", glm::vec3(1.0f));
-    ShaderSetVec3(skinnedOutlineShader, "u_color", glm::vec3(1.0f));
-    ShaderSetVec3(selectionBoxShader, "u_color", glm::vec3(1.0f));
+    ShaderSetVec4(lightSourceShader, "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(skinnedOutlineShader, "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(selectionBoxShader, "u_color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
 
     ShaderSetInt(postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     ShaderSetInt(postProcessShader, "u_inverted", 0);
     ShaderSetInt(postProcessShader, "u_grayscale", 0);
     ShaderSetInt(postProcessShader, "u_showOutline", 1);
+    ShaderSetInt(postProcessShader, "u_showParticles", 1);
 
-    game->shaders.push_back(shader);
+    game->shaders.push_back(mainShader);
     game->shaders.push_back(lightSourceShader);
     game->shaders.push_back(skinnedOutlineShader);
     game->shaders.push_back(postProcessShader);
@@ -280,7 +299,7 @@ void LoadAssets(Game *game)
     game->shaders.push_back(selectionBoxShader);
     ShaderSetMatrix4(selectionBoxShader, "u_projection", game->orthoProjection);
 
-    game->mainShader = shader;
+    game->mainShader = mainShader;
     game->postProcessShader = postProcessShader;
     game->outlineShader = lightSourceShader;
     game->lightSourceShader = lightSourceShader;
@@ -295,65 +314,30 @@ void LoadAssets(Game *game)
     //MESHES
 #ifdef LOAD_ASSETS
     Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    if(soldier->numOfMeshes != -1)
-    {
-        Entity *soldierEntity = (Entity *)malloc(sizeof(Entity));
-        *soldierEntity = CreateEntity(soldier);
-        strcpy(soldierEntity->textId, "soldier");
-        soldierEntity->position.y += 0.5f;
-        game->sceneEntities.push_back(soldierEntity);
-        game->soldierEntity0 = soldierEntity;
-        game->soldierEntity = soldierEntity;
-    }
 
-    Model *test = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
+    game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
+    game->soldierEntity0 = game->soldierEntity;
+
+    Model *backpack = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
                               aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
-
-    Entity *testEntity = (Entity *)malloc(sizeof(Entity));
-    *testEntity = CreateEntity(test);
-    strcpy(testEntity->textId, "backpack");
-    testEntity->position = glm::vec3(0.0f, 0.0f, 3.0f);
-    testEntity->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
-    testEntity->scale = glm::vec3(0.2f);
-    game->sceneEntities.push_back(testEntity);
-    game->testEntity = testEntity;
+    game->testEntity = AddNewEntityToScene(game, backpack, "backpack", glm::vec3(0.0f, 0.0f, 3.0f),
+                                           glm::vec3(0.0f, 180.0f, 0.0f), glm::vec3(0.2f));
 
     Model *sphere = ImportModel("../data/models/sphere.obj", game->mainShader, aiProcess_Triangulate);
     sphere->material->diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
-
-    Entity *sphereEntity = (Entity *)malloc(sizeof(Entity));
-    *sphereEntity = CreateEntity(sphere);
-    strcpy(sphereEntity->textId, "sphere");
-    sphereEntity->position = glm::vec3(-1.0f, 0.0f, 3.0f);
-    sphereEntity->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity->scale = glm::vec3(0.2f);
-    game->sceneEntities.push_back(sphereEntity);
+    AddNewEntityToScene(game, sphere, "sphere", glm::vec3(-1.0f, 0.0f, 3.0f),
+                        glm::vec3(0.0f, -90.0f, 0.0f), glm::vec3(0.2f));
 
     Model *sphere2 = ImportModel("../data/models/sphere2.obj", game->mainShader, aiProcess_Triangulate);
     sphere2->material->diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
-
-    Entity *sphereEntity2 = (Entity *)malloc(sizeof(Entity));
-    *sphereEntity2 = CreateEntity(sphere2);
-    strcpy(sphereEntity2->textId, "sphere2");
-    sphereEntity2->position = glm::vec3(0.0f, 1.0f, 3.0f);
-    sphereEntity2->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
-    sphereEntity2->scale = glm::vec3(0.2f);
-    game->sceneEntities.push_back(sphereEntity2);
+    AddNewEntityToScene(game, sphere2, "sphere2", glm::vec3(0.0f, 1.0f, 3.0f),
+                        glm::vec3(0.0f, -90.0f, 0.0f), glm::vec3(0.2f));
 
     Model *car = ImportModel("../data/models/car_scene.obj", game->mainShader, aiProcess_Triangulate);
     Texture carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
     for(int i = 0; i < car->numOfMeshes; i++)
-    {
         car->material[i].diffuseTexture = carDiffuseTexture;
-    }
-
-    Entity *carEntity = (Entity *)malloc(sizeof(Entity));
-    *carEntity = CreateEntity(car);
-    strcpy(carEntity->textId, "car");
-    carEntity->position = glm::vec3(0.0f, 1.0f, -3.0f);
-    carEntity->rotation = glm::vec3(0.0f, -90.0f, 0.0f);
-    //carEntity.scale = glm::vec3(0.2f);
-    game->sceneEntities.push_back(carEntity);
+    AddNewEntityToScene(game, car, "car", glm::vec3(0.0f, 1.0f, -3.0f), glm::vec3(0.0f, -90.0f, 0.0f));
 
     MaterialPhong containerMaterial = {};
     containerMaterial.shader = game->mainShader;
@@ -365,116 +349,83 @@ void LoadAssets(Game *game)
 
     Model *cubeMesh = ImportModel("../data/models/cube.obj", game->mainShader, aiProcess_Triangulate);
     cubeMesh->material[0] = containerMaterial;
-
-    Entity *cubeEntity = (Entity *)malloc(sizeof(Entity));
-    *cubeEntity = CreateEntity(cubeMesh);
-    strcpy(cubeEntity->textId, "cubeContainer");
-    cubeEntity->position.x -= 3.0f;
-    cubeEntity->position.z += 3.0f;
-    cubeEntity->position.y -= 0.5f;
-    cubeEntity->scale -= glm::vec3(0.5f);
-    game->sceneEntities.push_back(cubeEntity);
-    game->cubeEntity = cubeEntity;
-
-    Entity *cubeEntity2 = (Entity *)malloc(sizeof(Entity));
-    *cubeEntity2 = CreateEntity(cubeMesh);
-    strcpy(cubeEntity2->textId, "cubeContainer2");
-    cubeEntity2->position = glm::vec3(1.0f, 0.0f, 3.0f);
-    cubeEntity2->rotation = glm::vec3(0.0f, 180.0f, 0.0f);
-    cubeEntity2->scale = glm::vec3(0.2f);
-    game->sceneEntities.push_back(cubeEntity2);
+    game->cubeEntity = AddNewEntityToScene(game, cubeMesh, "cubeContainer", glm::vec3(-3.0f, 3.0f, -0.5f),
+                                           glm::vec3(0.0f), glm::vec3(0.5f));
+    AddNewEntityToScene(game, cubeMesh, "cubeContainer2", glm::vec3(1.0f, 0.0f, 3.0f),
+                        glm::vec3(0.0f, 180.0f, 0.0f), glm::vec3(0.2f));
 
     Model *lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
 
     glm::vec3 dirDiffuse = glm::vec3(0.9f);
-    glm::vec3 dirAmbient = glm::vec3(0.05f);
+    glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
     //glm::vec3 dirSpecular = glm::vec3(0.8f, 0.7f, 0.0f);
     //DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
-    DirectionalLight dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
-    ShaderSetDirLight(game->mainShader, dirLight);
-    ShaderSetDirLight(game->animationShader, dirLight);
+    game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
+    ShaderSetDirLight(game->mainShader, game->dirLight);
+    ShaderSetDirLight(game->animationShader, game->dirLight);
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
-    Entity *dirLightMesh = (Entity *)malloc(sizeof(Entity));
-    *dirLightMesh = CreateEntity(lightMesh);
-    strcpy(dirLightMesh->textId, "dirLightCube");
-    dirLightMesh->scale = glm::vec3(50.0f);
-    dirLightMesh->position = -dirLight.direction * 200.0f;
 
-    game->sceneEntities.push_back(dirLightMesh);
+    AddNewEntityToScene(game, lightMesh, "dirLightCube", -game->dirLight.direction * 200.0f, glm::vec3(0.0f), glm::vec3(50.0f));
 
+#if 0
     PointLight pointLights[4] = {};
-    Entity *pointLightsSources = (Entity *)malloc(sizeof(Entity) * 4);
     int width = 10;
     int maxPointLights = 4;
-    for(int i = 0; i < maxPointLights; i++)
+    for(int lightIndex = 0; lightIndex < maxPointLights; lightIndex++)
     {
-        pointLights[i].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[i].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[i].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
+        pointLights[lightIndex].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
+        pointLights[lightIndex].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
+        pointLights[lightIndex].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
 
-        pointLights[i].diffuse = glm::vec3(0.5f);
-        pointLights[i].ambient = glm::vec3(0.05f);
-        pointLights[i].specular = glm::vec3(0.1f);
+        pointLights[lightIndex].diffuse = glm::vec3(0.5f);
+        pointLights[lightIndex].ambient = glm::vec3(0.05f);
+        pointLights[lightIndex].specular = glm::vec3(0.1f);
 
-        pointLights[i].constant = 1.0f;
-        pointLights[i].linear = 0.027f;
-        pointLights[i].quadratic = 0.0028f;
+        pointLights[lightIndex].constant = 1.0f;
+        pointLights[lightIndex].linear = 0.027f;
+        pointLights[lightIndex].quadratic = 0.0028f;
 
-        ShaderSetPointLight(game->mainShader, pointLights[i], i);
-        ShaderSetPointLight(game->animationShader, pointLights[i], i);
+        ShaderSetPointLight(game->mainShader, pointLights[lightIndex], lightIndex);
+        ShaderSetPointLight(game->animationShader, pointLights[lightIndex], lightIndex);
 
-        pointLightsSources[i] = CreateEntity(lightMesh);
-        pointLightsSources[i].scale = glm::vec3(0.15f);
-        pointLightsSources[i].position = pointLights[i].position;
-
-        game->sceneEntities.push_back(&pointLightsSources[i]);
+        char lightTextId[20];
+        sprintf(lightTextId, "light%d", lightIndex);
+        AddNewEntityToScene(game, lightMesh, lightTextId, pointLights[lightIndex].position,
+                            glm::vec3(0.0f), glm::vec3(0.15f));
     }
 
     ShaderSetInt(game->mainShader, "u_pointLightCount", maxPointLights);
     ShaderSetInt(game->animationShader, "u_pointLightCount", maxPointLights);
+#endif
 
-    //for(int i = 0; i < 2; i++)
-    //{
-    //    InfantrySquad *squad = (InfantrySquad *)malloc(sizeof(InfantrySquad));
-    //    *squad = CreateInfantrySquad(cubeMesh, 1, 10);
-    //    //*squad = CreateInfantrySquad(soldier, 1, 10);
-    //    squad->scale = glm::vec3(0.5f);
-    //    squad->position.z = -10.0f / 2.0f;
-    //    squad->position.x = -10.0f / 2.0f;
-    //    squad->position.y -= i;
-
-    //    game->sceneEntities.push_back(squad);
-    //}
+    ShaderSetInt(game->mainShader, "u_pointLightCount", 0);
+    ShaderSetInt(game->animationShader, "u_pointLightCount", 0);
 
     for(int i = 0; i < 2; i++)
     {
         for(int j = 0; j < 10; j++)
         {
-            Entity *entity = (Entity *)calloc(1, sizeof(Entity));
-            *entity = CreateEntity(cubeMesh);
-
-            entity->scale = glm::vec3(0.5f);
-            entity->position.z = -10.0f / 2.0f;
-            entity->position.x = -10.0f / 2.0f;
-            entity->position.y -= i;
-
             glm::vec3 offset = glm::vec3(j, 0.0f, j);
-            entity->position += offset;
 
-            game->sceneEntities.push_back(entity);
+            char textId[25];
+            sprintf(textId, "container%d", i * j + j);
+            AddNewEntityToScene(game, cubeMesh, "container", glm::vec3(-10.0f / 2.0f, -i, -10.0f / 2.0f) + offset,
+                                glm::vec3(0.0f), glm::vec3(0.5f));
         }
     }
 
-    for(uint16 i = 0; i < game->sceneEntities.size(); i++)
-    {
-        game->sceneEntities[i]->id = i + 1;
-    }
 #endif
 
     game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
-    game->terrain.texture = CreateTexture("../data/heightmap_albedo.png");
+    game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
+    game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
+    //game->terrain.texture1 = CreateTexture("../data/extra/rocks.png");
+    game->terrain.texture1 = CreateTexture("../data/extra/mud.png");
+    game->terrain.texture2 = CreateTexture("../data/extra/leaves.png");
+    game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
+    //game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
 
     //PARTICLES
     LoadParticleSystem(game);

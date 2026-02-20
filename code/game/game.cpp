@@ -108,6 +108,7 @@ bool InitGame(Game *game)
 
     game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
     game->orthoProjection = glm::ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+    game->orthoProjDirLight = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
 
     game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -271,7 +272,7 @@ void UpdateGame(Game *game)
         game->selectionBox.size = input->mousePos - game->selectionBox.start;
     }
 
-    if(IsMouseJustReleased(game, MOUSE_LEFT) && RECT_HAS_SIZE(game->selectionBox.size))
+    if(IsMouseJustReleased(game, MOUSE_LEFT) && !input->isMouseCapturedByImgui && RECT_HAS_SIZE(game->selectionBox.size))
     {
         SelectMultipleObjects(game);
     }
