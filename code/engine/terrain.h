@@ -31,6 +31,8 @@ struct Terrain
 
 Terrain CreateTerrain(char *heightmapPath, float maxHeight = 6.0f, float mapPortion = 1.0f,
                       float mapScale = 0.1f, int meshStep = 1, float yShift = 0.0f);
+Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale = 20.0f / 255.0f, float mapPortion = 1.0f,
+                      float mapScale = 0.1f, int meshStep = 1, float yShift = 0.0f);
 
 float GetTerrainHeight(Terrain *terrain, float x, float z);
 glm::vec3 GetRayTerrainIntersection(Terrain *terrain, Ray *pickingRay, float maxDist);

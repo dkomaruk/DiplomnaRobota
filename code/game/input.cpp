@@ -26,7 +26,7 @@ void ProcessInput(Input *input)
         {
             case SDL_EVENT_QUIT:
             {
-                input->shouldQuit;
+                input->shouldQuit = true;
             } break;
 
             case SDL_EVENT_KEY_UP:

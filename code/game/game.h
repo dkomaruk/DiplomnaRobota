@@ -79,6 +79,7 @@ struct Game
     Entity *testEntity;
     Entity *soldierEntity;
     Entity *soldierEntity0;
+    Entity *tank;
     Entity *cubeEntity;
 
     Terrain terrain;
@@ -106,6 +107,10 @@ struct Game
     bool renderTerrain = true;
     bool renderSelectionFrustum = true;
     bool renderPickingRay = true;
+
+    //Noise
+    Texture valueNoise;
+    Texture perlinNoise, perlinNoise2;
 
     //Game temp stuff
     bool textDemoEnabled;

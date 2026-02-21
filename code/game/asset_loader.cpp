@@ -318,6 +318,27 @@ void LoadAssets(Game *game)
     game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
     game->soldierEntity0 = game->soldierEntity;
 
+    Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
+    game->tank = AddNewEntityToScene(game, abrams, "tank");
+    Entity *tank = game->tank;
+    for(int i = 0; i < tank->model->numOfNodes; i++)
+    {
+        char *nodeName = tank->model->nodes[i].name;
+        if(nodeName && strcmp(nodeName, "Tourelle_01") == 0)
+        {
+            tank->turret.nodeId = i;
+            tank->turret.transform = tank->model->nodes[i].localTransform;
+        }
+        else if(nodeName && strcmp(nodeName, "Axe_Canon_01") == 0)
+        {
+            tank->gun.nodeId = i;
+            tank->gun.transform = tank->model->nodes[i].localTransform;
+        }
+    }
+
+    Model *soldierAnimated = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    game->soldierEntity = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
+
     Model *backpack = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
                               aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
     game->testEntity = AddNewEntityToScene(game, backpack, "backpack", glm::vec3(0.0f, 0.0f, 3.0f),
@@ -416,19 +437,20 @@ void LoadAssets(Game *game)
         }
     }
 
-#endif
 
     game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
     game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
     game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
     //game->terrain.texture1 = CreateTexture("../data/extra/rocks.png");
-    game->terrain.texture1 = CreateTexture("../data/extra/mud.png");
+    game->terrain.texture1 = CreateTexture("../data/wispy-grass-meadow_albedo.png");
     game->terrain.texture2 = CreateTexture("../data/extra/leaves.png");
     game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
     //game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
 
     //PARTICLES
     LoadParticleSystem(game);
+
+#endif
 
     glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
     game->fpsCounter = CreateText(&game->fonts[24], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader, textColor);

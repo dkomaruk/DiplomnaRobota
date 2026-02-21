@@ -13,46 +13,68 @@
 
 #include <stb_image.h>
 
+float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::vec2 mapSize, float yScale, float yShift)
+{
+    float *heightmap = (float *)calloc((int)(mapSize.x * mapSize.y), sizeof(float));
+
+    uint16 *image16 = (uint16 *)image;
+    uint8 *image8 = (uint8 *)image;
+
+    for(int i = 0; i < mapSize.y; ++i)
+    {
+        for(int j = 0; j < mapSize.x; ++j)
+        {
+            int sampleIndex = j + i * (int)fullMapSize.x;
+            int destIndex = j + i * (int)mapSize.x;
+
+            uint16 sample = (channels == 1) ? image16[sampleIndex] : image8[sampleIndex * channels];
+            heightmap[destIndex] = sample * yScale - yShift;
+        }
+    }
+
+    return heightmap;
+}
+
 //Loads a 16-bit PNG heightmap and generates a terrain mesh
 Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep, float yShift)
 {
-    Terrain t = {};
-
     int x, y, channels;
     stbi_info(heightmapPath, &x, &y, &channels);
-
 
     uint8 *image = 0;
     uint16 *image16 = 0;
 
+    float yScale;
+
     if(channels == 1)
     {
         image16 = stbi_load_16(heightmapPath, &x, &y, &channels, 0);
-        t.yScale = (maxHeight / 65535.0f);
+        yScale = (maxHeight / 65535.0f);
     }
     else
     {
         image = stbi_load(heightmapPath, &x, &y, &channels, 0);
-        t.yScale = (maxHeight / 256.0f);
+        yScale = (maxHeight / 255.0f);
     }
 
     glm::vec2 fullMapSize = glm::vec2(x, y);
+    glm::vec2 mapSize = fullMapSize * mapPortion;
+
+    float *heightmap = GetHeightmapData(((channels == 1) ? image16 : (void *)image), channels, fullMapSize, mapSize, yScale, yShift);
+
+    stbi_image_free(((channels == 1) ? image16 : (void *)image));
+
+    return CreateTerrain(heightmap, fullMapSize, yScale, mapPortion, mapScale, meshStep, yShift);
+}
+
+Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale, float mapPortion, float mapScale, int meshStep, float yShift)
+{
+    Terrain t = {};
+
     t.mapSize = fullMapSize * mapPortion;
-
+    t.yScale = yScale;
     t.yShift = yShift;
-    t.heightmap = (float *)calloc((int)(t.mapSize.x * t.mapSize.y), sizeof(float));
-    for(int i = 0; i < t.mapSize.y; ++i)
-    {
-        for(int j = 0; j < t.mapSize.x; ++j)
-        {
-            int sampleIndex = j + i * (int)fullMapSize.x;
-            int destIndex = j + i * (int)t.mapSize.x;
-
-            uint16 sample = (channels == 1) ? image16[sampleIndex] : image[sampleIndex * channels];
-            t.heightmap[destIndex] = sample * t.yScale - t.yShift;
-        }
-    }
-    stbi_image_free(image);
+    t.heightmap = heightmap;
 
     std::vector<TerrainVertex> vertices;
 
@@ -191,6 +213,9 @@ void RenderTerrain(Game *game)
     ShaderSetInt(game->terrainShader, "u_texture2", 3);
     SetTexture(game->terrain.texture3.id, 4);
     ShaderSetInt(game->terrainShader, "u_texture3", 4);
+
+    SetTexture(game->perlinNoise2.id, 5);
+    ShaderSetInt(game->terrainShader, "u_noiseMap", 5);
 
     glBindVertexArray(game->terrain.mesh.vao);
     glDrawElements(GL_TRIANGLE_STRIP, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);

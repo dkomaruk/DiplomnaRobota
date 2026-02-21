@@ -37,6 +37,7 @@
 #include "aabb.cpp"
 #include "texture.cpp"
 #include "image.cpp"
+#include "noise.cpp"
 #include "mesh.cpp"
 #include "model.cpp"
 #include "animation.cpp"
@@ -87,44 +88,20 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    Model *model = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    glm::vec2 size = glm::vec2(256.0f, 256.0f);
+    uint8 *valueNoise = GenerateValueNoise(size);
+    game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
+    free(valueNoise);
+
+    uint8 *perlinNoise2 = GeneratePerlinNoise(glm::vec2(256.0f), (uint8)5);
+    game->perlinNoise2 = CreateGLTexture(perlinNoise2, (int)size.x, (int)size.y);
+
+    free(perlinNoise2);
 
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
     CreateFrustumLines(game->frustumLines, game->frustumNormals, game->lineShader);
 
-    Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
-    if(!abrams)
-    {
-        SDL_Log("Failed to load abrams.fbx");
-    }
-
-    Entity tank = CreateEntity(abrams);
-    for(int i = 0; i < tank.model->numOfNodes; i++)
-    {
-        char *nodeName = tank.model->nodes[i].name;
-        if(nodeName && strcmp(nodeName, "Tourelle_01") == 0)
-        {
-            tank.turret.nodeId = i;
-            tank.turret.transform = tank.model->nodes[i].localTransform;
-        }
-        else if(nodeName && strcmp(nodeName, "Axe_Canon_01") == 0)
-        {
-            tank.gun.nodeId = i;
-            tank.gun.transform = tank.model->nodes[i].localTransform;
-        }
-    }
-
-    tank.id = game->sceneEntities.back()->id + 1;
-    strcpy(tank.textId, "tank");
-    game->sceneEntities.push_back(&tank);
-
-    Entity character = CreateEntity(model);
-    game->soldierEntity = &character;
-    game->soldierEntity->position.x = 0.0f;
-    game->soldierEntity->position.z = 0.0f;
-    game->soldierEntity->id = game->sceneEntities.back()->id + 1;
-    game->sceneEntities.push_back(game->soldierEntity);
-
+#ifdef LOAD_ASSETS
     //SKY
     int flags = TexturePreset_Common;
     flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
@@ -132,6 +109,7 @@ int main(int argc, char *argv[])
     Mesh quad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                         LoadShader("../data/shaders/environment.frag"));
+#endif
 
     //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();
@@ -143,68 +121,6 @@ int main(int argc, char *argv[])
         //Update
         UpdateEditorUI(game);
         UpdateGame(game);
-
-        if(IsFirstPress(game, SDL_SCANCODE_DELETE))
-        {
-            game->sceneEntities.erase(
-                std::remove_if(game->sceneEntities.begin(), game->sceneEntities.end(), [&](Entity *entity) {
-                    if(game->selectedIDs.count(entity->id))
-                    {
-                        DeleteEntity(entity);
-                        return true;
-                    }
-                    return false;
-                }),
-                game->sceneEntities.end()
-            );
-
-            game->selectedIDs.clear();
-            game->lastSelectedId = -1;
-        }
-
-        glm::mat4 turretTransform = glm::mat4(1.0f);
-        turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f, 0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
-        turretTransform = glm::rotate(turretTransform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
-        tank.turret.transform = tank.model->nodes[tank.turret.nodeId].localTransform * turretTransform;
-
-        glm::mat4 gunTransform = glm::mat4(1.0f);
-        gunTransform = glm::rotate(gunTransform, glm::radians(sinf(SDL_GetTicks() / 500.0f) * 20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        tank.gun.transform = tank.model->nodes[tank.gun.nodeId].localTransform * gunTransform;
-
-        UpdateTransforms(&tank);
-
-        //glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank.position, tank.rotation, tank.scale);
-        //glm::mat4 tipWorldMat = tankWorldMatrix * tank.nodeTransforms[tank.gunTipId];
-        //game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-        //glm::mat4 tipRotation = glm::mat3(tipWorldMat);
-        //game->particleSystems[0].rotation = tipRotation;
-
-        float speed = 1.0f;
-        float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
-        float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
-        float y = GetTerrainHeight(&game->terrain, x, z);
-
-        game->soldierEntity->position = glm::vec3(x, y, z);
-
-        float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
-
-        if(angleDiff < -180.0f)
-            angleDiff += 360.0f;
-        if(angleDiff > 180.0f)
-            angleDiff -= 360.0f;
-
-        float rotationStep = 200.0f * game->deltaTime;
-
-        if(glm::abs(angleDiff) <= rotationStep)
-            game->soldierEntity->rotation.y = game->targetAngle;
-        else
-            game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
-
-        if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
-        {
-            game->targetDirection = glm::vec2(0, 0);
-        }
 
         //RENDERING
         if(!game->textDemoEnabled)
@@ -252,6 +168,7 @@ int main(int argc, char *argv[])
             }
 #endif
 
+#ifdef LOAD_ASSETS
             if(game->renderTerrain)
             {
                 RenderTerrain(game);
@@ -282,6 +199,7 @@ int main(int argc, char *argv[])
                 RenderParticles(game);
                 glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
             }
+#endif
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

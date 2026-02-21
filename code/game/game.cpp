@@ -189,11 +189,13 @@ void UpdateCamera(Game *game)
         camera->direction = normalize(camera->direction);
     }
 
+#if 0
     //Camera zoom
     camera->fov -= input->mouseWheelDelta.y;
     camera->fov = SDL_clamp(camera->fov, 1.0f, 45.0f);
 
     game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+#endif
 
     //Camera movement
     if(input->keys[SDL_SCANCODE_W])
@@ -212,9 +214,16 @@ void UpdateCamera(Game *game)
 
 void UpdateGame(Game *game)
 {
-    if(game->input.shouldQuit)
+    Input *input = &game->input;
+
+    if(input->shouldQuit)
     {
         game->isRunning = false;
+    }
+    if(input->keys[SDL_SCANCODE_ESCAPE])
+    {
+        game->isRunning = false;
+        return;
     }
 
     UpdateCamera(game);
@@ -230,14 +239,7 @@ void UpdateGame(Game *game)
         game->deltaTime = 0.0f;
     }
 
-    Input *input = &game->input;
-
-    if(input->keys[SDL_SCANCODE_ESCAPE])
-    {
-        game->isRunning = false;
-        return;
-    }
-
+    //Cast picking ray, perform selection, calculate intersection with the terrain
     if(IsFirstClick(game, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
     {
         glm::vec2 mousePos = input->isCursorHidden ? WINDOW_CENTER : input->mousePos;
@@ -247,6 +249,7 @@ void UpdateGame(Game *game)
         Ray pickingRay = CastPickingRay(game, mousePos);
         SelectSingleObject(game, &pickingRay);
 
+#ifdef LOAD_ASSETS
         float visibleRayLength = 2000.0f;
         glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
@@ -265,6 +268,7 @@ void UpdateGame(Game *game)
             game->targetDirection = glm::normalize(game->targetDirection);
             game->targetAngle = glm::degrees(glm::atan(game->targetDirection.x, game->targetDirection.y));
         }
+#endif
     }
 
     if(game->input.mouseButtons[MOUSE_LEFT] && !input->isMouseCapturedByImgui && !game->input.isCursorHidden)
@@ -277,6 +281,26 @@ void UpdateGame(Game *game)
         SelectMultipleObjects(game);
     }
 
+    //Delete selected entities
+    if(IsFirstPress(game, SDL_SCANCODE_DELETE))
+    {
+        game->sceneEntities.erase(
+            std::remove_if(game->sceneEntities.begin(), game->sceneEntities.end(), [&](Entity *entity) {
+                if(game->selectedIDs.count(entity->id))
+                {
+                    DeleteEntity(entity);
+                    return true;
+                }
+                return false;
+            }),
+            game->sceneEntities.end()
+        );
+
+        game->selectedIDs.clear();
+        game->lastSelectedId = -1;
+    }
+
+    //Update entities
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
         Entity *entity = game->sceneEntities[i];
@@ -303,6 +327,59 @@ void UpdateGame(Game *game)
 
     }
 
+    //Test game stuff
+#ifdef LOAD_ASSETS
+    game->testEntity->rotation.y += 90.0f * game->deltaTime;
+    glm::mat4 turretTransform = glm::mat4(1.0f);
+    turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f, 0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
+    turretTransform = glm::rotate(turretTransform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
+    Entity *tank = game->tank;
+    tank->turret.transform = tank->model->nodes[tank->turret.nodeId].localTransform * turretTransform;
+
+    glm::mat4 gunTransform = glm::mat4(1.0f);
+    gunTransform = glm::rotate(gunTransform, glm::radians(sinf(SDL_GetTicks() / 500.0f) * 20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    tank->gun.transform = tank->model->nodes[tank->gun.nodeId].localTransform * gunTransform;
+
+    UpdateTransforms(tank);
+
+    float speed = 1.0f;
+    float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
+    float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
+    float y = GetTerrainHeight(&game->terrain, x, z);
+
+    game->soldierEntity->position = glm::vec3(x, y, z);
+
+    float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
+
+    if(angleDiff < -180.0f)
+        angleDiff += 360.0f;
+    if(angleDiff > 180.0f)
+        angleDiff -= 360.0f;
+
+    float rotationStep = 200.0f * game->deltaTime;
+
+    if(glm::abs(angleDiff) <= rotationStep)
+        game->soldierEntity->rotation.y = game->targetAngle;
+    else
+        game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
+
+    if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
+    {
+        game->targetDirection = glm::vec2(0, 0);
+    }
+
+#if 0
+    glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank->position, tank->rotation, tank->scale);
+    glm::mat4 tipWorldMat = tankWorldMatrix * tank->nodeTransforms[tank->gunTipId];
+    game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glm::mat4 tipRotation = glm::mat3(tipWorldMat);
+    game->particleSystems[0].rotation = tipRotation;
+#endif
+
+#endif
+
+    //Audio update
     Camera *camera = &game->camera;
     glm::vec3 forward = normalize(camera->direction);
 
@@ -317,6 +394,7 @@ void UpdateGame(Game *game)
     alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
     alListenerfv(AL_ORIENTATION, listenerOri);
 
+    //Change outline thickness
     if(input->keys[SDL_SCANCODE_DOWN])
     {
         game->outlineThickness -= 5.0f * game->deltaTime;
@@ -330,7 +408,7 @@ void UpdateGame(Game *game)
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
 
-
+    //Text demo update
     if(!game->textDemoEnabled)
     {
 #if 0
@@ -348,6 +426,7 @@ void UpdateGame(Game *game)
             }
         }
 #endif
+        //Save a screenshot of outline buffer
         if(IsFirstPress(game, SDL_SCANCODE_U))
         {
             int w = (int)WINDOW_WIDTH;
@@ -360,6 +439,8 @@ void UpdateGame(Game *game)
             stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
             free(pixels);
         }
+
+        //Enable cursor and interaction with the ui
         if(IsFirstPress(game, SDL_SCANCODE_P))
         {
             if(input->isCursorHidden)
@@ -377,7 +458,7 @@ void UpdateGame(Game *game)
         }
     }
 
-
+    //Display mouse button name when it's pressed
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
     {
         if(IsFirstClick(game, i))
@@ -385,10 +466,6 @@ void UpdateGame(Game *game)
             SDL_Log("%s", GetMouseButtonName(i));
         }
     }
-
-#ifdef LOAD_ASSETS
-    game->testEntity->rotation.y += 90.0f * game->deltaTime;
-#endif
 
     if(IsFirstPress(game, SDL_SCANCODE_T))
     {
@@ -400,7 +477,8 @@ void UpdateGame(Game *game)
         UpdateTextDemo(game);
     }
 
-    //UPDATE PARTICLES
+#ifdef LOAD_ASSETS
+    //Update particles
     if(IsFirstPress(game, SDL_SCANCODE_Y))
     {
         game->renderParticles = !game->renderParticles;
@@ -416,7 +494,7 @@ void UpdateGame(Game *game)
 
         SortAllParticles(game);
     }
-
+#endif
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);
@@ -439,7 +517,7 @@ void UpdateGame(Game *game)
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);
 
-
+    //Reset deltas
     input->mouseDelta = glm::vec2(0.0f);
     input->mouseWheelDelta = glm::vec2(0.0f);
     input->typedText = "";

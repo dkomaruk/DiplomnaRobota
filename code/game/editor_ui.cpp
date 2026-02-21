@@ -16,8 +16,49 @@ void UpdateEditorUI(Game *game)
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    if(ImGui::BeginMainMenuBar())
+    {
+        if(ImGui::BeginMenu("Example1"))
+        {
+            if(ImGui::MenuItem("Example1 Option 1")) {}
+            if(ImGui::MenuItem("Example1 Option 2", "Shortcut example")) {SDL_Log("Option2 selected");}
+            ImGui::EndMenu();
+        }
+        if(ImGui::BeginMenu("Example2"))
+        {
+            if(ImGui::MenuItem("Example2 Option2")) {}
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
     ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize |
                              (game->input.isCursorHidden ? ImGuiWindowFlags_NoInputs : 0);
+
+    ImGui::Begin("Value Noise", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Image(game->valueNoise.id, ImVec2((float)game->valueNoise.x, (float)game->valueNoise.y));
+    if(ImGui::Button("Generate"))
+    {
+        glDeleteTextures(1, &game->valueNoise.id);
+        glm::vec2 size = glm::vec2(256.0f, 256.0f);
+        uint8 *valueNoise = GenerateValueNoise(size);
+        game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
+        free(valueNoise);
+    }
+    ImGui::End();
+
+    ImGui::Begin("Perlin Noise2", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Image(game->perlinNoise2.id, ImVec2((float)game->perlinNoise2.x, (float)game->perlinNoise2.y));
+
+    if(ImGui::Button("Generate"))
+    {
+        glDeleteTextures(1, &game->perlinNoise2.id);
+        glm::vec2 size = glm::vec2(256.0f, 256.0f);
+        uint8 *perlinNoise = GeneratePerlinNoise(size, (uint8)5);
+        game->perlinNoise2 = CreateGLTexture(perlinNoise, (int)size.x, (int)size.y);
+        free(perlinNoise);
+    }
+    ImGui::End();
 
     ImGui::Begin("Debug Settings", 0, flags);
 
