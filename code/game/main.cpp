@@ -93,9 +93,13 @@ int main(int argc, char *argv[])
     game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
     free(valueNoise);
 
+    uint8 *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
+    game->perlinNoise = CreateGLTexture(perlinNoise, (int)size.x, (int)size.y);
+
     uint8 *perlinNoise2 = GeneratePerlinNoise(glm::vec2(256.0f), (uint8)5);
     game->perlinNoise2 = CreateGLTexture(perlinNoise2, (int)size.x, (int)size.y);
 
+    free(perlinNoise);
     free(perlinNoise2);
 
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -110,6 +114,15 @@ int main(int argc, char *argv[])
     GLuint shader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                         LoadShader("../data/shaders/environment.frag"));
 #endif
+
+    Model *tree = ImportModel("../data/extra/tree/tree2_0.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree, "tree", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
+
+    Model *tree1 = ImportModel("../data/extra/tree/tree2_1.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree1, "tree1", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
+
+    Model *tree2 = ImportModel("../data/extra/tree/tree2_2.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree2, "tree2", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
 
     //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();
@@ -171,7 +184,10 @@ int main(int argc, char *argv[])
 #ifdef LOAD_ASSETS
             if(game->renderTerrain)
             {
+                glEnable(GL_CULL_FACE);
+                glCullFace(GL_BACK);
                 RenderTerrain(game);
+                glDisable(GL_CULL_FACE);
             }
 
             UseShader(shader);

@@ -99,6 +99,8 @@ Mesh CreateMesh(void *verticesData, int verticesCount, int vertexSize,
                 int numOfAttribs = ArrayCount(vertexAttribs),
                 GLenum usage = GL_STATIC_DRAW);
 
+void DeleteMesh(Mesh *mesh);
+
 //void UpdateMesh(Mesh *mesh, std::vector<Vertex> newVertices);
 void UpdateMesh(Mesh *mesh, void *newVertices, int size, GLenum usage = GL_DYNAMIC_DRAW);
 

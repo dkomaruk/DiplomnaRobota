@@ -3,6 +3,7 @@
 #include "particle_editor_ui.h"
 #include "file.h"
 #include "model.h"
+#include "noise.h"
 #include "shader.h"
 
 #include <imgui.h>
@@ -44,6 +45,48 @@ void UpdateEditorUI(Game *game)
         uint8 *valueNoise = GenerateValueNoise(size);
         game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
         free(valueNoise);
+    }
+    ImGui::End();
+
+    ImGui::Begin("Perlin Noise", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
+
+    int changed = 0;
+
+    static glm::ivec2 gridSize = glm::ivec2(32);
+    changed += ImGui::InputInt2("Octaves", &gridSize[0]);
+
+    static int octaves = 1;
+    changed += ImGui::InputInt("Octaves", &octaves);
+
+    static float persistence = 0.5f;
+    changed += ImGui::InputFloat("Persistence", &persistence, 0.05f);
+
+    static float lacunarity = 2.0f;
+    changed += ImGui::InputFloat("Lacunarity", &lacunarity, 0.05f);
+
+    if(ImGui::Button("Generate") || changed)
+    {
+        glDeleteTextures(1, &game->perlinNoise.id);
+        glm::vec2 size = glm::vec2(1024.0f, 1024.0f);
+        uint8 *perlinNoise = GeneratePerlinNoise(size, gridSize, octaves, persistence, lacunarity);
+        game->perlinNoise = CreateGLTexture(perlinNoise, (int)size.x, (int)size.y);
+
+        DeleteMesh(&game->terrain.mesh);
+        free(game->terrain.heightmap);
+
+        float yScale = 20.0f / 255.0f;
+        float *heightmap = GetHeightmapData(perlinNoise, 4, size, size, yScale, 22.0f);
+        Terrain terrain = CreateTerrain(heightmap, size, yScale, 1.0f, 0.1f, 4, 0.0f);
+
+        terrain.splatMap = game->terrain.splatMap;
+        terrain.texture0 = game->terrain.texture0;
+        terrain.texture1 = game->terrain.texture1;
+        terrain.texture2 = game->terrain.texture2;
+        terrain.texture3 = game->terrain.texture3;
+        game->terrain = terrain;
+
+        free(perlinNoise);
     }
     ImGui::End();
 

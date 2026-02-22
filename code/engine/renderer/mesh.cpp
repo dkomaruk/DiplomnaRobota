@@ -108,6 +108,13 @@ Mesh CreateMesh(void *verticesData, int verticesCount, int vertexSize, void *ind
     return mesh;
 }
 
+void DeleteMesh(Mesh *mesh)
+{
+    glDeleteVertexArrays(1, &mesh->vao);
+    glDeleteBuffers(1, &mesh->vbo);
+    glDeleteBuffers(1, &mesh->ebo);
+}
+
 void UpdateMesh(Mesh *mesh, void *newVertices, int size, GLenum usage)
 {
     glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);

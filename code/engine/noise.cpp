@@ -112,3 +112,85 @@ uint8 *GeneratePerlinNoise(glm::vec2 size, uint8 temp)
 
     return noise;
 }
+
+float SamplePerlin(glm::vec2 pos, glm::vec2* gradients, glm::ivec2 gridSize)
+{
+    glm::ivec2 pos0 = glm::ivec2(glm::floor(pos));
+    glm::vec2 weights = glm::fract(pos);
+
+    auto get_grad = [&](int x, int y) {
+        int ix = (x % gridSize.x + gridSize.x) % gridSize.x;
+        int iy = (y % gridSize.y + gridSize.y) % gridSize.y;
+        return gradients[ix + gridSize.x * iy];
+    };
+
+    glm::vec2 v00 = get_grad(pos0.x,     pos0.y);
+    glm::vec2 v10 = get_grad(pos0.x + 1, pos0.y);
+    glm::vec2 v01 = get_grad(pos0.x,     pos0.y + 1);
+    glm::vec2 v11 = get_grad(pos0.x + 1, pos0.y + 1);
+
+    glm::vec2 d00 = weights - glm::vec2(0.0f, 0.0f);
+    glm::vec2 d10 = weights - glm::vec2(1.0f, 0.0f);
+    glm::vec2 d01 = weights - glm::vec2(0.0f, 1.0f);
+    glm::vec2 d11 = weights - glm::vec2(1.0f, 1.0f);
+
+    float dot00 = glm::dot(v00, d00);
+    float dot10 = glm::dot(v10, d10);
+    float dot01 = glm::dot(v01, d01);
+    float dot11 = glm::dot(v11, d11);
+
+    glm::vec2 s = weights * weights * weights * (weights * (weights * 6.0f - 15.0f) + 10.0f);
+
+    return glm::mix(glm::mix(dot00, dot10, s.x), glm::mix(dot01, dot11, s.x), s.y);
+}
+
+uint8* GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, float persistence, float lacunarity)
+{
+    int numOfChannels = 4;
+    uint8* noise = (uint8*)calloc((int)(size.x * size.y) * numOfChannels, sizeof(uint8));
+
+    glm::ivec2 baseGrid = glm::ivec2(gridSize.x, gridSize.y);
+
+    glm::ivec2 gradTableSize = glm::ivec2(256);
+    glm::vec2* gradients = (glm::vec2*)malloc(gradTableSize.x * gradTableSize.y * sizeof(glm::vec2));
+    for(int i = 0; i < gradTableSize.x * gradTableSize.y; i++)
+    {
+        float angle = ((float)rand() / RAND_MAX) * 2.0f * 3.14159f;
+        gradients[i] = glm::vec2(cos(angle), sin(angle));
+    }
+
+    for(int y = 0; y < size.y; y++)
+    {
+        for(int x = 0; x < size.x; x++)
+        {
+            float total = 0.0f;
+            float amplitude = 1.0f;
+            float frequency = 1.0f;
+            float maxAmplitude = 0.0f;
+
+            for(int i = 0; i < octaves; i++)
+            {
+                glm::vec2 p = (glm::vec2(x, y) / size) * glm::vec2(baseGrid) * frequency;
+
+                total += SamplePerlin(p, gradients, gradTableSize) * amplitude;
+
+                maxAmplitude += amplitude;
+                amplitude *= persistence;
+                frequency *= lacunarity;
+            }
+
+            float n = total / (0.707f * maxAmplitude);
+            float res = (n + 1.0f) * 0.5f;
+            uint8 value = (uint8)(glm::clamp(res, 0.0f, 1.0f) * 255.0f);
+
+            int id = (x + (int)size.x * y) * numOfChannels;
+            noise[id + 0] = value;
+            noise[id + 1] = value;
+            noise[id + 2] = value;
+            noise[id + 3] = 255;
+        }
+    }
+
+    free(gradients);
+    return noise;
+}

@@ -110,8 +110,8 @@ Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale, flo
     {
         for(int j = 0; j < numOfVerticesZ; ++j)
         {
-            indices.push_back(j + numOfVerticesZ * i);
             indices.push_back(j + numOfVerticesZ * (i + 1));
+            indices.push_back(j + numOfVerticesZ * i);
         }
 
         indices.push_back(restartIndex);

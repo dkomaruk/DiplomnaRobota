@@ -100,7 +100,17 @@ void main()
     sampledTextures.diffuse = texture(u_material.diffuse, TexCoords);
     sampledTextures.specular = texture(u_material.specular, TexCoords);
 
+    if(sampledTextures.diffuse.a < 0.1)
+    {
+        discard;
+    }
+
     vec3 normal = Normal;
+    if(!gl_FrontFacing)
+    {
+        normal = -normal;
+    }
+
     vec3 viewDir = normalize(u_viewPos - FragPos);
 
     vec3 finalColor = vec3(0.0);

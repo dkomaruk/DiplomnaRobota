@@ -6,6 +6,7 @@
 
 uint8 *GenerateValueNoise(glm::vec2 size);
 uint8* GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize = glm::ivec2(32), int octaves = 4, float persistence = 0.5f, float lacunarity = 2.0f);
+uint8 *GeneratePerlinNoise(glm::vec2 size, uint8 temp);
 
 #define NOISE_H
 #endif
