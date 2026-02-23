@@ -49,6 +49,7 @@ void UpdateEditorUI(Game *game)
     ImGui::End();
 
     ImGui::Begin("Perlin Noise", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
+
     ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
 
     static glm::ivec2 gridSize = glm::ivec2(32);
@@ -75,15 +76,42 @@ void UpdateEditorUI(Game *game)
     if(ImGui::Button("Generate"))
     {
         glDeleteTextures(1, &game->perlinNoise.id);
-        uint8 *perlinNoise = GeneratePerlinNoise(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
-        game->perlinNoise = CreateGLTexture(perlinNoise, size.x, size.y);
+
+        float *perlinNoise = GeneratePerlinNoise(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
+
+        uint8 *perlinNoiseImage = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
+        for(int y = 0; y < size.y; y++)
+        {
+            for(int x = 0; x < size.x; x++)
+            {
+                uint8 value = (uint8)(glm::clamp(perlinNoise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
+
+                int id = (x + (int)size.x * y) * 4;
+                perlinNoiseImage[id + 0] = value;
+                perlinNoiseImage[id + 1] = value;
+                perlinNoiseImage[id + 2] = value;
+                perlinNoiseImage[id + 3] = 255;
+            }
+        }
+        game->perlinNoise = CreateGLTexture(perlinNoiseImage, size.x, size.y);
+        free(perlinNoiseImage);
 
         DeleteMesh(&game->terrain.mesh);
         free(game->terrain.heightmap);
 
-        float yScale = maxHeight / 255.0f;
-        float *heightmap = GetHeightmapData(perlinNoise, 4, size, size, yScale, maxHeight + 2.0f);
-        Terrain terrain = CreateTerrain(heightmap, size, yScale, 1.0f, mapScale, 4, 0.0f);
+        float *heightmap = (float *)calloc((int)(size.x * size.y), sizeof(float));
+        for(int i = 0; i < size.y; ++i)
+        {
+            for(int j = 0; j < size.x; ++j)
+            {
+                int sampleIndex = j + i * (int)size.x;
+                int destIndex = j + i * (int)size.x;
+
+                heightmap[destIndex] = perlinNoise[sampleIndex] * maxHeight - (maxHeight + 2.0f);
+            }
+        }
+
+        Terrain terrain = CreateTerrain(heightmap, size, maxHeight, 1.0f, mapScale, 1, 0.0f);
 
         terrain.splatMap = game->terrain.splatMap;
         terrain.texture0 = game->terrain.texture0;
@@ -120,6 +148,8 @@ void UpdateEditorUI(Game *game)
     {
         ShaderSetInt(game->postProcessShader, "u_showParticles", game->renderParticles);
     }
+
+    ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
 
     ImGui::End();
 

@@ -86,31 +86,31 @@ Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale, flo
 
     glm::vec2 center = t.worldSize / 2.0f;
 
-    for(int i = 0; i < t.mapSize.y; i += meshStep)
+    for(int y = 0; y < t.mapSize.y; y += meshStep)
     {
         numOfVerticesX++;
         numOfVerticesZ = 0;
 
-        float posX = ((float)i * t.mapScale) - center.x;
+        float posX = ((float)y * t.mapScale) - center.x;
 
-        for(int j = 0; j < t.mapSize.x; j += meshStep)
+        for(int x = 0; x < t.mapSize.x; x += meshStep)
         {
             TerrainVertex vertex = {};
-            vertex.position = glm::vec3(posX, t.heightmap[(int)(j + t.mapSize.x * i)], (j * t.mapScale) - center.y);
-            vertex.uv = glm::vec2(j, i) / (t.mapSize - 1.0f);
+            vertex.position = glm::vec3(posX, t.heightmap[(int)(x + t.mapSize.x * y)], (x * t.mapScale) - center.y);
+            vertex.uv = glm::vec2(x, y) / (t.mapSize - 1.0f);
 
-            int left  = std::max(0, j - meshStep);
-            int right = std::min((int)t.mapSize.x - 1, j + meshStep);
-            int top = std::max(0, i - meshStep);
-            int bot = std::min((int)t.mapSize.y - 1, i + meshStep);
+            int left  = std::max(0, x - meshStep);
+            int right = std::min((int)t.mapSize.x - 1, x + meshStep);
+            int top = std::max(0, y - meshStep);
+            int bottom = std::min((int)t.mapSize.y - 1, y + meshStep);
 
-            float hL = t.heightmap[(int)(left + t.mapSize.x * i)];
-            float hR = t.heightmap[(int)(right + t.mapSize.x * i)];
-            float hT = t.heightmap[(int)(j + t.mapSize.x * top)];
-            float hB = t.heightmap[(int)(j + t.mapSize.x * bot)];
+            float hL = t.heightmap[(int)(left + t.mapSize.x * y)];
+            float hR = t.heightmap[(int)(right + t.mapSize.x * y)];
+            float hT = t.heightmap[(int)(x + t.mapSize.x * top)];
+            float hB = t.heightmap[(int)(x + t.mapSize.x * bottom)];
 
             glm::vec3 tangentX = glm::vec3((right - left) * t.mapScale, hR - hL, 0.0f);
-            glm::vec3 tangentZ = glm::vec3(0.0f, hB - hT, (bot - top) * t.mapScale);
+            glm::vec3 tangentZ = glm::vec3(0.0f, hB - hT, (bottom - top) * t.mapScale);
 
             vertex.normal = glm::normalize(glm::cross(tangentZ, tangentX));
 

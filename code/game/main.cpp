@@ -93,13 +93,29 @@ int main(int argc, char *argv[])
     game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
     free(valueNoise);
 
-    uint8 *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
-    game->perlinNoise = CreateGLTexture(perlinNoise, (int)size.x, (int)size.y);
+    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
+
+    uint8 *perlinNoiseImage = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
+    for(int y = 0; y < size.y; y++)
+    {
+        for(int x = 0; x < size.x; x++)
+        {
+            uint8 value = (uint8)(glm::clamp(perlinNoise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
+
+            int id = (x + (int)size.x * y) * 4;
+            perlinNoiseImage[id + 0] = value;
+            perlinNoiseImage[id + 1] = value;
+            perlinNoiseImage[id + 2] = value;
+            perlinNoiseImage[id + 3] = 255;
+        }
+    }
+
+    game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
 
     uint8 *perlinNoise2 = GeneratePerlinNoise(glm::vec2(256.0f), (uint8)5);
     game->perlinNoise2 = CreateGLTexture(perlinNoise2, (int)size.x, (int)size.y);
 
-    free(perlinNoise);
+    free(perlinNoiseImage);
     free(perlinNoise2);
 
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
