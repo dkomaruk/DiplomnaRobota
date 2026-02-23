@@ -99,6 +99,21 @@ Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale, flo
             vertex.position = glm::vec3(posX, t.heightmap[(int)(j + t.mapSize.x * i)], (j * t.mapScale) - center.y);
             vertex.uv = glm::vec2(j, i) / (t.mapSize - 1.0f);
 
+            int left  = std::max(0, j - meshStep);
+            int right = std::min((int)t.mapSize.x - 1, j + meshStep);
+            int top = std::max(0, i - meshStep);
+            int bot = std::min((int)t.mapSize.y - 1, i + meshStep);
+
+            float hL = t.heightmap[(int)(left + t.mapSize.x * i)];
+            float hR = t.heightmap[(int)(right + t.mapSize.x * i)];
+            float hT = t.heightmap[(int)(j + t.mapSize.x * top)];
+            float hB = t.heightmap[(int)(j + t.mapSize.x * bot)];
+
+            glm::vec3 tangentX = glm::vec3((right - left) * t.mapScale, hR - hL, 0.0f);
+            glm::vec3 tangentZ = glm::vec3(0.0f, hB - hT, (bot - top) * t.mapScale);
+
+            vertex.normal = glm::normalize(glm::cross(tangentZ, tangentX));
+
             vertices.push_back(vertex);
             numOfVerticesZ++;
         }

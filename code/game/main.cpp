@@ -115,14 +115,18 @@ int main(int argc, char *argv[])
                                         LoadShader("../data/shaders/environment.frag"));
 #endif
 
-    Model *tree = ImportModel("../data/extra/tree/tree2_0.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree, "tree", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
+    Model *tree = ImportModel("../data/extra/tree/t2.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree, "spherical", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
 
-    Model *tree1 = ImportModel("../data/extra/tree/tree2_1.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree1, "tree1", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
+    Model *tree1 = ImportModel("../data/extra/tree/t0.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree1, "original", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
 
-    Model *tree2 = ImportModel("../data/extra/tree/tree2_2.obj", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree2, "tree2", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(3.0f));
+    Model *tree2 = ImportModel("../data/extra/tree/t3.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree2, "spherical smoothed", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
+
+    //TODO: Terrain tesselation, terrain normal calculation, terrain lighting
+    //TODO: Vegetation on terrain (trees, grass)
+    //TODO: Shadows (shadow mapping)
 
     //MAIN GAME LOOP START
     game->lastFrame = SDL_GetPerformanceCounter();

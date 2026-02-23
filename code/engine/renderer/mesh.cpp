@@ -27,9 +27,10 @@ AttribInfo textVertexAttribs[2] = {
     {1, 2, GL_FLOAT, sizeof(VertexText), (void *)offsetof(VertexText, uv)}
 };
 
-AttribInfo terrainVertexAttribs[2] = {
-    {0, 3, GL_FLOAT, sizeof(float) * 5, (void *)0},
-    {1, 2, GL_FLOAT, sizeof(float) * 5, (void *)(sizeof(float) *3)}
+AttribInfo terrainVertexAttribs[3] = {
+    {0, 3, GL_FLOAT, sizeof(TerrainVertex), (void *)0},
+    {1, 2, GL_FLOAT, sizeof(TerrainVertex), (void *)(sizeof(float) *3)},
+    {2, 3, GL_FLOAT, sizeof(TerrainVertex), (void *)(sizeof(float) *5)}
 };
 
 Mesh CreateVBO(void *verticesData, int verticesCount, int vertexSize, AttribInfo *attribs, int numOfAttribs, GLenum usage)

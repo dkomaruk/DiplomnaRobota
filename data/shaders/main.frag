@@ -106,10 +106,10 @@ void main()
     }
 
     vec3 normal = Normal;
-    if(!gl_FrontFacing)
-    {
-        normal = -normal;
-    }
+    //if(!gl_FrontFacing)
+    //{
+        //normal = -normal;
+    //}
 
     vec3 viewDir = normalize(u_viewPos - FragPos);
 

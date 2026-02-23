@@ -144,15 +144,15 @@ float SamplePerlin(glm::vec2 pos, glm::vec2* gradients, glm::ivec2 gridSize)
     return glm::mix(glm::mix(dot00, dot10, s.x), glm::mix(dot01, dot11, s.x), s.y);
 }
 
-uint8* GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, float persistence, float lacunarity)
+uint8 *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, float persistence, float lacunarity)
 {
     int numOfChannels = 4;
-    uint8* noise = (uint8*)calloc((int)(size.x * size.y) * numOfChannels, sizeof(uint8));
+    uint8 *noise = (uint8*)calloc((int)(size.x * size.y) * numOfChannels, sizeof(uint8));
 
     glm::ivec2 baseGrid = glm::ivec2(gridSize.x, gridSize.y);
 
     glm::ivec2 gradTableSize = glm::ivec2(256);
-    glm::vec2* gradients = (glm::vec2*)malloc(gradTableSize.x * gradTableSize.y * sizeof(glm::vec2));
+    glm::vec2* gradients = (glm::vec2 *)calloc(gradTableSize.x * gradTableSize.y, sizeof(glm::vec2));
     for(int i = 0; i < gradTableSize.x * gradTableSize.y; i++)
     {
         float angle = ((float)rand() / RAND_MAX) * 2.0f * 3.14159f;

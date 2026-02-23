@@ -385,6 +385,7 @@ void LoadAssets(Game *game)
     game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, game->dirLight);
     ShaderSetDirLight(game->animationShader, game->dirLight);
+    ShaderSetDirLight(game->terrainShader, game->dirLight);
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
 
