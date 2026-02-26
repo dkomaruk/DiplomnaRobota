@@ -265,9 +265,9 @@ void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOf
     }
 }
 
-void UpdateParticleEditorUI(Game *game, ImGuiWindowFlags flags)
+void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Particle System Editor", 0, flags);
+    ImGui::Begin("Particle System Editor", windowState, flags);
 
     ParticleSystemSettings *smoke = &game->smokeSettings;
 

@@ -354,6 +354,14 @@ void UpdateGame(Game *game)
         SelectMultipleObjects(game);
     }
 
+    if(IsFirstPress(input, SDL_SCANCODE_1)) game->particleEditorWindow = !game->particleEditorWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_2)) game->terrainGeneratorWindow = !game->terrainGeneratorWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_3)) game->selectedEntityWindow = !game->selectedEntityWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_4)) game->debugSettingsWindow = !game->debugSettingsWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_5)) game->lightingSettingsWindow = !game->lightingSettingsWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_6)) game->importModelWindow = !game->importModelWindow;
+    if(IsFirstPress(input, SDL_SCANCODE_7)) game->valueNoiseWindow = !game->valueNoiseWindow;
+
     //Delete selected entities
     if(IsFirstPress(input, SDL_SCANCODE_DELETE))
     {

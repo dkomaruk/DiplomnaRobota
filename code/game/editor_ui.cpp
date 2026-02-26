@@ -11,9 +11,9 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_gradient/imgui_gradient.hpp>
 
-void UpdateTerrainEditorUI(Game *game, ImGuiWindowFlags flags)
+void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Terrain Generator", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin("Terrain Generator", windowState, flags | ImGuiWindowFlags_HorizontalScrollbar);
 
     ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
 
@@ -98,143 +98,169 @@ void UpdateEditorUI(Game *game)
 
     if(ImGui::BeginMainMenuBar())
     {
-        if(ImGui::BeginMenu("Example1"))
+        if(ImGui::BeginMenu("File")) {}
+        if(ImGui::BeginMenu("Edit")) {}
+        if(ImGui::BeginMenu("Windows"))
         {
-            if(ImGui::MenuItem("Example1 Option 1")) {}
-            if(ImGui::MenuItem("Example1 Option 2", "Shortcut example")) {SDL_Log("Option2 selected");}
+            if(ImGui::MenuItem("Particle Editor", "1")) game->particleEditorWindow = true;
+            if(ImGui::MenuItem("Terrain Generator", "2")) game->terrainGeneratorWindow = true;
+            if(ImGui::MenuItem("Selected Entity", "3")) game->selectedEntityWindow = true;
+            if(ImGui::MenuItem("Debug Settings", "4")) game->debugSettingsWindow = true;
+            if(ImGui::MenuItem("Lighting Settings", "5")) game->lightingSettingsWindow = true;
+            if(ImGui::MenuItem("Import Model", "6")) game->importModelWindow = true;
+            if(ImGui::MenuItem("Value Noise", "7")) game->valueNoiseWindow = true;
             ImGui::EndMenu();
         }
-        if(ImGui::BeginMenu("Example2"))
-        {
-            if(ImGui::MenuItem("Example2 Option2")) {}
-            ImGui::EndMenu();
-        }
+        if(ImGui::BeginMenu("Help")) {}
+
+
         ImGui::EndMainMenuBar();
     }
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize |
                              (game->input.isCursorHidden ? ImGuiWindowFlags_NoInputs : 0);
 
-    ImGui::Begin("Value Noise", 0, flags | ImGuiWindowFlags_HorizontalScrollbar);
-    ImGui::Image(game->valueNoise.id, ImVec2((float)game->valueNoise.x, (float)game->valueNoise.y));
-    if(ImGui::Button("Generate"))
+    if(game->valueNoiseWindow)
     {
-        glDeleteTextures(1, &game->valueNoise.id);
-        glm::vec2 size = glm::vec2(256.0f, 256.0f);
-        uint8 *valueNoise = GenerateValueNoise(size);
-        game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
-        free(valueNoise);
-    }
-    ImGui::End();
-
-    UpdateTerrainEditorUI(game, flags);
-
-    ImGui::Begin("Debug Settings", 0, flags);
-
-    ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
-    ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
-    ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
-    ImGui::Checkbox("Display Terrain", &game->renderTerrain);
-
-    if(ImGui::Checkbox("Display Particles", &game->renderParticles))
-    {
-        ShaderSetInt(game->postProcessShader, "u_showParticles", game->renderParticles);
+        ImGui::Begin("Value Noise", &game->valueNoiseWindow, flags | ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::Image(game->valueNoise.id, ImVec2((float)game->valueNoise.x, (float)game->valueNoise.y));
+        if(ImGui::Button("Generate"))
+        {
+            glDeleteTextures(1, &game->valueNoise.id);
+            glm::vec2 size = glm::vec2(256.0f, 256.0f);
+            uint8 *valueNoise = GenerateValueNoise(size);
+            game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
+            free(valueNoise);
+        }
+        ImGui::End();
     }
 
-    ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
-    ImGui::InputFloat("Camera Sensitivity", &game->camera.sensitivity, 0.05f);
+    if(game->terrainGeneratorWindow)
+    {
+        UpdateTerrainEditorUI(game, &game->terrainGeneratorWindow, flags);
+    }
 
-    ImGui::End();
+    if(game->debugSettingsWindow)
+    {
+        ImGui::Begin("Debug Settings", &game->debugSettingsWindow, flags);
+
+        ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
+        ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
+        ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
+        ImGui::Checkbox("Display Terrain", &game->renderTerrain);
+
+        if(ImGui::Checkbox("Display Particles", &game->renderParticles))
+        {
+            ShaderSetInt(game->postProcessShader, "u_showParticles", game->renderParticles);
+        }
+
+        ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
+        ImGui::InputFloat("Camera Sensitivity", &game->camera.sensitivity, 0.05f);
+
+        ImGui::End();
+    }
 
     //ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 420.0f, 0.0f), ImGuiCond_Always);
     //ImGui::SetNextWindowSize(ImVec2(420.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
-    UpdateParticleEditorUI(game, flags);
-
-    ImGui::Begin("Lighting settings", 0, flags);
-
-    int lightingChanged = 0;
-    lightingChanged += ImGui::DragFloat3("Ambient", &game->dirLight.ambient[0], 0.05f);
-    lightingChanged += ImGui::DragFloat3("Diffuse", &game->dirLight.diffuse[0], 0.05f);
-    lightingChanged += ImGui::DragFloat3("Specular", &game->dirLight.specular[0], 0.05f);
-    lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.05f);
-
-    if(lightingChanged)
+    if(game->particleEditorWindow)
     {
-        ShaderSetDirLight(game->mainShader, game->dirLight);
-        ShaderSetDirLight(game->animationShader, game->dirLight);
-        ShaderSetDirLight(game->terrainShader, game->dirLight);
+        UpdateParticleEditorUI(game, &game->particleEditorWindow, flags);
     }
 
-    ImGui::End();
-
-    ImGui::SetNextWindowSizeConstraints(ImVec2(200, 20), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("Selected Entity", 0, flags);
-    if(game->lastSelectedId > 0)
+    if(game->lightingSettingsWindow)
     {
-        int id = game->lastSelectedId;
-        auto it = std::find_if(game->sceneEntities.begin(), game->sceneEntities.end(), [id](Entity *entity) {
-            return entity->id == id;
-        });
+        ImGui::Begin("Lighting settings", &game->lightingSettingsWindow, flags);
 
-        if(it != game->sceneEntities.end())
+        int lightingChanged = 0;
+        lightingChanged += ImGui::DragFloat3("Ambient", &game->dirLight.ambient[0], 0.05f);
+        lightingChanged += ImGui::DragFloat3("Diffuse", &game->dirLight.diffuse[0], 0.05f);
+        lightingChanged += ImGui::DragFloat3("Specular", &game->dirLight.specular[0], 0.05f);
+        lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.05f);
+
+        if(lightingChanged)
         {
-            Entity *selectedEntity = *it;
-            ImGui::LabelText("Text ID", "%s", selectedEntity->textId);
+            ShaderSetDirLight(game->mainShader, game->dirLight);
+            ShaderSetDirLight(game->animationShader, game->dirLight);
+            ShaderSetDirLight(game->terrainShader, game->dirLight);
+        }
 
-            if(ImGui::CollapsingHeader("Transform"))
+        ImGui::End();
+    }
+
+    if(game->selectedEntityWindow)
+    {
+        ImGui::SetNextWindowSizeConstraints(ImVec2(200, 20), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Selected Entity", &game->selectedEntityWindow, flags);
+        if(game->lastSelectedId > 0)
+        {
+            int id = game->lastSelectedId;
+            auto it = std::find_if(game->sceneEntities.begin(), game->sceneEntities.end(), [id](Entity *entity) {
+                return entity->id == id;
+            });
+
+            if(it != game->sceneEntities.end())
             {
-                ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
-                if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
+                Entity *selectedEntity = *it;
+                ImGui::LabelText("Text ID", "%s", selectedEntity->textId);
+
+                if(ImGui::CollapsingHeader("Transform"))
                 {
-                    glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
-                    selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
-                    UpdateAABBCorners(&selectedEntity->aabb);
-                    UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
+                    ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
+                    if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
+                    {
+                        glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
+                        selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
+                        UpdateAABBCorners(&selectedEntity->aabb);
+                        UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
+                    }
+                    ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
                 }
-                ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
-            }
 
-            if(ImGui::CollapsingHeader("Material"))
-            {
-                ImGui::LabelText("Shader ID", "%d", selectedEntity->model->material->shader);
-                ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->model->material->diffuseTexture.id);
-                ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->model->material->specularTexture.id);
+                if(ImGui::CollapsingHeader("Material"))
+                {
+                    ImGui::LabelText("Shader ID", "%d", selectedEntity->model->material->shader);
+                    ImGui::LabelText("Diffuse Texture ID", "%d", selectedEntity->model->material->diffuseTexture.id);
+                    ImGui::LabelText("Specular Texture ID", "%d", selectedEntity->model->material->specularTexture.id);
+                }
             }
         }
+
+        ImGui::End();
     }
 
-    ImGui::End();
-
-    ImGui::Begin("Import Model", 0, flags);
-
-    static float importScale = 1.0f;
-    ImGui::InputFloat("Import Scale", &importScale);
-
-    if(ImGui::Button("Import"))
+    if(game->importModelWindow)
     {
-        FileFilter filters[] = {{"FBX Files", "*.fbx"}, {"GLB Files", "*.glb"}, {"OBJ Files", "*.obj"}};
-        std::string path = OpenFileDialog(filters, ArrayCount(filters));
-        if(!path.empty())
+        ImGui::Begin("Import Model", &game->importModelWindow, flags);
+
+        static float importScale = 1.0f;
+        ImGui::InputFloat("Import Scale", &importScale);
+
+        if(ImGui::Button("Import"))
         {
-            Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
-                                        ModelType_DetermineOnLoad, importScale);
+            FileFilter filters[] = {{"FBX Files", "*.fbx"}, {"GLB Files", "*.glb"}, {"OBJ Files", "*.obj"}};
+            std::string path = OpenFileDialog(filters, ArrayCount(filters));
+            if(!path.empty())
+            {
+                Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
+                                            ModelType_DetermineOnLoad, importScale);
 
-            if(model->type == ModelType_Static)
-                model->material->shader = game->mainShader;
-            else if(model->type == ModelType_Animated)
-                model->material->shader = game->animationShader;
-            else
-                InvalidCodepath
+                if(model->type == ModelType_Static)
+                    model->material->shader = game->mainShader;
+                else if(model->type == ModelType_Animated)
+                    model->material->shader = game->animationShader;
+                else
+                    InvalidCodepath
 
-            Entity *entity = (Entity *)calloc(1, sizeof(Entity));
-            *entity = CreateEntity(model);
+                Entity *entity = (Entity *)calloc(1, sizeof(Entity));
+                *entity = CreateEntity(model);
 
-            entity->id = game->sceneEntities.back()->id + 1;
-            game->sceneEntities.push_back(entity);
+                entity->id = game->sceneEntities.back()->id + 1;
+                game->sceneEntities.push_back(entity);
 
-            game->lastFrame = SDL_GetPerformanceCounter();
+                game->lastFrame = SDL_GetPerformanceCounter();
+            }
         }
-    }
 
-    ImGui::End();
+        ImGui::End();
+    }
 }

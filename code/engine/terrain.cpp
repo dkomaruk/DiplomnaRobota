@@ -232,7 +232,7 @@ void RenderTerrain(Game *game)
     SetTexture(game->terrain.texture3.id, 4);
     ShaderSetInt(game->terrainShader, "u_texture3", 4);
 
-    SetTexture(game->perlinNoise2.id, 5);
+    SetTexture(game->perlinNoise.id, 5);
     ShaderSetInt(game->terrainShader, "u_noiseMap", 5);
 
     glBindVertexArray(game->terrain.mesh.vao);

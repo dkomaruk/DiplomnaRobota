@@ -107,6 +107,15 @@ struct Game
     bool renderPickingRay = true;
     GLenum polygonMode = GL_FILL;
 
+    //Editor windows
+    bool particleEditorWindow;
+    bool terrainGeneratorWindow;
+    bool selectedEntityWindow;
+    bool debugSettingsWindow;
+    bool lightingSettingsWindow;
+    bool importModelWindow;
+    bool valueNoiseWindow;
+
     //Noise
     Texture valueNoise;
     Texture perlinNoise;
