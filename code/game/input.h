@@ -6,6 +6,8 @@
 
 #include <glm/vec2.hpp>
 
+#include <string>
+
 #define MOUSE_BUTTONS_COUNT 5
 #define MOUSE_LEFT 0
 #define MOUSE_MIDDLE 1
@@ -15,8 +17,6 @@
 
 #define KEY_UP 0
 #define KEY_DOWN 1
-
-struct Game;
 
 struct Input
 {
@@ -38,10 +38,10 @@ struct Input
 
 void ProcessInput(Input *input);
 
-bool IsFirstPress(Game *game, SDL_Scancode key);
+bool IsFirstPress(Input *input, SDL_Scancode key);
 
-bool IsFirstClick(Game *game, uint32 button);
-bool IsMouseJustReleased(Game *game, uint32 button);
+bool IsFirstClick(Input *input, uint32 button);
+bool IsMouseJustReleased(Input *input, uint32 button);
 char *GetMouseButtonName(int button);
 
 #define INPUT_H

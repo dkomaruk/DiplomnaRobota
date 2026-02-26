@@ -214,6 +214,9 @@ glm::vec3 GetRayTerrainIntersection(Terrain *terrain, Ray *pickingRay, float max
 
 void RenderTerrain(Game *game)
 {
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
     glUseProgram(game->terrainShader);
     ShaderSetMatrix4(game->terrainShader, "u_view", game->view);
 
@@ -234,4 +237,6 @@ void RenderTerrain(Game *game)
 
     glBindVertexArray(game->terrain.mesh.vao);
     glDrawElements(GL_TRIANGLE_STRIP, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);
+
+    glDisable(GL_CULL_FACE);
 }

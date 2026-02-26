@@ -54,7 +54,7 @@ namespace glm
     }
 }
 
-void SaveParticleSettings(const ParticleSystemSettings& settings, const std::string& filepath) {
+void SaveParticleSettings(ParticleSystemSettings &settings, std::string &filepath) {
     json j;
     j["maxNumOfParticles"] = settings.maxNumOfParticles;
     j["prewarm"] = settings.prewarm;
@@ -109,7 +109,7 @@ void SaveParticleSettings(const ParticleSystemSettings& settings, const std::str
     j["velocityOverLifetime"] = settings.velocityOverLifetime;
     j["colorOverLifetime"] = settings.colorOverLifetime;
 
-    const ImGG::Gradient &gradient = settings.gradientWgt.gradient();
+    ImGG::Gradient &gradient = settings.gradientWgt.gradient();
 
     std::list<ImGG::Mark> marks = gradient.get_marks();
     for(ImGG::Mark mark : marks)
@@ -130,7 +130,7 @@ void ResampleGradient(ImGG::Gradient *gradient, ImVec4 *samples, int numOfSample
     }
 }
 
-void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &filepath, Atlas *atlas)
+void LoadParticleSettings(ParticleSystemSettings &settings, std::string &filepath, Atlas *atlas)
 {
     std::ifstream file(filepath);
     if (!file.is_open()) return;
@@ -202,7 +202,7 @@ void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &f
 
     if(j.contains("velocityControlPoints") && j["velocityControlPoints"].is_array())
     {
-        const auto &pointsJson = j["velocityControlPoints"];
+        auto &pointsJson = j["velocityControlPoints"];
 
         size_t count = Min((int)pointsJson.size(), PARTICLES_MAX_CONTROL_POINTS);
         for(size_t i = 0; i < count; ++i)
@@ -215,12 +215,12 @@ void LoadParticleSettings(ParticleSystemSettings& settings, const std::string &f
     settings.velocityOverLifetime = j.value("velocityOverLifetime", ds->velocityOverLifetime);
     settings.colorOverLifetime = j.value("colorOverLifetime", ds->colorOverLifetime);
 
-    const ImGG::Gradient &gradient = settings.gradientWgt.gradient();
+    ImGG::Gradient &gradient = settings.gradientWgt.gradient();
 
     std::list<ImGG::Mark> marks;
     if(j.contains("colorControlPoints") && j["colorControlPoints"].is_array())
     {
-        const auto &pointsJson = j["colorControlPoints"];
+        auto &pointsJson = j["colorControlPoints"];
         for(size_t i = 0; i < pointsJson.size(); ++i)
         {
             ImGG::Mark mark;

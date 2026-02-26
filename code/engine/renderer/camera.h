@@ -3,6 +3,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+struct Game;
+
 struct Camera
 {
     glm::vec3 position;
@@ -19,6 +21,8 @@ struct Camera
     float speed;
     float sensitivity;
 };
+
+void UpdateCamera(Game *game);
 
 #define CAMERA_H
 #endif

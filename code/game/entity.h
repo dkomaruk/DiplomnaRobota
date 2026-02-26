@@ -10,7 +10,6 @@ struct Game;
 enum EntityType
 {
     EntityType_Static = 1,
-    EntityType_Infantry
 };
 
 struct Entity;

@@ -1,9 +1,9 @@
 #include "game.h"
 
 #include "text.h"
-#include "infantry.h"
 #include "frustum.h"
 #include "shader.h"
+#include "camera.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -155,61 +155,134 @@ void RenderScene(Game *game)
     }
 }
 
+void RenderGame(Game *game)
+{
+    glEnable(GL_DEPTH_TEST);
+
+    glBindBuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
+    glViewport(0, 0, game->shadowMapFbo.depth.x, game->shadowMapFbo.depth.y);
+    RenderScene(game);
+
+    game->outlinePass = true;
+    glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+    glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
+    RenderScene(game);
+    game->outlinePass = false;
+
+    glPolygonMode(GL_FRONT_AND_BACK, game->polygonMode);
+
+    glDepthMask(GL_TRUE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
+    ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
+    RenderScene(game);
+
+#ifdef DEBUG
+    if(game->renderPickingRay)
+    {
+        RenderLine(&game->pickingRay);
+    }
+    if(game->renderSelectionFrustum)
+    {
+        for(int i = 0; i < ArrayCount(game->frustumLines); i++)
+        {
+            RenderLine(&game->frustumLines[i]);
+        }
+        for(int i = 0; i < ArrayCount(game->frustumNormals); i++)
+        {
+            RenderLine(&game->frustumNormals[i]);
+        }
+    }
+#endif
+
+#ifdef LOAD_ASSETS
+    if(game->renderTerrain)
+    {
+        RenderTerrain(game);
+    }
+
+    //Skymap
+    if(game->polygonMode == GL_FILL)
+    {
+        UseShader(game->skymapShader);
+        glDepthFunc(GL_LEQUAL);
+
+        ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
+
+        SetTexture(game->skymapTexture.id, 0);
+        ShaderSetInt(game->skymapShader, "u_skyMap", 0);
+        glBindVertexArray(game->fullscreenQuad.vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glDepthFunc(GL_LESS);
+    }
+
+    if(game->renderParticles)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, game->smokeFbo.id);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glViewport(0, 0, game->smokeFbo.color.x, game->smokeFbo.color.y);
+        SetTexture(&game->fullSceneDepthTexture, 2);
+        ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
+        ShaderSetVec2(game->particleShader, "u_screenSize", game->smokeFbo.color.size);
+        RenderParticles(game);
+        glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    }
+#endif
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    //Final pass, post-processing and combination of previously rendered framebuffers
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    SetTexture(&game->outlineFbo.color, 0);
+    ShaderSetInt(game->postProcessShader, "u_outline", 0);
+    SetTexture(&game->fullSceneTexture, 1);
+    ShaderSetInt(game->postProcessShader, "u_scene", 1);
+    SetTexture(&game->smokeFbo.color, 2);
+    ShaderSetInt(game->postProcessShader, "u_smoke", 2);
+    SetTexture(&game->fullSceneDepthTexture, 3);
+    ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
+    SetTexture(&game->smokeFbo.depth, 4);
+    ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
+
+    ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->smokeFbo.color.size);
+
+    glBindVertexArray(game->fullscreenQuad.vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    //UI
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
+        !game->input.isMouseCapturedByImgui)
+    {
+        RenderSelectionBox(game, &game->selectionBox);
+    }
+
+    RenderText(&game->aliveParticlesText);
+    RenderText(&game->deadParticlesText);
+    RenderText(&game->fpsCounter);
+    RenderText(&game->msPerFrame);
+
+    glDisable(GL_BLEND);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    SDL_GL_SwapWindow(game->window);
+}
+
 Game *GetGame()
 {
     static Game game;
     return &game;
-}
-
-void UpdateCamera(Game *game)
-{
-    Input *input = &game->input;
-    Camera *camera = &game->camera;
-
-    glm::vec3 dir = camera->direction;
-    //dir.y = 0.0f;
-    dir = normalize(dir);
-
-    float cameraSpeed = camera->speed * game->deltaTime;
-    if(input->keys[SDL_SCANCODE_LSHIFT])
-    {
-        cameraSpeed *= 5.0f;
-    }
-
-    //Camera orientation
-    if(input->isCursorHidden)
-    {
-        camera->yaw += input->mouseDelta.x * camera->sensitivity;
-        camera->pitch -= input->mouseDelta.y * camera->sensitivity;
-        camera->pitch = SDL_clamp(camera->pitch, camera->maxPitch.x, camera->maxPitch.y);
-
-        camera->direction.x = cos(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
-        camera->direction.y = sin(glm::radians(camera->pitch));
-        camera->direction.z = sin(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
-        camera->direction = normalize(camera->direction);
-    }
-
-#if 0
-    //Camera zoom
-    camera->fov -= input->mouseWheelDelta.y;
-    camera->fov = SDL_clamp(camera->fov, 1.0f, 45.0f);
-
-    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
-#endif
-
-    //Camera movement
-    if(input->keys[SDL_SCANCODE_W])
-        camera->position += cameraSpeed * dir;
-    if(input->keys[SDL_SCANCODE_S])
-        camera->position -= cameraSpeed * dir;
-    if(input->keys[SDL_SCANCODE_A])
-        camera->position -= normalize(cross(dir, camera->up)) * cameraSpeed;
-    if(input->keys[SDL_SCANCODE_D])
-        camera->position += normalize(cross(dir, camera->up)) * cameraSpeed;
-
-    //camera->position.y = 1.0f;
-
-    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void UpdateGame(Game *game)
@@ -230,7 +303,7 @@ void UpdateGame(Game *game)
     game->projViewInverse = glm::inverse(game->perspectiveProjection * glm::mat4(glm::mat3(game->view)));
 
     static bool isPaused = false;
-    if(IsFirstPress(game, SDL_SCANCODE_L))
+    if(IsFirstPress(input, SDL_SCANCODE_L))
     {
         isPaused = !isPaused;
     }
@@ -240,7 +313,7 @@ void UpdateGame(Game *game)
     }
 
     //Cast picking ray, perform selection, calculate intersection with the terrain
-    if(IsFirstClick(game, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
+    if(IsFirstClick(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
     {
         glm::vec2 mousePos = input->isCursorHidden ? WINDOW_CENTER : input->mousePos;
         game->selectionBox.start = mousePos;
@@ -276,13 +349,13 @@ void UpdateGame(Game *game)
         game->selectionBox.size = input->mousePos - game->selectionBox.start;
     }
 
-    if(IsMouseJustReleased(game, MOUSE_LEFT) && !input->isMouseCapturedByImgui && RECT_HAS_SIZE(game->selectionBox.size))
+    if(IsMouseJustReleased(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui && RECT_HAS_SIZE(game->selectionBox.size))
     {
         SelectMultipleObjects(game);
     }
 
     //Delete selected entities
-    if(IsFirstPress(game, SDL_SCANCODE_DELETE))
+    if(IsFirstPress(input, SDL_SCANCODE_DELETE))
     {
         game->sceneEntities.erase(
             std::remove_if(game->sceneEntities.begin(), game->sceneEntities.end(), [&](Entity *entity) {
@@ -305,29 +378,9 @@ void UpdateGame(Game *game)
     {
         Entity *entity = game->sceneEntities[i];
         UpdateEntity(game, entity);
-
-        switch(entity->type)
-        {
-            case EntityType_Infantry:
-            {
-                InfantrySquad *squad = (InfantrySquad *)entity;
-                //squad->position.x = sin(SDL_GetTicks() / 1000.0f) * ((i % 2 == 0) ? -1 : 1);
-            } break;
-
-            case EntityType_Static:
-            {
-
-            } break;
-
-            default:
-            {
-                *(int *)0 = 0; //Invalid entity type
-            } break;
-        }
-
     }
 
-    //Test game stuff
+    //Test code for the test scene
 #ifdef LOAD_ASSETS
     game->testEntity->rotation.y += 90.0f * game->deltaTime;
     glm::mat4 turretTransform = glm::mat4(1.0f);
@@ -408,78 +461,70 @@ void UpdateGame(Game *game)
         ShaderSetInt(game->postProcessShader, "u_outlineThickness", (int)game->outlineThickness);
     }
 
-    //Text demo update
-    if(!game->textDemoEnabled)
+    //Toggle wireframe mode
+    if(IsFirstPress(input, SDL_SCANCODE_SPACE))
     {
+        game->polygonMode = (game->polygonMode == GL_LINE) ? GL_FILL : GL_LINE;
+    }
+
 #if 0
-        if(IsFirstPress(game, SDL_SCANCODE_SPACE))
+    if(IsFirstPress(input, SDL_SCANCODE_SPACE))
+    {
+        int sourceState;
+        alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
+        if(sourceState == AL_PLAYING)
         {
-            int sourceState;
-            alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
-            if(sourceState == AL_PLAYING)
-            {
-                alSourcePause(game->source);
-            }
-            else
-            {
-                alSourcePlay(game->source);
-            }
+            alSourcePause(game->source);
         }
+        else
+        {
+            alSourcePlay(game->source);
+        }
+    }
 #endif
-        //Save a screenshot of outline buffer
-        if(IsFirstPress(game, SDL_SCANCODE_U))
-        {
-            int w = (int)WINDOW_WIDTH;
-            int h = (int)WINDOW_HEIGHT;
-            int bytesPerPixel = 3;
+    //Save a screenshot of outline buffer
+    if(IsFirstPress(input, SDL_SCANCODE_U))
+    {
+        int w = (int)WINDOW_WIDTH;
+        int h = (int)WINDOW_HEIGHT;
+        int bytesPerPixel = 3;
 
-            uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
-            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
-            glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-            stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
-            free(pixels);
+        uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+        glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
+        free(pixels);
+    }
+
+    //Enable cursor and interaction with the ui
+    if(IsFirstPress(input, SDL_SCANCODE_P))
+    {
+        if(input->isCursorHidden)
+        {
+            SDL_ShowCursor();
+            SDL_SetWindowRelativeMouseMode(game->window, false);
+        }
+        else
+        {
+            SDL_HideCursor();
+            SDL_SetWindowRelativeMouseMode(game->window, true);
         }
 
-        //Enable cursor and interaction with the ui
-        if(IsFirstPress(game, SDL_SCANCODE_P))
-        {
-            if(input->isCursorHidden)
-            {
-                SDL_ShowCursor();
-                SDL_SetWindowRelativeMouseMode(game->window, false);
-            }
-            else
-            {
-                SDL_HideCursor();
-                SDL_SetWindowRelativeMouseMode(game->window, true);
-            }
-
-            input->isCursorHidden = !input->isCursorHidden;
-        }
+        input->isCursorHidden = !input->isCursorHidden;
     }
 
     //Display mouse button name when it's pressed
     for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
     {
-        if(IsFirstClick(game, i))
+        if(IsFirstClick(input, i))
         {
             SDL_Log("%s", GetMouseButtonName(i));
         }
     }
 
-    if(IsFirstPress(game, SDL_SCANCODE_T))
-    {
-        game->textDemoEnabled = true;
-    }
-
-    if(game->textDemoEnabled)
-    {
-        UpdateTextDemo(game);
-    }
-
 #ifdef LOAD_ASSETS
     //Update particles
-    if(IsFirstPress(game, SDL_SCANCODE_Y))
+    if(IsFirstPress(input, SDL_SCANCODE_Y))
     {
         game->renderParticles = !game->renderParticles;
     }
@@ -495,6 +540,16 @@ void UpdateGame(Game *game)
         SortAllParticles(game);
     }
 #endif
+
+    //Update timing counters
+    float ms = game->deltaTime * 1000.0f;
+
+    char buffer[20];
+    sprintf(buffer, "%.5f ms/f", ms);
+    UpdateText(&game->msPerFrame, buffer);
+
+    sprintf(buffer, "%.5f FPS", 1000.0f / ms);
+    UpdateText(&game->fpsCounter, buffer);
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

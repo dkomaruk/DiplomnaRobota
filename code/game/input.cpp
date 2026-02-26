@@ -2,8 +2,6 @@
 
 #include "defines.h"
 
-#include "game.h"
-
 #include <GL/glew.h>
 
 #include <glm/mat4x4.hpp>
@@ -51,7 +49,7 @@ void ProcessInput(Input *input)
             case SDL_EVENT_MOUSE_MOTION:
             {
                 input->mousePos = glm::vec2(event.motion.x, event.motion.y);
-                input->mouseDelta = glm::vec2(event.motion.xrel, event.motion.yrel);
+                input->mouseDelta += glm::vec2(event.motion.xrel, event.motion.yrel);
             } break;
 
             case SDL_EVENT_MOUSE_WHEEL:
@@ -74,21 +72,21 @@ void ProcessInput(Input *input)
     input->isMouseCapturedByImgui = ImGui::GetIO().WantCaptureMouse;
 }
 
-bool IsFirstPress(Game *game, SDL_Scancode key)
+bool IsFirstPress(Input *input, SDL_Scancode key)
 {
-    return game->input.keys[key] && !game->input.prevKeys[key];
+    return input->keys[key] && !input->prevKeys[key];
 }
 
-bool IsFirstClick(Game *game, uint32 button)
+bool IsFirstClick(Input *input, uint32 button)
 {
     Assert(button < MOUSE_BUTTONS_COUNT)
-    return game->input.mouseButtons[button] && !game->input.prevMouseButtons[button];
+    return input->mouseButtons[button] && !input->prevMouseButtons[button];
 }
 
-bool IsMouseJustReleased(Game *game, uint32 button)
+bool IsMouseJustReleased(Input *input, uint32 button)
 {
     Assert(button < MOUSE_BUTTONS_COUNT)
-    return !game->input.mouseButtons[button] && game->input.prevMouseButtons[button];
+    return !input->mouseButtons[button] && input->prevMouseButtons[button];
 }
 
 char *GetMouseButtonName(int button)

@@ -116,6 +116,14 @@ void UpdateEntity(Game *game, Entity *entity)
 
     entity->modelMatPosScale = PrepareModelMatrix(entity->position, glm::vec3(0.0f), entity->scale);
     entity->modelMat = PrepareModelMatrix(entity);
+
+    //Per entity type actions
+    switch(entity->type)
+    {
+        case EntityType_Static: { } break;
+
+        CaseNotImplemented
+    }
 }
 
 glm::mat4 PrepareModelMatrix(Entity *entity)

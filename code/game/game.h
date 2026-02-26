@@ -4,7 +4,6 @@
 #include "audio.h"
 #include "input.h"
 #include "text.h"
-#include "text_demo.h"
 #include "particle_system.h"
 #include "terrain.h"
 #include "selection.h"
@@ -33,12 +32,11 @@ struct Game
 
     //Application flags
     bool isRunning = true;
-    bool lockFPS = false;
 
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
     GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, postProcessShader, uiTextShader,
-           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader;
+           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader, skymapShader;
 
     bool outlinePass;
     float outlineThickness = 1.0f;
@@ -55,6 +53,9 @@ struct Game
 
     //Lighting
     DirectionalLight dirLight;
+
+    //Environment
+    Texture skymapTexture;
 
     //Camera
     Camera camera;
@@ -94,28 +95,23 @@ struct Game
     //Selection
     SelectionBox selectionBox;
 
-    glm::vec2 selectionBoxStart = glm::vec2(0.0f);
-    glm::vec2 selectionBoxSize = glm::vec2(0.0f);
-
+    //Selection debug visualization
     Line pickingRay;
-
     Line frustumLines[4];
     Line frustumNormals[6];
 
-    //Debug
+    //Debug settings
     bool renderAABB = true;
     bool renderTerrain = true;
     bool renderSelectionFrustum = true;
     bool renderPickingRay = true;
+    GLenum polygonMode = GL_FILL;
 
     //Noise
     Texture valueNoise;
-    Texture perlinNoise, perlinNoise2;
+    Texture perlinNoise;
 
     //Game temp stuff
-    bool textDemoEnabled;
-    TextDemo textDemo;
-
     glm::vec2 target;
     glm::vec2 targetDirection;
     float targetAngle;
@@ -142,7 +138,7 @@ struct Game
 bool InitGame(Game *game);
 void UpdateGame(Game *game);
 
-void RenderScene(Game *game);
+void RenderGame(Game *game);
 
 Game *GetGame();
 

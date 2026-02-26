@@ -3,7 +3,6 @@
 #include "game.h"
 #include "texture.h"
 #include "shader.h"
-#include "infantry.h"
 #include "mesh.h"
 #include "model.h"
 #include "framebuffer.h"
@@ -263,6 +262,8 @@ void LoadAssets(Game *game)
                                                     LoadShader("../data/shaders/colorFill.frag"));
     GLuint aabbShader = CreateShaderProgram(LoadShader("../data/shaders/uiText.vert"),
                                             LoadShader("../data/shaders/colorFill.frag"));
+    GLuint skymapShader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
+                                              LoadShader("../data/shaders/environment.frag"));
 
     ShaderSetVec2(mainShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -284,6 +285,7 @@ void LoadAssets(Game *game)
     game->shaders.push_back(terrainShader);
     game->shaders.push_back(animationShader);
     game->shaders.push_back(lineShader);
+    game->shaders.push_back(skymapShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -310,6 +312,7 @@ void LoadAssets(Game *game)
     game->animationShader = animationShader;
     game->lineShader = lineShader;
     game->selectionBoxShader = selectionBoxShader;
+    game->skymapShader = skymapShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
@@ -377,6 +380,15 @@ void LoadAssets(Game *game)
 
     Model *lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
 
+    Model *tree = ImportModel("../data/extra/tree/t2.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree, "spherical", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
+
+    Model *tree1 = ImportModel("../data/extra/tree/t0.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree1, "original", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
+
+    Model *tree2 = ImportModel("../data/extra/tree/t3.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
+    AddNewEntityToScene(game, tree2, "spherical smoothed", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
+
     glm::vec3 dirDiffuse = glm::vec3(0.9f);
     glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
@@ -438,7 +450,7 @@ void LoadAssets(Game *game)
         }
     }
 
-
+    //Terrain
     game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
     game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
     game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
@@ -448,8 +460,17 @@ void LoadAssets(Game *game)
     game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
     //game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
 
-    //PARTICLES
+    //Particles
     LoadParticleSystem(game);
+
+    //Skymap
+    int flags = TexturePreset_Common;
+    flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
+    game->skymapTexture = CreateTexture("../data/imgs/extra/sky.png", flags);
+
+    //Debug lines
+    game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
+    CreateFrustumLines(game->frustumLines, game->frustumNormals, game->lineShader);
 
 #endif
 
