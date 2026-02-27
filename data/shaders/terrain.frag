@@ -10,6 +10,8 @@ uniform sampler2D u_texture3;
 
 uniform sampler2D u_noiseMap;
 
+uniform float u_texCoordsMultiplier;
+
 struct DirLight
 {
     vec3 direction;
@@ -54,7 +56,7 @@ void main()
 {
     //vec4 weights = texture(u_splatMap, TexCoords);
 
-    vec2 tiledUV = TexCoords * 16.0;
+    vec2 tiledUV = TexCoords * u_texCoordsMultiplier;
     //vec4 texture1 = texture(u_texture1, tiledUV);
     //vec4 texture0 = texture(u_texture0, tiledUV);
     //vec4 texture2 = texture(u_texture2, tiledUV);

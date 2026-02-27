@@ -235,6 +235,8 @@ void RenderTerrain(Game *game)
     SetTexture(game->perlinNoise.id, 5);
     ShaderSetInt(game->terrainShader, "u_noiseMap", 5);
 
+    ShaderSetFloat(game->terrainShader, "u_texCoordsMultiplier", game->terrainUVMultiplier);
+
     glBindVertexArray(game->terrain.mesh.vao);
     glDrawElements(GL_TRIANGLE_STRIP, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);
 

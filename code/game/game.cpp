@@ -78,7 +78,9 @@ bool InitGame(Game *game)
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
     ImGuiIO &io = ImGui::GetIO(); (void)io;
+    io.Fonts->AddFontFromFileTTF("../data/fonts/Roboto-Regular.ttf", 20.0f);
 
     ImGui::StyleColorsDark();
 
@@ -217,6 +219,8 @@ void RenderGame(Game *game)
         glDepthFunc(GL_LESS);
     }
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     if(game->renderParticles)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, game->smokeFbo.id);
@@ -231,8 +235,6 @@ void RenderGame(Game *game)
         glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
     }
 #endif
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     //Final pass, post-processing and combination of previously rendered framebuffers
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -266,10 +268,13 @@ void RenderGame(Game *game)
         RenderSelectionBox(game, &game->selectionBox);
     }
 
-    RenderText(&game->aliveParticlesText);
-    RenderText(&game->deadParticlesText);
-    RenderText(&game->fpsCounter);
-    RenderText(&game->msPerFrame);
+    if(game->renderCounters)
+    {
+        RenderText(&game->aliveParticlesText);
+        RenderText(&game->deadParticlesText);
+        RenderText(&game->fpsCounter);
+        RenderText(&game->msPerFrame);
+    }
 
     glDisable(GL_BLEND);
 
@@ -354,13 +359,17 @@ void UpdateGame(Game *game)
         SelectMultipleObjects(game);
     }
 
-    if(IsFirstPress(input, SDL_SCANCODE_1)) game->particleEditorWindow = !game->particleEditorWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_2)) game->terrainGeneratorWindow = !game->terrainGeneratorWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_3)) game->selectedEntityWindow = !game->selectedEntityWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_4)) game->debugSettingsWindow = !game->debugSettingsWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_5)) game->lightingSettingsWindow = !game->lightingSettingsWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_6)) game->importModelWindow = !game->importModelWindow;
-    if(IsFirstPress(input, SDL_SCANCODE_7)) game->valueNoiseWindow = !game->valueNoiseWindow;
+    ImGuiIO &io = ImGui::GetIO();
+    if(!io.WantCaptureKeyboard)
+    {
+        if(IsFirstPress(input, SDL_SCANCODE_1)) game->particleEditorWindow = !game->particleEditorWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_2)) game->terrainGeneratorWindow = !game->terrainGeneratorWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_3)) game->selectedEntityWindow = !game->selectedEntityWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_4)) game->debugSettingsWindow = !game->debugSettingsWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_5)) game->lightingSettingsWindow = !game->lightingSettingsWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_6)) game->importModelWindow = !game->importModelWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_7)) game->valueNoiseWindow = !game->valueNoiseWindow;
+    }
 
     //Delete selected entities
     if(IsFirstPress(input, SDL_SCANCODE_DELETE))

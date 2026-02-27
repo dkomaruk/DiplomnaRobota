@@ -38,6 +38,8 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
     static float mapScale = 0.1f;
     ImGui::InputFloat("Map Scale", &mapScale, 0.05f);
 
+    ImGui::InputFloat("UV Multiplier", &game->terrainUVMultiplier, 0.05f);
+
     if(ImGui::Button("Generate"))
     {
         glDeleteTextures(1, &game->perlinNoise.id);
@@ -98,8 +100,9 @@ void UpdateEditorUI(Game *game)
 
     if(ImGui::BeginMainMenuBar())
     {
-        if(ImGui::BeginMenu("File")) {}
-        if(ImGui::BeginMenu("Edit")) {}
+        if(ImGui::BeginMenu("File")) { ImGui::EndMenu(); }
+        if(ImGui::BeginMenu("Edit")) { ImGui::EndMenu(); }
+
         if(ImGui::BeginMenu("Windows"))
         {
             if(ImGui::MenuItem("Particle Editor", "1")) game->particleEditorWindow = true;
@@ -111,8 +114,8 @@ void UpdateEditorUI(Game *game)
             if(ImGui::MenuItem("Value Noise", "7")) game->valueNoiseWindow = true;
             ImGui::EndMenu();
         }
-        if(ImGui::BeginMenu("Help")) {}
 
+        if(ImGui::BeginMenu("Help")) { ImGui::EndMenu(); }
 
         ImGui::EndMainMenuBar();
     }
@@ -148,6 +151,7 @@ void UpdateEditorUI(Game *game)
         ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
         ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
         ImGui::Checkbox("Display Terrain", &game->renderTerrain);
+        ImGui::Checkbox("Display Counters", &game->renderCounters);
 
         if(ImGui::Checkbox("Display Particles", &game->renderParticles))
         {

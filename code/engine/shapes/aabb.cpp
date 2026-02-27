@@ -140,7 +140,7 @@ bool RayBoxIntersection(AABB *aabb, glm::vec3 rayOrigin, glm::vec3 inverseRayDir
     glm::vec3 tMax = glm::max(t0, t1);
 
     float tPlaneEntry = glm::max(glm::max(tMin.x, tMin.y), tMin.z);
-    float tPlaneExit  = glm::min(glm::min(tMax.x, tMax.y), tMax.z);
+    float tPlaneExit = glm::min(glm::min(tMax.x, tMax.y), tMax.z);
 
     if(tPlaneEntry <= tPlaneExit && tPlaneExit >= 0.0f)
     {

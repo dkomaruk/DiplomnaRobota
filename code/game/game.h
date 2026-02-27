@@ -84,6 +84,7 @@ struct Game
     Entity *cubeEntity;
 
     Terrain terrain;
+    float terrainUVMultiplier = 16.0f;
 
     //Audio
     Audio audio; //TODO: Audio API
@@ -105,6 +106,7 @@ struct Game
     bool renderTerrain = true;
     bool renderSelectionFrustum = true;
     bool renderPickingRay = true;
+    bool renderCounters = true;
     GLenum polygonMode = GL_FILL;
 
     //Editor windows
