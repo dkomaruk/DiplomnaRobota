@@ -114,7 +114,7 @@ void SelectMultipleObjects(Game *game)
 
     Frustum frustum = CreateFrustum(nearPoints, farPoints);
 
-#ifdef DEBUG
+//#ifdef DEBUG
     UpdateLine(&game->frustumNormals[Frustum_R], nearPoints[Frustum_UR],
                 nearPoints[Frustum_UR] + frustum.planes[Frustum_R].normal * planeNormalLength);
     UpdateLine(&game->frustumNormals[Frustum_U], nearPoints[Frustum_UR],
@@ -127,7 +127,7 @@ void SelectMultipleObjects(Game *game)
                 nearPoints[Frustum_BL] + frustum.planes[Frustum_B].normal * planeNormalLength);
     UpdateLine(&game->frustumNormals[Frustum_N], nearPoints[Frustum_BL],
                 nearPoints[Frustum_BL] + frustum.planes[Frustum_N].normal * planeNormalLength);
-#endif
+//#endif
 
     std::vector<uint16> pickedIDs;
     for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)

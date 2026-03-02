@@ -54,6 +54,26 @@ uint8 *GenerateValueNoise(glm::vec2 size)
     return noise;
 }
 
+uint8 *NoiseToImage(float *noise, glm::vec2 size)
+{
+    uint8 *image = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
+    for(int y = 0; y < size.y; y++)
+    {
+        for(int x = 0; x < size.x; x++)
+        {
+            uint8 value = (uint8)(glm::clamp(noise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
+
+            int id = (x + (int)size.x * y) * 4;
+            image[id + 0] = value;
+            image[id + 1] = value;
+            image[id + 2] = value;
+            image[id + 3] = 255;
+        }
+    }
+
+    return image;
+}
+
 float SamplePerlin(glm::vec2 pos, glm::vec2* gradientTable, glm::ivec2 gradientTableSize)
 {
     glm::ivec2 pos0 = glm::ivec2(glm::floor(pos));
@@ -104,9 +124,14 @@ float *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, flo
             {
                 glm::vec2 p = (glm::vec2(x, y) / size) * glm::vec2(gridSize) * frequency;
 
-                total += SamplePerlin(p, gradientTable, gradientTableSize) * amplitude;
+                if (i == 0)
+                {
+                    total += SamplePerlin(p, gradientTable, gradientTableSize);
+                } else
+                {
+                    total += SamplePerlin(p, gradientTable, gradientTableSize) * amplitude;
+                }
 
-                maxAmplitude += amplitude;
                 amplitude *= persistence;
                 frequency *= lacunarity;
             }
@@ -115,7 +140,7 @@ float *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, flo
             //Gradient vector is normalized and has length of 1
             //Thus the dot product between the two is in range +-1.414
             //The blend between the four dot products can at most be +-0.707 right at the center of the grid cell (0.5, 0.5)
-            float normalizedValue = glm::clamp(((total / (0.707f * maxAmplitude)) + 1.0f) / 2.0f, 0.0f, 1.0f);
+            float normalizedValue = glm::clamp(((total / 0.707f) + 1.0f) / 2.0f, 0.0f, 1.0f);
 
             noise[x + (int)size.x * y] = normalizedValue;
         }

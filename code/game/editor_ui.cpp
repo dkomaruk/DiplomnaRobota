@@ -46,20 +46,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
         float *perlinNoise = GeneratePerlinNoise(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
 
-        uint8 *perlinNoiseImage = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
-        for(int y = 0; y < size.y; y++)
-        {
-            for(int x = 0; x < size.x; x++)
-            {
-                uint8 value = (uint8)(glm::clamp(perlinNoise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
-
-                int id = (x + (int)size.x * y) * 4;
-                perlinNoiseImage[id + 0] = value;
-                perlinNoiseImage[id + 1] = value;
-                perlinNoiseImage[id + 2] = value;
-                perlinNoiseImage[id + 3] = 255;
-            }
-        }
+        uint8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
         game->perlinNoise = CreateGLTexture(perlinNoiseImage, size.x, size.y);
         free(perlinNoiseImage);
 
@@ -78,7 +65,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
             }
         }
 
-        Terrain terrain = CreateTerrain(heightmap, size, maxHeight, 1.0f, mapScale, 1, 0.0f);
+        Terrain terrain = CreateTerrain(heightmap, size, 1.0f, mapScale, 1, 0.0f);
 
         terrain.splatMap = game->terrain.splatMap;
         terrain.texture0 = game->terrain.texture0;

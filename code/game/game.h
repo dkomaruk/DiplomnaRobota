@@ -36,7 +36,8 @@ struct Game
     //Shaders and their uniforms
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
     GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, postProcessShader, uiTextShader,
-           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader, skymapShader;
+           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader, skymapShader,
+           shadowShader, skinnedShadowShader;
 
     bool outlinePass;
     float outlineThickness = 1.0f;
@@ -46,7 +47,12 @@ struct Game
     Texture fullSceneTexture, fullSceneDepthTexture;
 
     Framebuffer smokeFbo;
+
+    //Shadows
     Framebuffer shadowMapFbo;
+    glm::mat4 dirLightView;
+    glm::mat4 orthoProjDirLight;
+    bool shadowPass = false;
 
     //Post-processing
     Mesh fullscreenQuad;
@@ -59,7 +65,7 @@ struct Game
 
     //Camera
     Camera camera;
-    glm::mat4 view, perspectiveProjection, orthoProjection, orthoProjDirLight, projViewInverse;
+    glm::mat4 view, perspectiveProjection, orthoProjection, projViewInverse;
 
     //Input
     Input input;
@@ -120,7 +126,7 @@ struct Game
 
     //Noise
     Texture valueNoise;
-    Texture perlinNoise;
+    Texture perlinNoise, perlinNoise2;
 
     //Game temp stuff
     glm::vec2 target;

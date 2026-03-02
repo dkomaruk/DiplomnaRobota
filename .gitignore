@@ -3,6 +3,7 @@ debug.bat
 data/audio
 data/models
 data/imgs/extra
+code/tracy-0.13.1
 data/extra
 .vscode
 build

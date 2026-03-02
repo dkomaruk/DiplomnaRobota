@@ -37,7 +37,7 @@ bool InitGame(Game *game)
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-#ifdef WINDOW_TRANSPARENT
+#if defined(WINDOW_TRANSPARENT) || defined(WINDOW_BORDERLESS)
     bool isBorderless = true;
     bool isTransparent = true;
 #else
@@ -49,7 +49,7 @@ bool InitGame(Game *game)
                         (isBorderless ? SDL_WINDOW_TRANSPARENT : 0) |
                         (isTransparent ? SDL_WINDOW_TRANSPARENT : 0);
 
-    game->window = SDL_CreateWindow("Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
+    game->window = SDL_CreateWindow("Komaruk Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
     if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
@@ -110,7 +110,8 @@ bool InitGame(Game *game)
 
     game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
     game->orthoProjection = glm::ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
-    game->orthoProjDirLight = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+    game->orthoProjDirLight = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+    //game->orthoProjDirLight = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
     game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -161,9 +162,11 @@ void RenderGame(Game *game)
 {
     glEnable(GL_DEPTH_TEST);
 
-    glBindBuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
+    game->shadowPass = true;
+    glBindFramebuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
     glViewport(0, 0, game->shadowMapFbo.depth.x, game->shadowMapFbo.depth.y);
     RenderScene(game);
+    game->shadowPass = false;
 
     game->outlinePass = true;
     glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
@@ -179,7 +182,7 @@ void RenderGame(Game *game)
     ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
     RenderScene(game);
 
-#ifdef DEBUG
+//#ifdef DEBUG
     if(game->renderPickingRay)
     {
         RenderLine(&game->pickingRay);
@@ -195,7 +198,7 @@ void RenderGame(Game *game)
             RenderLine(&game->frustumNormals[i]);
         }
     }
-#endif
+//#endif
 
 #ifdef LOAD_ASSETS
     if(game->renderTerrain)
@@ -331,10 +334,10 @@ void UpdateGame(Game *game)
         float visibleRayLength = 2000.0f;
         glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
-#ifdef DEBUG
+//#ifdef DEBUG
         UpdateLine(&game->pickingRay, pickingRay.origin,
                    pickingRay.origin + pickingRay.direction * visibleRayLength);
-#endif
+//#endif
 
         game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
         game->targetDirection = game->target - glm::vec2(game->soldierEntity->position.x,
@@ -412,7 +415,7 @@ void UpdateGame(Game *game)
 
     UpdateTransforms(tank);
 
-    float speed = 1.0f;
+    float speed = 3.0f;
     float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
     float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
     float y = GetTerrainHeight(&game->terrain, x, z);
@@ -557,6 +560,12 @@ void UpdateGame(Game *game)
         SortAllParticles(game);
     }
 #endif
+
+    //Light
+    game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
 
     //Update timing counters
     float ms = game->deltaTime * 1000.0f;

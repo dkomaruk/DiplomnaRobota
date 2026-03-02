@@ -64,15 +64,14 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
 
     stbi_image_free(((channels == 1) ? image16 : (void *)image));
 
-    return CreateTerrain(heightmap, fullMapSize, yScale, mapPortion, mapScale, meshStep, yShift);
+    return CreateTerrain(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
 }
 
-Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float yScale, float mapPortion, float mapScale, int meshStep, float yShift)
+Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float mapPortion, float mapScale, int meshStep, float yShift)
 {
     Terrain t = {};
 
     t.mapSize = fullMapSize * mapPortion;
-    t.yScale = yScale;
     t.yShift = yShift;
     t.heightmap = heightmap;
 
@@ -232,8 +231,11 @@ void RenderTerrain(Game *game)
     SetTexture(game->terrain.texture3.id, 4);
     ShaderSetInt(game->terrainShader, "u_texture3", 4);
 
-    SetTexture(game->perlinNoise.id, 5);
+    SetTexture(game->perlinNoise2.id, 5);
     ShaderSetInt(game->terrainShader, "u_noiseMap", 5);
+
+    SetTexture(game->shadowMapFbo.depth.id, 6);
+    ShaderSetInt(game->terrainShader, "u_shadowMap", 6);
 
     ShaderSetFloat(game->terrainShader, "u_texCoordsMultiplier", game->terrainUVMultiplier);
 

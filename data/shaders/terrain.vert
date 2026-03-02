@@ -6,11 +6,13 @@ layout(location = 2) in vec3 normal;
 
 uniform mat4 u_projection;
 uniform mat4 u_view;
+uniform mat4 u_lightViewProj;
 
 out float Height;
 out vec2 TexCoords;
 out vec3 Normal;
 out vec3 FragPos;
+out vec4 FragPosLightSpace;
 
 void main()
 {
@@ -18,6 +20,7 @@ void main()
     TexCoords = texCoords;
     Normal = normal;
     FragPos = pos;
+    FragPosLightSpace = u_lightViewProj * vec4(FragPos, 1.0);
 
     gl_Position = u_projection * u_view * vec4(pos, 1.0);
 }

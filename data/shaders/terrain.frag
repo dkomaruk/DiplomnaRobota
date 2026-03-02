@@ -1,6 +1,6 @@
 #version 460 core
 
-uniform sampler2D u_terrainMap;
+//uniform sampler2D u_terrainMap;
 
 uniform sampler2D u_splatMap;
 uniform sampler2D u_texture0;
@@ -9,6 +9,7 @@ uniform sampler2D u_texture2;
 uniform sampler2D u_texture3;
 
 uniform sampler2D u_noiseMap;
+uniform sampler2D u_shadowMap;
 
 uniform float u_texCoordsMultiplier;
 
@@ -22,6 +23,7 @@ uniform DirLight u_dirLight;
 in float Height;
 in vec2 TexCoords;
 in vec3 Normal;
+in vec4 FragPosLightSpace;
 
 //https://web.archive.org/web/20190211214453/https://www.iquilezles.org/www/articles/texturerepetition/texturerepetition.htm
 //https://www.shadertoy.com/view/Xtl3zf
@@ -52,6 +54,17 @@ vec4 textureNoTile(sampler2D samp, sampler2D noise, in vec2 uv) {
     return mix(cola, colb, smoothstep(0.2, 0.8, f - 0.1 * sum(cola.rgb - colb.rgb)));
 }
 
+float CalculateShadow(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(u_shadowMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+    float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+
+    return shadow;
+}
+
 void main()
 {
     //vec4 weights = texture(u_splatMap, TexCoords);
@@ -73,5 +86,7 @@ void main()
 
     vec3 ambient = texture1 * u_dirLight.ambient;
 
-    gl_FragColor = vec4(diffuse + ambient, 1.0);
+    float shadow = CalculateShadow(FragPosLightSpace);
+
+    gl_FragColor = vec4((ambient + (1.0 - shadow) * diffuse), 1.0);
 }

@@ -100,7 +100,7 @@ void main()
     sampledTextures.diffuse = texture(u_material.diffuse, TexCoords);
     sampledTextures.specular = texture(u_material.specular, TexCoords);
 
-    if(sampledTextures.diffuse.a < 0.1)
+    if(sampledTextures.diffuse.a < 0.4)
     {
         discard;
     }

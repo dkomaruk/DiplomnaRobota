@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <glm/vec2.hpp>
 
-#ifdef WINDOW_TRANSPARENT
+#if defined(WINDOW_TRANSPARENT) || defined(WINDOW_BORDERLESS)
     #define WINDOW_WIDTH 1920.0f
     #define WINDOW_HEIGHT 1080.0f
 #else

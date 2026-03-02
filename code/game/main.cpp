@@ -1,10 +1,14 @@
-#define GLM_ENABLE_EXPERIMENTAL
 #define IMGUI_DEFINE_MATH_OPERATORS
+#define NOMINMAX
 
 //TODO: Replace with SDL_ShowOpenFileDialog
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commdlg.h>
+
+#ifdef PROFILER
+#include "public/TracyClient.cpp"
+#endif
 
 #undef near //There are defined in windows headers and collide with some variable names
 #undef far
@@ -13,7 +17,7 @@
 //TODO: Replace with a less heavy library
 #include <json.hpp>
 
-//GLM extensions have to be included before any other glm header file for some reason, otherwise it doesn't compile
+//These GLM extensions have to be included before stb_vorbis.c for some reason. Otherwise it doesn't compile
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -55,32 +59,7 @@ int main(int argc, char *argv[])
 
     LoadAssets(game);
 
-    glm::vec2 size = glm::vec2(256.0f, 256.0f);
-    uint8 *valueNoise = GenerateValueNoise(size);
-    game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
-    free(valueNoise);
-
-    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
-
-    uint8 *perlinNoiseImage = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
-    for(int y = 0; y < size.y; y++)
-    {
-        for(int x = 0; x < size.x; x++)
-        {
-            uint8 value = (uint8)(glm::clamp(perlinNoise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
-
-            int id = (x + (int)size.x * y) * 4;
-            perlinNoiseImage[id + 0] = value;
-            perlinNoiseImage[id + 1] = value;
-            perlinNoiseImage[id + 2] = value;
-            perlinNoiseImage[id + 3] = 255;
-        }
-    }
-
-    game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
-    free(perlinNoiseImage);
-
-    //TODO: Terrain tesselation, terrain normal calculation, terrain lighting
+    //TODO: Terrain tesselation
     //TODO: Vegetation on terrain (trees, grass)
     //TODO: Shadows (shadow mapping)
 
@@ -94,6 +73,25 @@ int main(int argc, char *argv[])
         UpdateGame(game);
 
         RenderGame(game);
+
+        if(IsFirstPress(&game->input, SDL_SCANCODE_U))
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+            int width = 1024, height = 1024;
+            std::vector<float> depthData(width * height);
+
+            glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, depthData.data());
+
+            std::vector<unsigned char> pixelData(width * height);
+
+            for (int i = 0; i < width * height; ++i) {
+                pixelData[i] = static_cast<unsigned char>(depthData[i] * 255.0f);
+            }
+
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png("depth_output.png", width, height, 1, pixelData.data(), width);
+        }
+
 
         Uint64 thisFrame = SDL_GetPerformanceCounter();
         game->deltaTime = (thisFrame - game->lastFrame) / (float)game->perfFreq;

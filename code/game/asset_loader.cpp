@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "model.h"
 #include "framebuffer.h"
+#include "noise.h"
 
 #include "string_utils.h"
 
@@ -264,6 +265,10 @@ void LoadAssets(Game *game)
                                             LoadShader("../data/shaders/colorFill.frag"));
     GLuint skymapShader = CreateShaderProgram(LoadShader("../data/shaders/environment.vert"),
                                               LoadShader("../data/shaders/environment.frag"));
+    GLuint shadowShader = CreateShaderProgram(LoadShader("../data/shaders/shadow.vert"),
+                                              LoadShader("../data/shaders/shadow.frag"));
+    GLuint skinnedShadowShader = CreateShaderProgram(LoadShader("../data/shaders/shadow_skinned.vert"),
+                                                     LoadShader("../data/shaders/shadow.frag"));
 
     ShaderSetVec2(mainShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
     ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -286,6 +291,8 @@ void LoadAssets(Game *game)
     game->shaders.push_back(animationShader);
     game->shaders.push_back(lineShader);
     game->shaders.push_back(skymapShader);
+    game->shaders.push_back(shadowShader);
+    game->shaders.push_back(skinnedShadowShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -313,10 +320,13 @@ void LoadAssets(Game *game)
     game->lineShader = lineShader;
     game->selectionBoxShader = selectionBoxShader;
     game->skymapShader = skymapShader;
+    game->shadowShader = shadowShader;
+    game->skinnedShadowShader = skinnedShadowShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
-    Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    //Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
 
     game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
     game->soldierEntity0 = game->soldierEntity;
@@ -339,7 +349,7 @@ void LoadAssets(Game *game)
         }
     }
 
-    Model *soldierAnimated = ImportModel("../data/models/soldier/Rifle Walk.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *soldierAnimated = ImportModel("../data/models/soldier/Rifle Run.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
     game->soldierEntity = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
 
     Model *backpack = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
@@ -401,7 +411,7 @@ void LoadAssets(Game *game)
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
 
-    AddNewEntityToScene(game, lightMesh, "dirLightCube", -game->dirLight.direction * 200.0f, glm::vec3(0.0f), glm::vec3(50.0f));
+    //AddNewEntityToScene(game, lightMesh, "dirLightCube", -game->dirLight.direction * 200.0f, glm::vec3(0.0f), glm::vec3(50.0f));
 
 #if 0
     PointLight pointLights[4] = {};
@@ -451,7 +461,7 @@ void LoadAssets(Game *game)
     }
 
     //Terrain
-    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 4, 22.0f);
+    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
     game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
     game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
     //game->terrain.texture1 = CreateTexture("../data/extra/rocks.png");
@@ -474,11 +484,22 @@ void LoadAssets(Game *game)
 
 #endif
 
+    glm::vec2 size = glm::vec2(256.0f, 256.0f);
+    uint8 *valueNoise = GenerateValueNoise(size);
+    game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
+    free(valueNoise);
+
+    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
+
+    uint8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
+    game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
+    free(perlinNoiseImage);
+
     glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
-    game->fpsCounter = CreateText(&game->fonts[24], "0 FPS", glm::vec2(20.0f, 36.0f), game->uiTextShader, textColor);
-    game->msPerFrame = CreateText(&game->fonts[24], "0 ms/f", glm::vec2(220.0f, 36.0f), game->uiTextShader, textColor);
-    game->aliveParticlesText = CreateText(&game->fonts[24], "Alive Particles: 0", glm::vec2(20.0f, 72.0f), game->uiTextShader, textColor);
-    game->deadParticlesText = CreateText(&game->fonts[24], "Dead Particles: 0", glm::vec2(20.0f, 108.0f), game->uiTextShader, textColor);
+    game->fpsCounter = CreateText(&game->fonts[48], "0 FPS", glm::vec2(20.0f, 54.0f), game->uiTextShader, textColor);
+    game->msPerFrame = CreateText(&game->fonts[48], "0 ms/f", glm::vec2(400.0f, 54.0f), game->uiTextShader, textColor);
+    game->aliveParticlesText = CreateText(&game->fonts[48], "Alive Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f), game->uiTextShader, textColor);
+    game->deadParticlesText = CreateText(&game->fonts[48], "Dead Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f + 60.0f), game->uiTextShader, textColor);
 
     game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 }

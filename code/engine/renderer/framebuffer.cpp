@@ -20,7 +20,7 @@ void SetupFramebuffers(Game *game)
     game->smokeFbo = CreateFramebuffer(glm::ivec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f),
                                        FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32F);
 
-    game->shadowMapFbo = CreateFramebuffer(glm::ivec2(1024, 1024), 0, FboTexturePreset_Depth32F);
+    game->shadowMapFbo = CreateFramebuffer(glm::ivec2(1024, 1024) * 8, 0, FboTexturePreset_Depth32F | TextureFlag_ClampToEdge);
 
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

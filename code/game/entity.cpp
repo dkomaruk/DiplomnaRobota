@@ -24,11 +24,17 @@ void RenderEntity(Entity *self, Game *game)
     }
 #endif
 
+    if(game->shadowPass)
+    {
+        ShaderSetMatrix4(game->shadowShader, "u_model", self->modelMat);
+        ShaderSetMatrix4(game->skinnedShadowShader, "u_model", self->modelMat);
+    }
+
     if(game->renderAABB)
     {
         ShaderSetVec4(game->lineShader, "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glLineWidth(2.0f);
-        RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
+        RenderMesh(game, &self->meshAABB, self->modelMat, game->lineShader, 0, self->meshAABB.drawMode);
         glLineWidth(1.0f);
     }
 

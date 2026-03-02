@@ -416,9 +416,18 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
     {
         shader = (model->type == ModelType_Static) ?  game->outlineShader : game->skinnedOutlineShader;
     }
+    if(game->shadowPass)
+    {
+        shader = game->shadowShader;
+    }
 
     if(model->type == ModelType_Animated)
     {
+        if(game->shadowPass)
+        {
+            shader = game->skinnedShadowShader;
+        }
+
         ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), 100);
     }
 
