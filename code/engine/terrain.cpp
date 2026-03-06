@@ -36,7 +36,7 @@ float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::v
 }
 
 //Loads a 16-bit PNG heightmap and generates a terrain mesh
-Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep, float yShift)
+Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep, float yShift)
 {
     int x, y, channels;
     stbi_info(heightmapPath, &x, &y, &channels);
@@ -64,10 +64,10 @@ Terrain CreateTerrain(char *heightmapPath, float maxHeight, float mapPortion, fl
 
     stbi_image_free(((channels == 1) ? image16 : (void *)image));
 
-    return CreateTerrain(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
+    return CreateTerrainMesh(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
 }
 
-Terrain CreateTerrain(float *heightmap, glm::vec2 fullMapSize, float mapPortion, float mapScale, int meshStep, float yShift)
+Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion, float mapScale, int meshStep, float yShift)
 {
     Terrain t = {};
 

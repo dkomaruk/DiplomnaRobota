@@ -1,4 +1,4 @@
-#include "particle_editor_ui.h"
+#include "particle_editor.h"
 
 #include "particle_system.h"
 #include "file.h"

@@ -1,8 +1,8 @@
-#ifndef PARTICLE_EDITOR_UI_H
+#ifndef PARTICLE_EDITOR_H
 
 #include "game.h"
 
 void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize);
 
-#define PARTICLE_EDITOR_UI_H
+#define PARTICLE_EDITOR_H
 #endif

@@ -37,17 +37,21 @@ bool InitGame(Game *game)
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-#if defined(WINDOW_TRANSPARENT) || defined(WINDOW_BORDERLESS)
-    bool isBorderless = true;
+#ifdef WINDOW_TRANSPARENT
     bool isTransparent = true;
 #else
-    bool isBorderless = false;
     bool isTransparent = false;
 #endif
 
+#ifdef WINDOW_BORDERLESS
+    bool isBorderless = true;
+#else
+    bool isBorderless = false;
+#endif
+
     Uint64 windowFlags = SDL_WINDOW_OPENGL |
-                        (isBorderless ? SDL_WINDOW_TRANSPARENT : 0) |
-                        (isTransparent ? SDL_WINDOW_TRANSPARENT : 0);
+                        (isBorderless ? SDL_WINDOW_FULLSCREEN : 0) |
+                        (isTransparent ? SDL_WINDOW_TRANSPARENT : 0) ;
 
     game->window = SDL_CreateWindow("Komaruk Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
     if(!game->window)

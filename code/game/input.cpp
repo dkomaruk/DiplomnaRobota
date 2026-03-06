@@ -20,6 +20,7 @@ void ProcessInput(Input *input)
     while(SDL_PollEvent(&event))
     {
         ImGui_ImplSDL3_ProcessEvent(&event);
+
         switch(event.type)
         {
             case SDL_EVENT_QUIT:

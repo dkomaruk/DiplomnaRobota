@@ -1,9 +1,36 @@
 # Current
 
+## 2026-03-06 S8 More Stuff
+- [ ] Multithreaded asset loading for faster iteration time
+  - Load assets in parallel
+- [ ] Terrain optimization (chunking, tesselation and LOD)
+- [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
+  - Load meshes, impostors, grass textures and so on
+  - Distribute them on the terrain (jitter grid, blue noise, perlin noise)
+  - Draw in one call
+
 # Next
+- [ ] Map Editor
+  - Ability to place individual items on the terrain
+  - Place fillers for vegetation and random items
+  - Draw on the terrain into a splat map
+  - Save heightmap, other textures, placed object positions, object descriptors into one file
+- [ ] Multithreading
+  - Update Entities in parallel
+- [ ] Manual Memory Management
+  - Arenas, general purpose allocators
+- [ ] Entities
+- [ ] Game User Interface
+  - Alt: build custom UI (for game) (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
+    - Why: good practice
+    - Why not: can take too long
+- [ ] Pathfinding
+  - A*, graphs
+- [ ] Enemy AI
+- [ ] PBR
+- [ ] Fixed point math for simulation
 
 # Upcoming
-- [ ] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
 - [ ] Further Text Improvements
   - [ ] Make a single draw call for all visible dynamic text instead of making a draw call per instance of dynamic text
   - [ ] Render text using SDF. This approach allows rendering low resolution glyph textures at high quality by using distances instead of displaying already rasterized letters.
@@ -15,13 +42,7 @@
   - [ ] Check how WARNO/Total War snaps unites to terrain and how it orients them on slopes and hills
     - WARNO uses coordinates from 0 to 655360 (for fixed point math). They also have coordinate system from 0 meters to 3048 meters for one map unit (can go up to 10 on each axis). Their heightmap is a png of size 1024x1024 for one map unit which is around 2.97 meters per one pixel which then gets smoothed out by interpolation when rendered. Every time the heightmap png is changed, the map has to be baked again to apply the changes.
     - [ ] Also calculate rotation from this grid system (need more research).
-- [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
 - [ ] Audio Utils
-- [ ] User Interface
-  - Use Dear Imgui (for editor)
-  - Alt: build custom UI (for game) (<https://www.rfleury.com/p/ui-part-1-the-interaction-medium>)
-    - Why: good practice
-    - Why not: can take too long
 - [ ] Polish Particle System
   - [ ] Add particle system demo
   - [ ] Ability to add new emitters at some position. Also select and drag existing ones
@@ -56,6 +77,12 @@
   - Alt: send state snapshot
 
 # Log
+
+## 2026-02/03 S7 Stuff
+- [x] Move Input to the engine part. Extract all game specific code and move it to UpdateGame instead.
+- [x] Basic Editor Interface
+  - Use Dear Imgui (for editor)
+- [x] Raycasting, ray AABB and AABB frustum intersection tests
 
 ## 2026-02-05/07 S6 Model transform hierarchy
 - [x] Models need to keep the node hierarchy in order to transform separate parts of the model (and make children of that part move along)

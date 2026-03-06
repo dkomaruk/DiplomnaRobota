@@ -242,7 +242,7 @@ void LoadAssets(Game *game)
 
     //SHADERS
     GLuint mainShader = CreateShaderProgram(LoadShader("../data/shaders/main.vert"),
-                                        LoadShader("../data/shaders/main.frag"));
+                                            LoadShader("../data/shaders/main.frag"));
     GLuint lightSourceShader = CreateShaderProgram(LoadShader("../data/shaders/main.vert"),
                                                    LoadShader("../data/shaders/colorFill.frag"));
     GLuint skinnedOutlineShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
@@ -461,7 +461,7 @@ void LoadAssets(Game *game)
     }
 
     //Terrain
-    game->terrain = CreateTerrain("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
+    game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
     game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
     game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
     //game->terrain.texture1 = CreateTexture("../data/extra/rocks.png");
