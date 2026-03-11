@@ -291,6 +291,76 @@ Game *GetGame()
     return &game;
 }
 
+void UpdateTestScene(Game *game)
+{
+    //Test code for the test scene
+    game->testEntity->rotation.y += 90.0f * game->deltaTime;
+    glm::mat4 turretTransform = glm::mat4(1.0f);
+    turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f,
+                                     0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
+    turretTransform = glm::rotate(turretTransform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)),
+                                  glm::vec3(0.0f, 0.0f, 1.0f));
+
+    Entity *tank = game->tank;
+    tank->turret.transform = tank->model->nodes[tank->turret.nodeId].localTransform * turretTransform;
+
+    glm::mat4 gunTransform = glm::mat4(1.0f);
+    gunTransform = glm::rotate(gunTransform, glm::radians(sinf(SDL_GetTicks() / 500.0f) * 20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    tank->gun.transform = tank->model->nodes[tank->gun.nodeId].localTransform * gunTransform;
+
+    UpdateTransforms(tank);
+
+    float speed = 3.0f;
+    float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
+    float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
+    float y = GetTerrainHeight(&game->terrain, x, z);
+
+    game->soldierEntity->position = glm::vec3(x, y, z);
+
+    float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
+
+    if(angleDiff < -180.0f)
+        angleDiff += 360.0f;
+    if(angleDiff > 180.0f)
+        angleDiff -= 360.0f;
+
+    float rotationStep = 200.0f * game->deltaTime;
+
+    if(glm::abs(angleDiff) <= rotationStep)
+        game->soldierEntity->rotation.y = game->targetAngle;
+    else
+        game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
+
+    if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
+    {
+        game->targetDirection = glm::vec2(0, 0);
+    }
+
+#if 0
+    glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank->position, tank->rotation, tank->scale);
+    glm::mat4 tipWorldMat = tankWorldMatrix * tank->nodeTransforms[tank->gunTipId];
+    game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glm::mat4 tipRotation = glm::mat3(tipWorldMat);
+    game->particleSystems[0].rotation = tipRotation;
+#endif
+
+    Camera *camera = &game->camera;
+    glm::vec3 forward = normalize(camera->direction);
+
+    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 right = normalize(cross(forward, worldUp));
+    glm::vec3 up = normalize(cross(right, forward));
+
+    ALfloat listenerOri[6] = {
+        camera->direction.x, camera->direction.y, camera->direction.z,
+        up.x, up.y, up.z
+    };
+    alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
+    alListenerfv(AL_ORIENTATION, listenerOri);
+}
+
+
 void UpdateGame(Game *game)
 {
     Input *input = &game->input;
@@ -331,15 +401,12 @@ void UpdateGame(Game *game)
         float visibleRayLength = 2000.0f;
         glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
-//#ifdef DEBUG
         UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
-//#endif
 
         game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
         game->targetDirection = game->target - glm::vec2(game->soldierEntity->position.x,
                                                          game->soldierEntity->position.z);
 
-        //Prevents silent division by zero in the glm::normalize and NaN in the targetDirection as a result
         if(glm::length2(game->targetDirection) > 0.00001f)
         {
             game->targetDirection = glm::normalize(game->targetDirection);
@@ -396,72 +463,9 @@ void UpdateGame(Game *game)
         UpdateEntity(game, entity);
     }
 
-    //Test code for the test scene
 #ifdef LOAD_ASSETS
-    game->testEntity->rotation.y += 90.0f * game->deltaTime;
-    glm::mat4 turretTransform = glm::mat4(1.0f);
-    turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f, 0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
-    turretTransform = glm::rotate(turretTransform, glm::radians(45.0f * (SDL_GetTicks() / 1000.0f)), glm::vec3(0.0f, 0.0f, 1.0f));
-    Entity *tank = game->tank;
-    tank->turret.transform = tank->model->nodes[tank->turret.nodeId].localTransform * turretTransform;
-
-    glm::mat4 gunTransform = glm::mat4(1.0f);
-    gunTransform = glm::rotate(gunTransform, glm::radians(sinf(SDL_GetTicks() / 500.0f) * 20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    tank->gun.transform = tank->model->nodes[tank->gun.nodeId].localTransform * gunTransform;
-
-    UpdateTransforms(tank);
-
-    float speed = 3.0f;
-    float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
-    float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
-    float y = GetTerrainHeight(&game->terrain, x, z);
-
-    game->soldierEntity->position = glm::vec3(x, y, z);
-
-    float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
-
-    if(angleDiff < -180.0f)
-        angleDiff += 360.0f;
-    if(angleDiff > 180.0f)
-        angleDiff -= 360.0f;
-
-    float rotationStep = 200.0f * game->deltaTime;
-
-    if(glm::abs(angleDiff) <= rotationStep)
-        game->soldierEntity->rotation.y = game->targetAngle;
-    else
-        game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
-
-    if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
-    {
-        game->targetDirection = glm::vec2(0, 0);
-    }
-
-#if 0
-    glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank->position, tank->rotation, tank->scale);
-    glm::mat4 tipWorldMat = tankWorldMatrix * tank->nodeTransforms[tank->gunTipId];
-    game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-    glm::mat4 tipRotation = glm::mat3(tipWorldMat);
-    game->particleSystems[0].rotation = tipRotation;
+    UpdateTestScene(game);
 #endif
-
-#endif
-
-    //Audio update
-    Camera *camera = &game->camera;
-    glm::vec3 forward = normalize(camera->direction);
-
-    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 right = normalize(cross(forward, worldUp));
-    glm::vec3 up = normalize(cross(right, forward));
-
-    ALfloat listenerOri[6] = {
-        camera->direction.x, camera->direction.y, camera->direction.z,
-        up.x, up.y, up.z
-    };
-    alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
-    alListenerfv(AL_ORIENTATION, listenerOri);
 
     //Change outline thickness
     if(input->keys[SDL_SCANCODE_DOWN])

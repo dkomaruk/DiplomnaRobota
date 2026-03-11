@@ -2,8 +2,9 @@ run.bat
 debug.bat
 data/audio
 data/models
-data/imgs/extra
+data/imgs
 code/tracy-0.13.1
 data/extra
+.markdownlint.json
 .vscode
 build
