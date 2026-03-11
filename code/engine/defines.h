@@ -3,18 +3,6 @@
 #include <stdint.h>
 #include <glm/vec2.hpp>
 
-#if defined(WINDOW_TRANSPARENT) || defined(WINDOW_BORDERLESS)
-    #define WINDOW_WIDTH 1920.0f
-    #define WINDOW_HEIGHT 1080.0f
-#else
-    #define WINDOW_WIDTH 1280.0f
-    #define WINDOW_HEIGHT 720.0f
-    //#define WINDOW_WIDTH 1920.0f
-    //#define WINDOW_HEIGHT 1080.0f
-#endif
-
-#define WINDOW_CENTER glm::vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f)
-
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -40,6 +28,8 @@ typedef uint64_t uint64;
 #define FLAG_IS_SINGLE(f) (!(f) || ((f) & ((f) - 1)))
 
 #define RECT_HAS_SIZE(rectSize) (glm::abs((rectSize).x) > 0 && glm::abs((rectSize).y) > 0)
+#define RECT_HALF(rect) (glm::vec2((rect).x / 2.0f, (rect).y / 2.0f))
+#define RECT_ASPECT_RATIO(rect) ((rect).x > (rect).y) ? ((float)(rect).x / (rect).y) : ((float)(rect).y / (rect).x)
 
 #define DEFINES_H
 #endif

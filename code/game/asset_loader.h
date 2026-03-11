@@ -2,7 +2,7 @@
 
 struct Game;
 
-void LoadAssets(Game *game);
+void LoadTestScene(Game *game);
 
 #define ASSET_LOADER_H
 #endif

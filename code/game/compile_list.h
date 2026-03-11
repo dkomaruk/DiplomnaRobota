@@ -1,5 +1,7 @@
 #ifndef COMPILE_LIST_H
 
+//Unity build
+
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
 
@@ -33,6 +35,7 @@
 #include "plane.cpp"
 #include "ray.cpp"
 #include "selection.cpp"
+#include "intersections.cpp"
 
 #define COMPILE_LIST_H
 #endif

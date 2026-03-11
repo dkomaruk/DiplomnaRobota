@@ -3,9 +3,6 @@
 #include <string>
 #include <fstream>
 
-#include <windows.h>
-#include <commdlg.h>
-
 struct FileFilter
 {
     std::string name;

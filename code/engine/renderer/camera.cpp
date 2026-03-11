@@ -3,7 +3,22 @@
 #include "game.h"
 #include "input.h"
 
-void UpdateCamera(Game *game)
+Camera CreateFPSCamera()
+{
+    Camera camera = {};
+
+    camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+    camera.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    //camera.speed = 2.5f;
+    camera.speed = 5.0f;
+    //camera.speed = 40.0f;
+    camera.sensitivity = 0.1f;
+
+    return camera;
+}
+
+void UpdateFPSCamera(Game *game)
 {
     Input *input = &game->input;
     Camera *camera = &game->camera;
@@ -36,7 +51,7 @@ void UpdateCamera(Game *game)
     camera->fov -= input->mouseWheelDelta.y;
     camera->fov = SDL_clamp(camera->fov, 1.0f, 45.0f);
 
-    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
+    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 100.0f);
 #endif
 
     //Camera movement

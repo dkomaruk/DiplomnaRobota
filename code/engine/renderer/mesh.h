@@ -106,7 +106,7 @@ void DeleteMesh(Mesh *mesh);
 void UpdateMesh(Mesh *mesh, void *newVertices, int size, GLenum usage = GL_DYNAMIC_DRAW);
 
 /**Creates a quad mesh in NDC coordinates from pixel coordinates*/
-Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size);
+Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 quadSize, glm::vec2 viewportSize);
 Mesh CreateUnitQuadStripes();
 Mesh *GetUnitQuad();
 

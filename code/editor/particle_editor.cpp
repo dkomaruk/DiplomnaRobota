@@ -284,8 +284,8 @@ void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flag
     static glm::vec2 resolution = glm::vec2(0.5f, 0.5f);
     if(ImGui::DragFloat("Particle Resolution", &resolution.x, 0.01f, 0.0f, 2.0f) && (resolution.x >= 0.001f && resolution.y >= 0.001f))
     {
-        DeleteFramebuffer(&game->smokeFbo);
-        game->smokeFbo = CreateFramebuffer(resolution * glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32F);
+        DeleteFramebuffer(&game->particlesFbo);
+        game->particlesFbo = CreateFramebuffer(resolution * glm::vec2(game->windowSize), FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32F);
     }
 
     if(ImGui::CollapsingHeader("Position"))

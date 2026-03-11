@@ -33,7 +33,5 @@ struct Frustum
 Frustum CreateFrustum(glm::vec3 *nearPoints, glm::vec3 *farPoints);
 void CreateFrustumLines(Line lines[4], Line normals[6], GLuint lineShader);
 
-bool FrustumAABBIntersectionTest(Frustum* frustum, AABB *aabb);
-
 #define FRUSTUM_H
 #endif

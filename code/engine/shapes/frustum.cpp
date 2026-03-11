@@ -32,20 +32,3 @@ void CreateFrustumLines(Line *lines, Line *normals, GLuint lineShader)
         normals[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), lineShader, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 }
-
-bool FrustumAABBIntersectionTest(Frustum* frustum, AABB *aabb)
-{
-    glm::vec3 center = (aabb->max + aabb->min) * 0.5f;
-    glm::vec3 extents = aabb->max - center;
-
-    for(int planeIndex = 0; planeIndex < 6; planeIndex++)
-    {
-        float projectionLength = glm::dot(extents, glm::abs(frustum->planes[planeIndex].normal));
-        float distanceToPlane = PointPlaneDistance(&frustum->planes[planeIndex], center);
-
-        if(distanceToPlane < -projectionLength)
-            return false;
-    }
-
-    return true;
-}

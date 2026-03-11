@@ -1,37 +1,7 @@
 #include "selection.h"
 
 #include "game.h"
-#include "ray.h"
-
-void UpdateSelection(Game *game)
-{
-    uint64 start = SDL_GetPerformanceCounter();
-
-    Input *input = &game->input;
-    SelectionBox *selectionBox = &game->selectionBox;
-
-    glm::vec2 mousePos;
-    if(input->isCursorHidden)
-    {
-        mousePos /= glm::vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f);
-        selectionBox->start = mousePos;
-    }
-    else
-    {
-        mousePos = input->mousePos;
-        selectionBox->start = mousePos;
-
-        mousePos.y = (int)WINDOW_HEIGHT - mousePos.y;
-    }
-
-    Ray pickingRay = CastPickingRay(game, mousePos);
-
-    SelectSingleObject(game, &pickingRay);
-
-    uint64 end = SDL_GetPerformanceCounter();
-    SDL_Log("%f ms", ((end - start) / (float)game->perfFreq) * 1000.0f);
-}
-
+#include "intersections.h"
 
 void SelectSingleObject(Game *game, Ray *pickingRay)
 {
@@ -46,8 +16,7 @@ void SelectSingleObject(Game *game, Ray *pickingRay)
                                 glm::vec3(entity->modelMatPosScale * glm::vec4(entity->aabb.max, 1.0f))};
 
         float intersectionDist;
-        bool result = RayBoxIntersection(&transformedAABB, pickingRay->origin,
-                                            pickingRay->inverseDirection, &intersectionDist);
+        bool result = RayBoxIntersection(&transformedAABB, pickingRay, &intersectionDist);
         if(result && (intersectionDist < closestDistance))
         {
             closestDistance = intersectionDist;
@@ -79,14 +48,14 @@ void SelectSingleObject(Game *game, Ray *pickingRay)
 void SelectMultipleObjects(Game *game)
 {
     glm::vec2 mouse = game->input.mousePos;
-    mouse.y = WINDOW_HEIGHT - mouse.y;
+    mouse.y = game->windowSize.y - mouse.y;
 
-    game->selectionBox.start.y = WINDOW_HEIGHT - game->selectionBox.start.y;
+    game->selectionBox.start.y = game->windowSize.y - game->selectionBox.start.y;
 
     glm::vec2 min = glm::min(game->selectionBox.start, mouse);
     glm::vec2 max = glm::max(game->selectionBox.start, mouse);
 
-    glm::vec4 viewport = glm::vec4(0.0f, 0.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glm::vec4 viewport = glm::vec4(0.0f, 0.0f, game->windowSize);
 
     glm::vec2 positions[4];
     positions[Frustum_BL] = glm::vec2(min.x, min.y);

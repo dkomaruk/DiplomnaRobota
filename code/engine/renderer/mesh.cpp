@@ -123,15 +123,11 @@ void UpdateMesh(Mesh *mesh, void *newVertices, int size, GLenum usage)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 size)
+Mesh CreateQuadNDC(glm::vec2 position, glm::vec2 quadSize, glm::vec2 viewportSize)
 {
-    glm::vec2 window = glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glm::vec3 p = glm::vec3(glm::vec2((position.x / viewportSize.x) * 2.0f - 1.0f, 1.0f - (position.y / viewportSize.y) * 2.0f), 0.0f);
+    glm::vec3 s = glm::vec3((quadSize / viewportSize) * 2.0f, 0.0f);
 
-    //Position and size in NDC coordinates
-    glm::vec3 p = glm::vec3(glm::vec2((position.x / window.x) * 2.0f - 1.0f, 1.0f - (position.y / window.y) * 2.0f), 0.0f);
-    glm::vec3 s = glm::vec3((size / window) * 2.0f, 0.0f);
-
-    //Normals
     glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
 
     Vertex v1 = {p, n, glm::vec2(0.0f, 1.0f)};

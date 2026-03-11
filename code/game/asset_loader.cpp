@@ -7,6 +7,7 @@
 #include "model.h"
 #include "framebuffer.h"
 #include "noise.h"
+#include "frustum.h"
 
 #include "string_utils.h"
 
@@ -217,7 +218,7 @@ Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 po
     return newEntity;
 }
 
-void LoadAssets(Game *game)
+void LoadTestScene(Game *game)
 {
     //AUDIO
     LoadAudio(game);
@@ -270,8 +271,8 @@ void LoadAssets(Game *game)
     GLuint skinnedShadowShader = CreateShaderProgram(LoadShader("../data/shaders/shadow_skinned.vert"),
                                                      LoadShader("../data/shaders/shadow.frag"));
 
-    ShaderSetVec2(mainShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
-    ShaderSetVec2(animationShader, "u_viewport", WINDOW_WIDTH, WINDOW_HEIGHT);
+    ShaderSetVec2(mainShader, "u_viewport", game->windowSize);
+    ShaderSetVec2(animationShader, "u_viewport", game->windowSize);
 
     ShaderSetVec4(lightSourceShader, "u_color", glm::vec4(1.0f));
     ShaderSetVec4(skinnedOutlineShader, "u_color", glm::vec4(1.0f));
@@ -501,5 +502,5 @@ void LoadAssets(Game *game)
     game->aliveParticlesText = CreateText(&game->fonts[48], "Alive Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f), game->uiTextShader, textColor);
     game->deadParticlesText = CreateText(&game->fonts[48], "Dead Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f + 60.0f), game->uiTextShader, textColor);
 
-    game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+    game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(game->windowSize), glm::vec2(game->windowSize));
 }

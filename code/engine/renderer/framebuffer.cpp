@@ -9,18 +9,19 @@ void SetupFramebuffers(Game *game)
 
     //TODO: Multiple render targets, render picking and outline textures using one framebuffer and one render pass
     //Full scene textures are created separately because I use the same framebuffer for outlines and full render and just swap out the textures
-    game->outlineFbo = CreateFramebuffer(glm::ivec2(WINDOW_WIDTH, WINDOW_HEIGHT), FboTexturePreset_ColorLinearRGB, 0);
-    game->fullSceneTexture = CreateGLTexture(NULL, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT,
+    game->outlineFbo = CreateFramebuffer(game->windowSize, FboTexturePreset_ColorLinearRGB, 0);
+    game->fullSceneTexture = CreateGLTexture(NULL, game->windowSize.x, game->windowSize.y,
                                              FboTexturePreset_ColorLinearRGB);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
-    game->fullSceneDepthTexture = CreateGLTexture(NULL, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT,
+    game->fullSceneDepthTexture = CreateGLTexture(NULL, game->windowSize.x, game->windowSize.y,
                                                   FboTexturePreset_Depth32F);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, game->fullSceneDepthTexture.id, 0);
 
-    game->smokeFbo = CreateFramebuffer(glm::ivec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f),
-                                       FboTexturePreset_ColorLinearRGBA, FboTexturePreset_Depth32F);
+    game->particlesFbo = CreateFramebuffer(RECT_HALF(game->windowSize), FboTexturePreset_ColorLinearRGBA,
+                                           FboTexturePreset_Depth32F);
 
-    game->shadowMapFbo = CreateFramebuffer(glm::ivec2(1024, 1024) * 8, 0, FboTexturePreset_Depth32F | TextureFlag_ClampToEdge);
+    game->shadowMapFbo = CreateFramebuffer(glm::ivec2(1024, 1024), 0,
+                                           FboTexturePreset_Depth32F | TextureFlag_ClampToEdge);
 
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

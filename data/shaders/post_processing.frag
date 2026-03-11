@@ -2,7 +2,7 @@
 
 uniform sampler2D u_outline;
 uniform sampler2D u_scene;
-uniform sampler2D u_smoke;
+uniform sampler2D u_particles;
 uniform sampler2D u_sceneDepth;
 uniform sampler2D u_smokeDepth;
 uniform vec2 u_lowResInvSize;
@@ -28,7 +28,7 @@ void main()
 
     if(u_showParticles)
     {
-        vec4 smokeColor = texture(u_smoke, TexCoords);
+        vec4 smokeColor = texture(u_particles, TexCoords);
         sceneColor = vec4(mix(sceneColor.rgb, smokeColor.rgb, smokeColor.a), 1.0);
     }
 

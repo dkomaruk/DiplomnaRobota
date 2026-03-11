@@ -22,7 +22,8 @@ struct Camera
     float sensitivity;
 };
 
-void UpdateCamera(Game *game);
+Camera CreateFPSCamera();
+void UpdateFPSCamera(Game *game);
 
 #define CAMERA_H
 #endif

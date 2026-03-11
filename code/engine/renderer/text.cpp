@@ -93,11 +93,12 @@ std::vector<VertexText> PrepareTextVertices(Font *font, char *text, glm::ivec2 *
         Character ch = font->characters[c];
 
         int xOffset = (ch.bearing.x < 0) ? ch.bearing.x : 0;
-        if((nextPos.x + xOffset + ch.advance) > WINDOW_WIDTH - 10)
-        {
-            nextPos.x = 0;
-            nextPos.y += ch.textureSize.y;
-        }
+        //TODO: word wrapping in a label container
+        //if((nextPos.x + xOffset + ch.advance) > WINDOW_WIDTH - 10)
+        //{
+        //    nextPos.x = 0;
+        //    nextPos.y += ch.textureSize.y;
+        //}
 
         glm::ivec2 chPos = glm::ivec2(nextPos.x + xOffset, nextPos.y);
 

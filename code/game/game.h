@@ -29,6 +29,7 @@
 struct Game
 {
     SDL_Window *window;
+    glm::ivec2 windowSize;
 
     //Application flags
     bool isRunning = true;
@@ -46,7 +47,7 @@ struct Game
     Framebuffer outlineFbo;
     Texture fullSceneTexture, fullSceneDepthTexture;
 
-    Framebuffer smokeFbo;
+    Framebuffer particlesFbo;
 
     //Shadows
     Framebuffer shadowMapFbo;

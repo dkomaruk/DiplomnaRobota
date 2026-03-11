@@ -3,6 +3,8 @@
 ## 2026-03-06 S8 More Stuff
 - [ ] Multithreaded asset loading for faster iteration time
   - Load assets in parallel
+  - Looks like PNGs take a long time to load because of the decompression?
+    - Need to profile time per image type and its size
 - [ ] Terrain optimization (chunking, tesselation and LOD)
 - [ ] Forest, grass, bushes rendering (instancing, impostors at high distance, LOD)
   - Load meshes, impostors, grass textures and so on
@@ -12,8 +14,8 @@
 # Next
 - [ ] Map Editor
   - Ability to place individual items on the terrain
-  - Place fillers for vegetation and random items
-  - Draw on the terrain into a splat map
+  - Place filler volumes for vegetation and random items
+  - Draw on the terrain mesh into a splat map
   - Save heightmap, other textures, placed object positions, object descriptors into one file
 - [ ] Multithreading
   - Update Entities in parallel

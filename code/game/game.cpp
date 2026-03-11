@@ -4,6 +4,7 @@
 #include "frustum.h"
 #include "shader.h"
 #include "camera.h"
+#include "asset_loader.h"
 
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -22,6 +23,8 @@
 
 bool InitGame(Game *game)
 {
+    srand((uint32)time(0));
+
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
 
     if(!SDL_Init(SDL_INIT_VIDEO))
@@ -43,22 +46,24 @@ bool InitGame(Game *game)
     bool isTransparent = false;
 #endif
 
-#ifdef WINDOW_BORDERLESS
-    bool isBorderless = true;
+#ifdef WINDOW_FULLSCREEN
+    bool isFullscreen = true;
 #else
-    bool isBorderless = false;
+    bool isFullscreen = false;
 #endif
 
-    Uint64 windowFlags = SDL_WINDOW_OPENGL |
-                        (isBorderless ? SDL_WINDOW_FULLSCREEN : 0) |
+    Uint64 windowFlags = SDL_WINDOW_OPENGL | (isFullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
                         (isTransparent ? SDL_WINDOW_TRANSPARENT : 0) ;
 
-    game->window = SDL_CreateWindow("Komaruk Diplom", (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT, windowFlags);
+    game->windowSize = glm::ivec2(1280, 720);
+    game->window = SDL_CreateWindow("Komaruk Diplom", game->windowSize.x, game->windowSize.y, windowFlags);
     if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
         return false;
     }
+
+    SDL_GetWindowSize(game->window, &game->windowSize.x, &game->windowSize.y);
 
     if(!TTF_Init())
     {
@@ -83,7 +88,7 @@ bool InitGame(Game *game)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    ImGuiIO &io = ImGui::GetIO(); (void)io;
+    ImGuiIO &io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF("../data/fonts/Roboto-Regular.ttf", 20.0f);
 
     ImGui::StyleColorsDark();
@@ -102,22 +107,14 @@ bool InitGame(Game *game)
     stbi_set_flip_vertically_on_load(true);
     stbi_flip_vertically_on_write(true);
 
-    Camera *camera = &game->camera;
+    game->camera = CreateFPSCamera();
 
-    camera->position = glm::vec3(0.0f, 0.0f, 5.0f);
-    camera->direction = glm::vec3(0.0f, 0.0f, -1.0f);
-    camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
-    //camera->speed = 2.5f;
-    camera->speed = 5.0f;
-    //camera->speed = 40.0f;
-    camera->sensitivity = 0.1f;
-
-    game->perspectiveProjection = glm::perspective(glm::radians(camera->fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 1000.0f);
-    game->orthoProjection = glm::ortho(0.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, -1.0f, 1.0f);
+    game->perspectiveProjection = glm::perspective(glm::radians(game->camera.fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 1000.0f);
+    game->orthoProjection = glm::ortho(0.0f, (float)game->windowSize.x, (float)game->windowSize.y, 0.0f, -1.0f, 1.0f);
     game->orthoProjDirLight = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
-    //game->orthoProjDirLight = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
-    game->view = lookAt(camera->position, camera->position + camera->direction, glm::vec3(0.0f, 1.0f, 0.0f));
+    game->view = glm::lookAt(game->camera.position, game->camera.position + game->camera.direction,
+                             glm::vec3(0.0f, 1.0f, 0.0f));
 
     game->perfFreq = SDL_GetPerformanceFrequency();
 
@@ -130,7 +127,7 @@ bool InitGame(Game *game)
     audio->device = alcOpenDevice(0);
     if(!audio->device)
     {
-        SDL_Log("Failed to open an OpenAL device\n");
+        SDL_Log("Failed to open an audio playback device\n");
         return false;
     }
 
@@ -144,7 +141,7 @@ bool InitGame(Game *game)
     return true;
 }
 
-void RenderScene(Game *game)
+void RenderTestScene(Game *game)
 {
     glm::vec4 bgColor = game->outlinePass ? glm::vec4(0.0f) : glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -169,14 +166,14 @@ void RenderGame(Game *game)
     game->shadowPass = true;
     glBindFramebuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
     glViewport(0, 0, game->shadowMapFbo.depth.x, game->shadowMapFbo.depth.y);
-    RenderScene(game);
+    RenderTestScene(game);
     game->shadowPass = false;
 
     game->outlinePass = true;
     glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
-    glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+    glViewport(0, 0, game->windowSize.x, game->windowSize.y);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
-    RenderScene(game);
+    RenderTestScene(game);
     game->outlinePass = false;
 
     glPolygonMode(GL_FRONT_AND_BACK, game->polygonMode);
@@ -184,9 +181,8 @@ void RenderGame(Game *game)
     glDepthMask(GL_TRUE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
     ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
-    RenderScene(game);
+    RenderTestScene(game);
 
-//#ifdef DEBUG
     if(game->renderPickingRay)
     {
         RenderLine(&game->pickingRay);
@@ -202,7 +198,6 @@ void RenderGame(Game *game)
             RenderLine(&game->frustumNormals[i]);
         }
     }
-//#endif
 
 #ifdef LOAD_ASSETS
     if(game->renderTerrain)
@@ -210,7 +205,6 @@ void RenderGame(Game *game)
         RenderTerrain(game);
     }
 
-    //Skymap
     if(game->polygonMode == GL_FILL)
     {
         UseShader(game->skymapShader);
@@ -230,16 +224,16 @@ void RenderGame(Game *game)
 
     if(game->renderParticles)
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, game->smokeFbo.id);
+        glBindFramebuffer(GL_FRAMEBUFFER, game->particlesFbo.id);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glViewport(0, 0, game->smokeFbo.color.x, game->smokeFbo.color.y);
+        glViewport(0, 0, game->particlesFbo.color.x, game->particlesFbo.color.y);
         SetTexture(&game->fullSceneDepthTexture, 2);
         ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
-        ShaderSetVec2(game->particleShader, "u_screenSize", game->smokeFbo.color.size);
+        ShaderSetVec2(game->particleShader, "u_screenSize", game->particlesFbo.color.size);
         RenderParticles(game);
-        glViewport(0, 0, (int)WINDOW_WIDTH, (int)WINDOW_HEIGHT);
+        glViewport(0, 0, game->windowSize.x, game->windowSize.y);
     }
 #endif
 
@@ -253,14 +247,14 @@ void RenderGame(Game *game)
     ShaderSetInt(game->postProcessShader, "u_outline", 0);
     SetTexture(&game->fullSceneTexture, 1);
     ShaderSetInt(game->postProcessShader, "u_scene", 1);
-    SetTexture(&game->smokeFbo.color, 2);
-    ShaderSetInt(game->postProcessShader, "u_smoke", 2);
+    SetTexture(&game->particlesFbo.color, 2);
+    ShaderSetInt(game->postProcessShader, "u_particles", 2);
     SetTexture(&game->fullSceneDepthTexture, 3);
     ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
-    SetTexture(&game->smokeFbo.depth, 4);
+    SetTexture(&game->particlesFbo.depth, 4);
     ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
 
-    ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->smokeFbo.color.size);
+    ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->particlesFbo.color.size);
 
     glBindVertexArray(game->fullscreenQuad.vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -270,7 +264,7 @@ void RenderGame(Game *game)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
-        !game->input.isMouseCapturedByImgui)
+        !game->input.isMouseCapturedByImgui && !game->input.isCursorHidden)
     {
         RenderSelectionBox(game, &game->selectionBox);
     }
@@ -311,7 +305,6 @@ void UpdateGame(Game *game)
         return;
     }
 
-    UpdateCamera(game);
     game->projViewInverse = glm::inverse(game->perspectiveProjection * glm::mat4(glm::mat3(game->view)));
 
     static bool isPaused = false;
@@ -327,10 +320,10 @@ void UpdateGame(Game *game)
     //Cast picking ray, perform selection, calculate intersection with the terrain
     if(IsFirstClick(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
     {
-        glm::vec2 mousePos = input->isCursorHidden ? WINDOW_CENTER : input->mousePos;
+        glm::vec2 mousePos = input->isCursorHidden ? RECT_HALF(game->windowSize) : input->mousePos;
         game->selectionBox.start = mousePos;
 
-        mousePos.y = (int)WINDOW_HEIGHT - mousePos.y;
+        mousePos.y = (int)game->windowSize.y - mousePos.y;
         Ray pickingRay = CastPickingRay(game, mousePos);
         SelectSingleObject(game, &pickingRay);
 
@@ -339,8 +332,7 @@ void UpdateGame(Game *game)
         glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
 //#ifdef DEBUG
-        UpdateLine(&game->pickingRay, pickingRay.origin,
-                   pickingRay.origin + pickingRay.direction * visibleRayLength);
+        UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
 //#endif
 
         game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
@@ -361,7 +353,7 @@ void UpdateGame(Game *game)
         game->selectionBox.size = input->mousePos - game->selectionBox.start;
     }
 
-    if(IsMouseJustReleased(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui && RECT_HAS_SIZE(game->selectionBox.size))
+    if(IsMouseJustReleased(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui && !input->isCursorHidden)
     {
         SelectMultipleObjects(game);
     }
@@ -509,8 +501,8 @@ void UpdateGame(Game *game)
     //Save a screenshot of outline buffer
     if(IsFirstPress(input, SDL_SCANCODE_U))
     {
-        int w = (int)WINDOW_WIDTH;
-        int h = (int)WINDOW_HEIGHT;
+        int w = game->windowSize.x;
+        int h = game->windowSize.y;
         int bytesPerPixel = 3;
 
         uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
