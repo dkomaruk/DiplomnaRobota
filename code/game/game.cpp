@@ -420,7 +420,8 @@ void UpdateGame(Game *game)
         game->selectionBox.size = input->mousePos - game->selectionBox.start;
     }
 
-    if(IsMouseJustReleased(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui && !input->isCursorHidden)
+    if(IsMouseJustReleased(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui && !input->isCursorHidden &&
+       RECT_HAS_SIZE(game->selectionBox.size))
     {
         SelectMultipleObjects(game);
     }
