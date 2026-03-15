@@ -46,7 +46,7 @@ struct Particle
 
 //Having a separate buffer with these structs to pass to the GPU is convenient,
 //because I can put alive sorted particles in and not worry about order in the main Particle array
-struct ParticleData
+struct ParticleData //Per particle instance data
 {
     float scale;
     float angle;

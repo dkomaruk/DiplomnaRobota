@@ -270,6 +270,8 @@ void LoadTestScene(Game *game)
                                               LoadShader("../data/shaders/shadow.frag"));
     GLuint skinnedShadowShader = CreateShaderProgram(LoadShader("../data/shaders/shadow_skinned.vert"),
                                                      LoadShader("../data/shaders/shadow.frag"));
+    GLuint grassShader = CreateShaderProgram(LoadShader("../data/shaders/grass.vert"),
+                                             LoadShader("../data/shaders/grass.frag"));
 
     ShaderSetVec2(mainShader, "u_viewport", game->windowSize);
     ShaderSetVec2(animationShader, "u_viewport", game->windowSize);
@@ -294,6 +296,8 @@ void LoadTestScene(Game *game)
     game->shaders.push_back(skymapShader);
     game->shaders.push_back(shadowShader);
     game->shaders.push_back(skinnedShadowShader);
+    game->shaders.push_back(particleShader);
+    game->shaders.push_back(grassShader);
 
     for(int i = 0; i < game->shaders.size(); i++)
     {
@@ -302,9 +306,6 @@ void LoadTestScene(Game *game)
 
     game->shaders.push_back(uiTextShader);
     ShaderSetMatrix4(uiTextShader, "u_projection", game->orthoProjection);
-
-    game->shaders.push_back(particleShader);
-    ShaderSetMatrix4(particleShader, "u_projection", game->perspectiveProjection);
 
     game->shaders.push_back(selectionBoxShader);
     ShaderSetMatrix4(selectionBoxShader, "u_projection", game->orthoProjection);
@@ -323,6 +324,7 @@ void LoadTestScene(Game *game)
     game->skymapShader = skymapShader;
     game->shadowShader = shadowShader;
     game->skinnedShadowShader = skinnedShadowShader;
+    game->grassShader = grassShader;
 
     //MESHES
 #ifdef LOAD_ASSETS
@@ -400,6 +402,10 @@ void LoadTestScene(Game *game)
     Model *tree2 = ImportModel("../data/extra/tree/t3.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
     AddNewEntityToScene(game, tree2, "spherical smoothed", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
 
+    game->grass = ImportModel("../data/extra/grass2.fbx", game->mainShader, aiProcess_Triangulate |
+                              aiProcess_GlobalScale, ModelType_Static, 0.001f);
+    AddNewEntityToScene(game, game->grass, "grass", glm::vec3(0.0f, 6.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f));
+
     glm::vec3 dirDiffuse = glm::vec3(0.9f);
     glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
@@ -413,6 +419,8 @@ void LoadTestScene(Game *game)
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
 
     //AddNewEntityToScene(game, lightMesh, "dirLightCube", -game->dirLight.direction * 200.0f, glm::vec3(0.0f), glm::vec3(50.0f));
+
+
 
 #if 0
     PointLight pointLights[4] = {};

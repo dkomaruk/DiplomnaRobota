@@ -2,6 +2,8 @@
 
 #include "game.h"
 #include "intersections.h"
+#include "frustum.h"
+#include "ui.h"
 
 void SelectSingleObject(Game *game, Ray *pickingRay)
 {

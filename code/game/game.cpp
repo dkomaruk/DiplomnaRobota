@@ -21,6 +21,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl3.h>
 
+#include <time.h>
+
 bool InitGame(Game *game)
 {
     srand((uint32)time(0));
@@ -204,6 +206,16 @@ void RenderGame(Game *game)
     {
         RenderTerrain(game);
     }
+
+    //Render grass
+    UseShader(game->grassShader);
+
+    ShaderSetInt(game->grassShader, "u_texture", 0);
+    SetTexture(game->grass->material->diffuseTexture.id, 0);
+
+    glBindVertexArray(game->grassQuad.vao);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
+    glBindVertexArray(0);
 
     if(game->polygonMode == GL_FILL)
     {
@@ -595,6 +607,7 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->lightSourceShader, "u_view", game->view);
     ShaderSetMatrix4(game->skinnedOutlineShader, "u_view", game->view);
     ShaderSetMatrix4(game->particleShader, "u_view", game->view);
+    ShaderSetMatrix4(game->grassShader, "u_view", game->view);
     ShaderSetMatrix4(game->lineShader, "u_view", game->view);
 
     //ShaderSetMatrix4(game->mainShader, "u_projection", game->projection);

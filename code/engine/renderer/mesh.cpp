@@ -164,10 +164,10 @@ Mesh CreateUnitQuadStripes()
 {
     glm::vec3 n = glm::vec3(0.0f, 0.0f, 1.0f);
 
-    Vertex v1 = {glm::vec3(-0.5f, 0.5f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
-    Vertex v2 = {glm::vec3(-0.5f, -0.5f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
-    Vertex v3 = {glm::vec3(0.5f, -0.5f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
-    Vertex v4 = {glm::vec3(0.5f, 0.5f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
+    Vertex v1 = {glm::vec3(-0.5f, 1.0f, 0.0f), n, glm::vec2(0.0f, 1.0f)};
+    Vertex v2 = {glm::vec3(-0.5f, 0.0f, 0.0f), n, glm::vec2(0.0f, 0.0f)};
+    Vertex v3 = {glm::vec3(0.5f, 0.0f, 0.0f), n, glm::vec2(1.0f, 0.0f)};
+    Vertex v4 = {glm::vec3(0.5f, 1.0f, 0.0f), n, glm::vec2(1.0f, 1.0f)};
     std::vector<Vertex> vertices = {v2, v3, v1, v4};
 
     return CreateMesh(&vertices[0], vertices.size(), sizeof(Vertex), vertexAttribs, ArrayCount(vertexAttribs));
