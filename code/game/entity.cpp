@@ -34,6 +34,9 @@ void RenderEntity(Entity *self, Game *game)
     {
         ShaderSetVec4(game->lineShader, "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glLineWidth(2.0f);
+        //NOTE: Use modelMatPosScale to display AABB, modelMat to display OBB.
+        //Did this so that AABB responds to movements of animated characters
+        //RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
         RenderMesh(game, &self->meshAABB, self->modelMat, game->lineShader, 0, self->meshAABB.drawMode);
         glLineWidth(1.0f);
     }

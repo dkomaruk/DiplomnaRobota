@@ -1,7 +1,5 @@
 #include "particle_editor.h"
-
 #include "particle_system.h"
-#include "file.h"
 
 #include "math_utils.h"
 
@@ -54,7 +52,7 @@ namespace glm
     }
 }
 
-void SaveParticleSettings(ParticleSystemSettings &settings, std::string &filepath) {
+void SaveParticleSettings(ParticleSystemSettings &settings, const std::string &filepath) {
     json j;
     j["maxNumOfParticles"] = settings.maxNumOfParticles;
     j["prewarm"] = settings.prewarm;
@@ -130,7 +128,7 @@ void ResampleGradient(ImGG::Gradient *gradient, ImVec4 *samples, int numOfSample
     }
 }
 
-void LoadParticleSettings(ParticleSystemSettings &settings, std::string &filepath, Atlas *atlas)
+void LoadParticleSettings(ParticleSystemSettings &settings, const std::string &filepath, Atlas *atlas)
 {
     std::ifstream file(filepath);
     if (!file.is_open()) return;
@@ -265,6 +263,25 @@ void ReallocParticles(Game *game, ParticleSystemSettings *settings, int oldNumOf
     }
 }
 
+void SaveParticleSystemCallback(void *userdata, const char * const *filelist, int filter)
+{
+    if(filelist && *filelist)
+    {
+        Game *game = (Game *)userdata;
+        SaveParticleSettings(game->smokeSettings, std::string(filelist[0]));
+    }
+}
+
+void LoadParticleSystemCallback(void *userdata, const char * const *filelist, int filter)
+{
+    if(filelist && *filelist)
+    {
+        Game *game = (Game *)userdata;
+        LoadParticleSettings(game->smokeSettings, std::string(filelist[0]), game->smokeSettings.atlas);
+        ReallocParticles(game, &game->smokeSettings, game->smokeSettings.maxNumOfParticles);
+    }
+}
+
 void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
     ImGui::Begin("Particle System Editor", windowState, flags);
@@ -376,23 +393,14 @@ void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flag
         ImGui::InputInt("Frames", &smoke->animationFPS);
     }
 
-    FileFilter filters[] = {{"JSON Files", "*.json"}};
+    static SDL_DialogFileFilter filters[] = {{"JSON Files", "json"}};
     if(ImGui::Button("Save"))
     {
-        std::string path = SaveFileDialog(filters, ArrayCount(filters));
-        if(!path.empty())
-            SaveParticleSettings(*smoke, path);
-        game->lastFrame = SDL_GetPerformanceCounter();
+        SDL_ShowSaveFileDialog(SaveParticleSystemCallback, (void *)game, game->window, filters, 1, 0);
     }
     if(ImGui::Button("Load"))
     {
-        std::string path = OpenFileDialog(filters, ArrayCount(filters));
-        if(!path.empty())
-        {
-            LoadParticleSettings(*smoke, path, smoke->atlas);
-            ReallocParticles(game, smoke, oldNumOfParticles);
-            game->lastFrame = SDL_GetPerformanceCounter();
-        }
+        SDL_ShowOpenFileDialog(LoadParticleSystemCallback, (void *)game, game->window, filters, 1, 0, false);
     }
 
     ImGui::End();

@@ -2,7 +2,7 @@
 
 struct Game;
 
-void UpdateEditorUI(Game *game);
+void UpdateEditor(Game *game);
 
 #define EDITOR_H
 #endif

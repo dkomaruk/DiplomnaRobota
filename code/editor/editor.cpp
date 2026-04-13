@@ -4,7 +4,6 @@
 #include "terrain_editor.h"
 
 #include "game.h"
-#include "file.h"
 #include "model.h"
 #include "noise.h"
 #include "shader.h"
@@ -13,6 +12,10 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_gradient/imgui_gradient.hpp>
+
+#include <mutex>
+#include <queue>
+#include <string>
 
 void UpdateMenuBar(Game *game)
 {
@@ -120,7 +123,6 @@ void UpdateSelectedEntity(Game *game, ImGuiWindowFlags flags)
                 {
                     glm::mat4 modelMat = PrepareModelMatrix(glm::vec3(0.0f), selectedEntity->rotation, glm::vec3(1.0f));
                     selectedEntity->aabb = TransformAABB(&selectedEntity->model->aabb, modelMat);
-                    UpdateAABBCorners(&selectedEntity->aabb);
                     UpdateAABBMesh(&selectedEntity->aabb, &selectedEntity->meshAABB, true);
                 }
                 ImGui::DragFloat3("Scale", &selectedEntity->scale[0], 0.1f);
@@ -138,21 +140,39 @@ void UpdateSelectedEntity(Game *game, ImGuiWindowFlags flags)
     ImGui::End();
 }
 
+struct ImportCallbackData
+{
+    std::mutex mutex;
+    std::queue<std::string> queue;
+};
+
+void ImportModelCallback(void *userdata, const char * const *filelist, int filter)
+{
+    if(filelist && *filelist)
+    {
+        ImportCallbackData *importData = (ImportCallbackData *)userdata;
+
+        importData->mutex.lock();
+        importData->queue.push(filelist[0]);
+        importData->mutex.unlock();
+    }
+}
+
 void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
 {
     ImGui::Begin("Import Model", &game->importModelWindow, flags);
 
-    static float importScale = 1.0f;
-    ImGui::InputFloat("Import Scale", &importScale);
+    ImGui::InputFloat("Import Scale", &game->importScale);
 
-    if(ImGui::Button("Import"))
+    static ImportCallbackData importData = {};
+
+    if(importData.mutex.try_lock())
     {
-        FileFilter filters[] = {{"FBX Files", "*.fbx"}, {"GLB Files", "*.glb"}, {"OBJ Files", "*.obj"}};
-        std::string path = OpenFileDialog(filters, ArrayCount(filters));
-        if(!path.empty())
+        while(importData.queue.size())
         {
+            std::string& path = importData.queue.front();
             Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
-                                        ModelType_DetermineOnLoad, importScale);
+                                        ModelType_DetermineOnLoad, game->importScale);
 
             if(model->type == ModelType_Static)
                 model->material->shader = game->mainShader;
@@ -167,14 +187,22 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
             entity->id = game->sceneEntities.back()->id + 1;
             game->sceneEntities.push_back(entity);
 
-            game->lastFrame = SDL_GetPerformanceCounter();
+            importData.queue.pop();
         }
+
+        importData.mutex.unlock();
+    }
+
+    if(ImGui::Button("Import"))
+    {
+        static SDL_DialogFileFilter filters[] = {{"FBX Files", "fbx"}, {"GLB Files", "glb"}, {"OBJ Files", "obj"}};
+        SDL_ShowOpenFileDialog(ImportModelCallback, (void *)&importData, game->window, filters, 3, 0, false);
     }
 
     ImGui::End();
 }
 
-void UpdateEditorUI(Game *game)
+void UpdateEditor(Game *game)
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();

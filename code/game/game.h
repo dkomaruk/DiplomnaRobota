@@ -122,8 +122,10 @@ struct Game
     bool selectedEntityWindow;
     bool debugSettingsWindow;
     bool lightingSettingsWindow;
-    bool importModelWindow;
     bool valueNoiseWindow;
+
+    float importScale = 1.0f;
+    bool importModelWindow;
 
     //Noise
     Texture valueNoise;

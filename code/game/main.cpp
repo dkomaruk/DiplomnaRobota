@@ -7,13 +7,6 @@
 
 #include <SDL3/SDL_main.h>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <commdlg.h>
-
-#undef near
-#undef far
-
 #include <json.hpp>
 #include <glm/gtx/intersect.hpp>
 
@@ -60,6 +53,7 @@ struct GrassData
 
 int main(int argc, char *argv[])
 {
+
     Game *game = GetGame();
     if(!InitGame(game))
     {
@@ -107,9 +101,7 @@ int main(int argc, char *argv[])
     {
         ProcessInput(&game->input);
 
-        UpdateFPSCamera(game);
-
-        UpdateEditorUI(game);
+        UpdateEditor(game);
         UpdateGame(game);
 
         RenderGame(game);

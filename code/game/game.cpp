@@ -375,6 +375,8 @@ void UpdateTestScene(Game *game)
 
 void UpdateGame(Game *game)
 {
+    UpdateFPSCamera(game);
+
     Input *input = &game->input;
 
     if(input->shouldQuit)
