@@ -20,7 +20,7 @@ void UseShader(GLuint shader);
 GLuint GetCurrentShader();
 
 void ShaderSetInt(GLuint shader, char *uniform, int v);
-void ShaderSetUInt(GLuint shader, char *uniform, uint32 v);
+void ShaderSetUInt(GLuint shader, char *uniform, u32 v);
 void ShaderSetFloat(GLuint shader, char *uniform, float v);
 
 void ShaderSetVec2(GLuint shader, char *uniform, float v0, float v1);

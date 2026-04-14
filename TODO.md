@@ -1,6 +1,8 @@
 # Current
 
 ## 2026-03-06 S8 More Stuff
+- [ ] Use a JSON file to configure shader to decrease the number of places you need to edit to add a new shader
+- [ ] Convert PNG textures into DXT file format for faster load time
 - [ ] Multithreaded asset loading for faster iteration time
   - Load assets in parallel
   - Looks like PNGs take a long time to load because of the decompression?

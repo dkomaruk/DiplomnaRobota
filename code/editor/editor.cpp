@@ -72,7 +72,7 @@ void UpdateValueNoise(Game *game, ImGuiWindowFlags flags)
     {
         glDeleteTextures(1, &game->valueNoise.id);
         glm::vec2 size = glm::vec2(256.0f, 256.0f);
-        uint8 *valueNoise = GenerateValueNoise(size);
+        u8 *valueNoise = GenerateValueNoise(size);
         game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
         free(valueNoise);
     }

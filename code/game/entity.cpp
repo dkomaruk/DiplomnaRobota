@@ -34,8 +34,11 @@ void RenderEntity(Entity *self, Game *game)
     {
         ShaderSetVec4(game->lineShader, "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glLineWidth(2.0f);
+
+        //TODO: Figure out how to recalculate AABB correctly on animated and rotated entities. Maybe it doesn't matter that much tho since accurate collision detection isn't really needed in a strategy game because most collisions are resolved during pathfinding
+
         //NOTE: Use modelMatPosScale to display AABB, modelMat to display OBB.
-        //Did this so that AABB responds to movements of animated characters
+        //Did this so that debug AABB responds to movements of animated characters that are manually rotated
         //RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
         RenderMesh(game, &self->meshAABB, self->modelMat, game->lineShader, 0, self->meshAABB.drawMode);
         glLineWidth(1.0f);
@@ -54,7 +57,7 @@ Entity CreateEntity(Model *model)
     entity.type = EntityType_Static;
 
     entity.aabb = model->aabb;
-    uint32 indicesAABB[24] = {
+    u32 indicesAABB[24] = {
         0, 1, 1, 3, 3, 2, 2, 0,
         4, 5, 5, 7, 7, 6, 6, 4,
         0, 4, 1, 5, 2, 6, 3, 7

@@ -33,7 +33,7 @@ void SelectSingleObject(Game *game, Ray *pickingRay)
 
     if(closestId >= 0)
     {
-        uint16 pickedId = (uint16)closestId;
+        u16 pickedId = (u16)closestId;
         bool isAlreadyPicked = game->selectedIDs.count(pickedId);
         if(isAlreadyPicked && game->input.keys[SDL_SCANCODE_LSHIFT])
         {
@@ -100,7 +100,7 @@ void SelectMultipleObjects(Game *game)
                 nearPoints[Frustum_BL] + frustum.planes[Frustum_N].normal * planeNormalLength);
 //#endif
 
-    std::vector<uint16> pickedIDs;
+    std::vector<u16> pickedIDs;
     for(int entityIndex = 0; entityIndex < game->sceneEntities.size(); entityIndex++)
     {
         Entity *entity = game->sceneEntities[entityIndex];

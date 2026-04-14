@@ -25,7 +25,7 @@
 
 bool InitGame(Game *game)
 {
-    srand((uint32)time(0));
+    srand((u32)time(0));
 
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0");
 
@@ -524,7 +524,7 @@ void UpdateGame(Game *game)
         int h = game->windowSize.y;
         int bytesPerPixel = 3;
 
-        uint8 *pixels = (uint8 *)malloc(w * h * bytesPerPixel);
+        u8 *pixels = (u8 *)malloc(w * h * bytesPerPixel);
         glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
         glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
         stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);

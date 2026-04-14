@@ -127,7 +127,7 @@ struct ParticleSystemSettings
 struct ParticleSystem
 {
     Particle *particles;
-    uint32 nextParticle;
+    u32 nextParticle;
     float accumulatedSpawns;
     int aliveParticles;
 

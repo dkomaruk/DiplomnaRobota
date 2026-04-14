@@ -17,8 +17,8 @@ float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::v
 {
     float *heightmap = (float *)calloc((int)(mapSize.x * mapSize.y), sizeof(float));
 
-    uint16 *image16 = (uint16 *)image;
-    uint8 *image8 = (uint8 *)image;
+    u16 *image16 = (u16 *)image;
+    u8 *image8 = (u8 *)image;
 
     for(int i = 0; i < mapSize.y; ++i)
     {
@@ -27,7 +27,7 @@ float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::v
             int sampleIndex = j + i * (int)fullMapSize.x;
             int destIndex = j + i * (int)mapSize.x;
 
-            uint16 sample = (channels == 1) ? image16[sampleIndex] : image8[sampleIndex * channels];
+            u16 sample = (channels == 1) ? image16[sampleIndex] : image8[sampleIndex * channels];
             heightmap[destIndex] = sample * yScale - yShift;
         }
     }
@@ -41,8 +41,8 @@ Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPo
     int x, y, channels;
     stbi_info(heightmapPath, &x, &y, &channels);
 
-    uint8 *image = 0;
-    uint16 *image16 = 0;
+    u8 *image = 0;
+    u16 *image16 = 0;
 
     float yScale;
 
@@ -118,8 +118,8 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
         }
     }
 
-    uint32 restartIndex = 0xFF'FF'FF'FF;
-    std::vector<uint32> indices;
+    u32 restartIndex = 0xFF'FF'FF'FF;
+    std::vector<u32> indices;
     for(int i = 0; i < numOfVerticesX - 1; ++i)
     {
         for(int j = 0; j < numOfVerticesZ; ++j)

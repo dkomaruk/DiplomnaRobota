@@ -71,7 +71,7 @@ Font PrepareFont(char *filepath, int fontSize)
         }
     }
 
-    font.atlas = CreateGLTexture((uint8 *)atlas->pixels, atlasWidth, atlasHeight);
+    font.atlas = CreateGLTexture((u8 *)atlas->pixels, atlasWidth, atlasHeight);
 
     return font;
 }

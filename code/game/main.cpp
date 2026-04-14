@@ -115,10 +115,10 @@ int main(int argc, char *argv[])
 
             glReadPixels(0, 0, imgSize.x, imgSize.y, GL_DEPTH_COMPONENT, GL_FLOAT, depthData.data());
 
-            std::vector<uint8> pixelData(imgSize.x * imgSize.y);
+            std::vector<u8> pixelData(imgSize.x * imgSize.y);
             for(int i = 0; i < imgSize.x * imgSize.y; ++i)
             {
-                pixelData[i] = (uint8)(depthData[i] * 255.0f);
+                pixelData[i] = (u8)(depthData[i] * 255.0f);
             }
 
             stbi_flip_vertically_on_write(1);

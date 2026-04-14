@@ -24,8 +24,8 @@ struct TransformOverride
 
 struct Entity
 {
-    uint16 id;
-    uint16 type;
+    u16 id;
+    u16 type;
     char textId[25];
 
     Model *model;

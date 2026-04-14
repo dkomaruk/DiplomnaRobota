@@ -494,13 +494,13 @@ void LoadTestScene(Game *game)
 #endif
 
     glm::vec2 size = glm::vec2(256.0f, 256.0f);
-    uint8 *valueNoise = GenerateValueNoise(size);
+    u8 *valueNoise = GenerateValueNoise(size);
     game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
     free(valueNoise);
 
     float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
 
-    uint8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
+    u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
     game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
     free(perlinNoiseImage);
 

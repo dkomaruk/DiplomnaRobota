@@ -40,8 +40,8 @@ void ProcessInput(Input *input);
 
 bool IsFirstPress(Input *input, SDL_Scancode key);
 
-bool IsFirstClick(Input *input, uint32 button);
-bool IsMouseJustReleased(Input *input, uint32 button);
+bool IsFirstClick(Input *input, u32 button);
+bool IsMouseJustReleased(Input *input, u32 button);
 char *GetMouseButtonName(int button);
 
 #define INPUT_H

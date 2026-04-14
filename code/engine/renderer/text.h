@@ -19,7 +19,7 @@ struct Character
     glm::ivec2 characterSize;
     glm::ivec2 textureSize;
 
-    uint32 advance;
+    u32 advance;
 };
 
 struct Font

@@ -71,7 +71,7 @@ struct Atlas
     std::vector<Sprite> sprites;
 };
 
-Texture CreateGLTexture(uint8 *image, int width, int height, int flags = TexturePreset_Common);
+Texture CreateGLTexture(u8 *image, int width, int height, int flags = TexturePreset_Common);
 Texture CreateTexture(char *imagePath, int flags = TexturePreset_Common);
 
 void SetTexture(Texture *texture, GLuint textureSlot);

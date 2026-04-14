@@ -1,10 +1,12 @@
 #include "texture.h"
 
+#include "debug.h"
+
 #include <glm/vec3.hpp>
 #include <SDL3/SDL.h>
 #include <stb_image.h>
 
-Texture CreateGLTexture(uint8 *image, int width, int height, int flags)
+Texture CreateGLTexture(u8 *image, int width, int height, int flags)
 {
     Texture texture = {};
     texture.x = width;
@@ -102,7 +104,9 @@ Texture CreateTexture(char *imagePath, int flags)
 
     bool flipY = flags & TextureFlag_FlipY;
     stbi_set_flip_vertically_on_load(flipY);
+    StartProfiling();
     unsigned char *image = stbi_load(imagePath, &texture.x, &texture.y, &channels, desiredChannels);
+    EndProfiling(std::string(imagePath));
 
     if(!image) return texture; //TODO: Return a missing texture placeholder
 

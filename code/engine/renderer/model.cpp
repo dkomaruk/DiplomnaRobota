@@ -4,6 +4,7 @@
 #include "texture.h"
 #include "shader.h"
 #include "game.h"
+#include "debug.h"
 
 #include <SDL3/SDL.h>
 
@@ -43,7 +44,7 @@ Texture ImportTextures(const aiScene *scene, aiMaterial *material,
         if(texture->mHeight == 0)
         {
             int w, h;
-            uint8 *image = stbi_load_from_memory((uint8 *)texture->pcData, texture->mWidth, &w, &h, 0, 4);
+            u8 *image = stbi_load_from_memory((u8 *)texture->pcData, texture->mWidth, &w, &h, 0, 4);
             if(!image) return result;
 
             result = CreateGLTexture(image, w, h);
@@ -51,7 +52,7 @@ Texture ImportTextures(const aiScene *scene, aiMaterial *material,
         }
         else
         {
-            result = CreateGLTexture((uint8 *)texture->pcData, texture->mWidth, texture->mHeight);
+            result = CreateGLTexture((u8 *)texture->pcData, texture->mWidth, texture->mHeight);
         }
     }
     else
@@ -92,14 +93,14 @@ std::vector<SkinnedVertex> LoadAnimatedVerticesData(aiMesh *mesh, Skeleton *skel
     vertices.resize(mesh->mNumVertices);
 
     //Load vertices
-    for(uint32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
+    for(u32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
     {
         vertices[vertexIndex].boneId = glm::ivec4(-1);
         LoadVertexData(mesh, vertexIndex, &vertices[vertexIndex].vertex);
     }
 
     //Load bones
-    for(uint32 boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
+    for(u32 boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
     {
         aiBone *aBone = mesh->mBones[boneIndex];
 
@@ -111,10 +112,10 @@ std::vector<SkinnedVertex> LoadAnimatedVerticesData(aiMesh *mesh, Skeleton *skel
         Assert(boneId >= 0 && boneId < skeleton->numOfBones)
 
         //Load bone weights into vertices
-        for(uint32 weightIndex = 0; weightIndex < aBone->mNumWeights; weightIndex++)
+        for(u32 weightIndex = 0; weightIndex < aBone->mNumWeights; weightIndex++)
         {
             int vertexId = aBone->mWeights[weightIndex].mVertexId;
-            Assert((uint32)vertexId < mesh->mNumVertices)
+            Assert((u32)vertexId < mesh->mNumVertices)
 
             //The bone with the largest influence on this vertex gets to extend its AABB with vertex position
             float weight = aBone->mWeights[weightIndex].mWeight;
@@ -144,7 +145,7 @@ std::vector<Vertex> LoadStaticVerticesData(aiMesh *mesh)
     std::vector<Vertex> vertices;
     vertices.resize(mesh->mNumVertices);
 
-    for(uint32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
+    for(u32 vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++)
     {
         LoadVertexData(mesh, vertexIndex, &vertices[vertexIndex]);
     }
@@ -158,7 +159,7 @@ void CountNodes(aiNode *node, int *counter, std::unordered_map<std::string, int>
     nameToNodeIndex[node->mName.C_Str()] = *counter;
     *counter += 1;
 
-    for(uint32 childIndex = 0; childIndex < node->mNumChildren; childIndex++)
+    for(u32 childIndex = 0; childIndex < node->mNumChildren; childIndex++)
     {
         CountNodes(node->mChildren[childIndex], counter, nameToNodeIndex);
     }
@@ -183,9 +184,9 @@ void FlattenAssimpHierarchy(aiScene *scene, aiNode *aNode, Model *model,
 
     glm::mat4 nodeTransform = parentTransform * node.localTransform;
 
-    for(uint32 nodeMeshIndex = 0; nodeMeshIndex < aNode->mNumMeshes; nodeMeshIndex++)
+    for(u32 nodeMeshIndex = 0; nodeMeshIndex < aNode->mNumMeshes; nodeMeshIndex++)
     {
-        uint32 meshIndex = aNode->mMeshes[nodeMeshIndex];
+        u32 meshIndex = aNode->mMeshes[nodeMeshIndex];
         model->meshToNodeId[meshIndex] = nodeId;
 
         aiAABB aiAABB = scene->mMeshes[meshIndex]->mAABB;
@@ -204,14 +205,14 @@ void FlattenAssimpHierarchy(aiScene *scene, aiNode *aNode, Model *model,
         }
     }
 
-    for(uint32 childIndex = 0; childIndex < aNode->mNumChildren; childIndex++)
+    for(u32 childIndex = 0; childIndex < aNode->mNumChildren; childIndex++)
     {
         FlattenAssimpHierarchy(scene, aNode->mChildren[childIndex], model, nodeId,
                                nodeTransform, boneMap, nameToNodeIndex);
     }
 }
 
-Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, float scale)
+Model *ImportModel(char *filepath, GLuint shader, u32 flags, u16 type, float scale)
 {
     Model *result = (Model *)calloc(1, sizeof(Model));
     result->numOfMeshes = -1;
@@ -226,7 +227,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
     if(type == ModelType_DetermineOnLoad)
     {
-        result->type = (uint16)((scene->mNumAnimations == 0) ? ModelType_Static : ModelType_Animated);
+        result->type = (u16)((scene->mNumAnimations == 0) ? ModelType_Static : ModelType_Animated);
     }
     else
     {
@@ -240,10 +241,10 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
     int numOfBones = 0;
     std::unordered_map<std::string, int> boneMap;
-    for(uint32 meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
+    for(u32 meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
     {
         aiMesh *mesh = scene->mMeshes[meshIndex];
-        for(uint32 boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
+        for(u32 boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++)
         {
             aiBone *bone = mesh->mBones[boneIndex];
 
@@ -288,15 +289,15 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     std::vector<std::string> loadedDiffusePaths, loadedSpecularPaths;
     std::vector<Texture> diffuseTextures, specularTextures;
 
-    for(uint32 meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
+    for(u32 meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++)
     {
         aiMesh *mesh = scene->mMeshes[meshIndex];
         bool hasUVs = mesh->HasTextureCoords(0);
 
-        std::vector<uint32> indices;
-        for(uint32 j = 0; j < mesh->mNumFaces; j++)
+        std::vector<u32> indices;
+        for(u32 j = 0; j < mesh->mNumFaces; j++)
         {
-            for(uint32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
+            for(u32 k = 0; k < mesh->mFaces[j].mNumIndices; k++)
             {
                 indices.push_back(mesh->mFaces[j].mIndices[k]);
             }
@@ -336,7 +337,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
     {
         AnimatedModel *animData = result->animData;
 
-        for(uint32 animationIndex = 0; animationIndex < scene->mNumAnimations; animationIndex++)
+        for(u32 animationIndex = 0; animationIndex < scene->mNumAnimations; animationIndex++)
         {
             aiAnimation *anim = scene->mAnimations[animationIndex];
 
@@ -350,7 +351,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
             animation->numOfSamples = anim->mNumChannels;
             animation->samples = (AnimationSample *)calloc(animation->numOfSamples, sizeof(AnimationSample));
 
-            for(uint32 sampleIndex = 0; sampleIndex < anim->mNumChannels; sampleIndex++)
+            for(u32 sampleIndex = 0; sampleIndex < anim->mNumChannels; sampleIndex++)
             {
                 aiNodeAnim *channel = anim->mChannels[sampleIndex];
                 std::string nodeName = channel->mNodeName.C_Str();
@@ -361,7 +362,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
                 sample.numOfPositions = channel->mNumPositionKeys;
                 sample.posKeys = (KeyPosition *)calloc(channel->mNumPositionKeys, sizeof(KeyPosition));
-                for(uint32 posKeyIndex = 0; posKeyIndex < channel->mNumPositionKeys; posKeyIndex++)
+                for(u32 posKeyIndex = 0; posKeyIndex < channel->mNumPositionKeys; posKeyIndex++)
                 {
                     aiVectorKey *pk = &channel->mPositionKeys[posKeyIndex];
                     sample.posKeys[posKeyIndex].time = (float)pk->mTime;
@@ -370,7 +371,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
                 sample.numOfRotations = channel->mNumRotationKeys;
                 sample.rotKeys = (KeyRotation *)calloc(channel->mNumRotationKeys, sizeof(KeyRotation));
-                for(uint32 rotKeyIndex = 0; rotKeyIndex < channel->mNumRotationKeys; rotKeyIndex++)
+                for(u32 rotKeyIndex = 0; rotKeyIndex < channel->mNumRotationKeys; rotKeyIndex++)
                 {
                     aiQuatKey *rk = &channel->mRotationKeys[rotKeyIndex];
                     sample.rotKeys[rotKeyIndex].time = (float)rk->mTime;
@@ -380,7 +381,7 @@ Model *ImportModel(char *filepath, GLuint shader, uint32 flags, uint16 type, flo
 
                 sample.numOfScalings = channel->mNumScalingKeys;
                 sample.scaleKeys = (KeyScale *)calloc(channel->mNumScalingKeys, sizeof(KeyScale));
-                for(uint32 scaleKeyIndex = 0; scaleKeyIndex < channel->mNumScalingKeys; scaleKeyIndex++)
+                for(u32 scaleKeyIndex = 0; scaleKeyIndex < channel->mNumScalingKeys; scaleKeyIndex++)
                 {
                     aiVectorKey *sk = &channel->mScalingKeys[scaleKeyIndex];
                     sample.scaleKeys[scaleKeyIndex].time = (float)sk->mTime;

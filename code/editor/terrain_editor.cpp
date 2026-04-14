@@ -43,7 +43,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
         float *perlinNoise = GeneratePerlinNoise(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
 
-        uint8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
+        u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
         game->perlinNoise = CreateGLTexture(perlinNoiseImage, size.x, size.y);
         free(perlinNoiseImage);
 

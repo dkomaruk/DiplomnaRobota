@@ -7,19 +7,19 @@
 
 #include <stdlib.h>
 
-uint8 *GenerateValueNoise(glm::vec2 size)
+u8 *GenerateValueNoise(glm::vec2 size)
 {
     int numOfChannels = 4;
-    uint8 *noise = (uint8 *)calloc((int)(size.x * size.y) * numOfChannels, sizeof(uint8));
+    u8 *noise = (u8 *)calloc((int)(size.x * size.y) * numOfChannels, sizeof(u8));
 
     glm::ivec2 gridSize = glm::ivec2(32);
 
-    uint8 *values = (uint8 *)calloc(gridSize.x * gridSize.y, sizeof(uint8));
+    u8 *values = (u8 *)calloc(gridSize.x * gridSize.y, sizeof(u8));
     for(int y = 0; y < gridSize.y; y++)
     {
         for(int x = 0; x < gridSize.x; x++)
         {
-            values[x + gridSize.x * y] = (uint8)(((float)rand() / RAND_MAX) * 255.0f);
+            values[x + gridSize.x * y] = (u8)(((float)rand() / RAND_MAX) * 255.0f);
         }
     }
 
@@ -33,13 +33,13 @@ uint8 *GenerateValueNoise(glm::vec2 size)
             glm::ivec2 pos0 = glm::ivec2(pos);
             glm::vec2 weights = glm::fract(pos);
 
-            uint8 v00 = values[pos0.x + gridSize.x * pos0.y];
-            uint8 v01 = values[pos0.x + gridSize.x * (pos0.y + 1)];
-            uint8 v10 = values[(pos0.x + 1) + gridSize.x * pos0.y];
-            uint8 v11 = values[(pos0.x + 1) + gridSize.x * (pos0.y + 1)];
+            u8 v00 = values[pos0.x + gridSize.x * pos0.y];
+            u8 v01 = values[pos0.x + gridSize.x * (pos0.y + 1)];
+            u8 v10 = values[(pos0.x + 1) + gridSize.x * pos0.y];
+            u8 v11 = values[(pos0.x + 1) + gridSize.x * (pos0.y + 1)];
 
             weights = glm::smoothstep(0.0f, 1.0f, weights);
-            uint8 value = glm::mix(glm::mix(v00, v10, weights.x), glm::mix(v01, v11, weights.x), weights.y);
+            u8 value = glm::mix(glm::mix(v00, v10, weights.x), glm::mix(v01, v11, weights.x), weights.y);
 
             int id = (x + (int)size.x * y) * numOfChannels;
             noise[id + 0] = value;
@@ -54,14 +54,14 @@ uint8 *GenerateValueNoise(glm::vec2 size)
     return noise;
 }
 
-uint8 *NoiseToImage(float *noise, glm::vec2 size)
+u8 *NoiseToImage(float *noise, glm::vec2 size)
 {
-    uint8 *image = (uint8 *)calloc((int)(size.x * size.y) * 4, sizeof(uint8));
+    u8 *image = (u8 *)calloc((int)(size.x * size.y) * 4, sizeof(u8));
     for(int y = 0; y < size.y; y++)
     {
         for(int x = 0; x < size.x; x++)
         {
-            uint8 value = (uint8)(glm::clamp(noise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
+            u8 value = (u8)(glm::clamp(noise[x + (int)size.x * y], 0.0f, 1.0f) * 255.0f);
 
             int id = (x + (int)size.x * y) * 4;
             image[id + 0] = value;

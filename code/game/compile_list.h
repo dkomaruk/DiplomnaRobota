@@ -16,6 +16,7 @@
 #include "terrain_editor.cpp"
 #include "camera.cpp"
 #include "shader.cpp"
+#include "debug.cpp"
 #include "aabb.cpp"
 #include "texture.cpp"
 #include "image.cpp"

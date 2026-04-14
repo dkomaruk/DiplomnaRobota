@@ -81,7 +81,7 @@ struct Game
 
     //Scene
     std::vector<Entity *> sceneEntities;
-    std::unordered_set<uint16> selectedIDs;
+    std::unordered_set<u16> selectedIDs;
     int lastSelectedId = -1;
 
     Entity *testEntity;
