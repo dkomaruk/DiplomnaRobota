@@ -84,11 +84,9 @@ struct Game
     std::unordered_set<u16> selectedIDs;
     int lastSelectedId = -1;
 
-    Entity *testEntity;
     Entity *soldierEntity;
-    Entity *soldierEntity0;
+    Entity *soldierAnimated;
     Entity *tank;
-    Entity *cubeEntity;
 
     Terrain terrain;
     float terrainUVMultiplier = 16.0f;

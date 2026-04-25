@@ -217,20 +217,20 @@ void RenderGame(Game *game)
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
     glBindVertexArray(0);
 
-    if(game->polygonMode == GL_FILL)
-    {
-        UseShader(game->skymapShader);
-        glDepthFunc(GL_LEQUAL);
+    //if(game->polygonMode == GL_FILL)
+    //{
+    //    UseShader(game->skymapShader);
+    //    glDepthFunc(GL_LEQUAL);
 
-        ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
+    //    ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
 
-        SetTexture(game->skymapTexture.id, 0);
-        ShaderSetInt(game->skymapShader, "u_skyMap", 0);
-        glBindVertexArray(game->fullscreenQuad.vao);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+    //    SetTexture(game->skymapTexture.id, 0);
+    //    ShaderSetInt(game->skymapShader, "u_skyMap", 0);
+    //    glBindVertexArray(game->fullscreenQuad.vao);
+    //    glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        glDepthFunc(GL_LESS);
-    }
+    //    glDepthFunc(GL_LESS);
+    //}
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -306,7 +306,6 @@ Game *GetGame()
 void UpdateTestScene(Game *game)
 {
     //Test code for the test scene
-    game->testEntity->rotation.y += 90.0f * game->deltaTime;
     glm::mat4 turretTransform = glm::mat4(1.0f);
     turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f,
                                      0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
@@ -323,13 +322,13 @@ void UpdateTestScene(Game *game)
     UpdateTransforms(tank);
 
     float speed = 3.0f;
-    float x = game->soldierEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
-    float z = game->soldierEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
+    float x = game->soldierAnimated->position.x + game->targetDirection.x * speed * game->deltaTime;
+    float z = game->soldierAnimated->position.z + game->targetDirection.y * speed * game->deltaTime;
     float y = GetTerrainHeight(&game->terrain, x, z);
 
-    game->soldierEntity->position = glm::vec3(x, y, z);
+    game->soldierAnimated->position = glm::vec3(x, y, z);
 
-    float angleDiff = game->targetAngle - game->soldierEntity->rotation.y;
+    float angleDiff = game->targetAngle - game->soldierAnimated->rotation.y;
 
     if(angleDiff < -180.0f)
         angleDiff += 360.0f;
@@ -339,9 +338,9 @@ void UpdateTestScene(Game *game)
     float rotationStep = 200.0f * game->deltaTime;
 
     if(glm::abs(angleDiff) <= rotationStep)
-        game->soldierEntity->rotation.y = game->targetAngle;
+        game->soldierAnimated->rotation.y = game->targetAngle;
     else
-        game->soldierEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
+        game->soldierAnimated->rotation.y += glm::sign(angleDiff) * rotationStep;
 
     if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
     {
@@ -418,8 +417,8 @@ void UpdateGame(Game *game)
         UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
 
         game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
-        game->targetDirection = game->target - glm::vec2(game->soldierEntity->position.x,
-                                                         game->soldierEntity->position.z);
+        game->targetDirection = game->target - glm::vec2(game->soldierAnimated->position.x,
+                                                         game->soldierAnimated->position.z);
 
         if(glm::length2(game->targetDirection) > 0.00001f)
         {

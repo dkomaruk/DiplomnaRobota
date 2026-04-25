@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "model.h"
 #include "framebuffer.h"
+#include "debug.h"
 #include "noise.h"
 #include "frustum.h"
 
@@ -13,10 +14,12 @@
 
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include "AL/al.h"
-#include "AL/alext.h"
+#include <ThreadPool.h>
 
-#include "stb_vorbis.c"
+#include <AL/al.h>
+#include <AL/alext.h>
+
+#include <stb_vorbis.c>
 
 #define TEXTURE_ATLAS_ELEMENT 0
 #define SPRITE_ELEMENT 1
@@ -221,13 +224,14 @@ Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 po
 void LoadTestScene(Game *game)
 {
     //AUDIO
-    LoadAudio(game);
+    //LoadAudio(game);
 
     //TODO: Remove from asset loader
     SetupFramebuffers(game);
 
     //FONTS
-    int fontSizes[] = {4, 12, 18, 20, 24, 36, 48};
+    //int fontSizes[] = {4, 12, 18, 20, 24, 36, 48};
+    int fontSizes[] = {48};
     int numOfFonts = sizeof(fontSizes) / sizeof(int);
 
     for(int i = 0; i < numOfFonts; i++)
@@ -328,14 +332,18 @@ void LoadTestScene(Game *game)
 
     //MESHES
 #ifdef LOAD_ASSETS
-    //Model *soldier = ImportModel("../data/models/soldier/vampire/vampire.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, aiProcess_Triangulate);
+    Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader,
+                                 aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    Model *soldierAnimated = ImportModel("../data/models/soldier/Rifle Run.fbx", game->animationShader,
+                                         aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
+    game->grass = ImportModel("../data/extra/grass2.fbx", game->mainShader, aiProcess_Triangulate |
+                              aiProcess_GlobalScale, ModelType_Static, 0.001f);
 
     game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
-    game->soldierEntity0 = game->soldierEntity;
-
-    Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, 0);
     game->tank = AddNewEntityToScene(game, abrams, "tank");
+    game->soldierAnimated = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
+
     Entity *tank = game->tank;
     for(int i = 0; i < tank->model->numOfNodes; i++)
     {
@@ -352,65 +360,10 @@ void LoadTestScene(Game *game)
         }
     }
 
-    Model *soldierAnimated = ImportModel("../data/models/soldier/Rifle Run.fbx", game->animationShader, aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
-    game->soldierEntity = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
-
-    Model *backpack = ImportModel("../data/models/backpack/backpack.obj", game->mainShader,
-                              aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
-    game->testEntity = AddNewEntityToScene(game, backpack, "backpack", glm::vec3(0.0f, 0.0f, 3.0f),
-                                           glm::vec3(0.0f, 180.0f, 0.0f), glm::vec3(0.2f));
-
-    Model *sphere = ImportModel("../data/models/sphere.obj", game->mainShader, aiProcess_Triangulate);
-    sphere->material->diffuseTexture = CreateTexture("../data/models/sphere_diffuse.png");
-    AddNewEntityToScene(game, sphere, "sphere", glm::vec3(-1.0f, 0.0f, 3.0f),
-                        glm::vec3(0.0f, -90.0f, 0.0f), glm::vec3(0.2f));
-
-    Model *sphere2 = ImportModel("../data/models/sphere2.obj", game->mainShader, aiProcess_Triangulate);
-    sphere2->material->diffuseTexture = CreateTexture("../data/models/sphere2_diffuse.png");
-    AddNewEntityToScene(game, sphere2, "sphere2", glm::vec3(0.0f, 1.0f, 3.0f),
-                        glm::vec3(0.0f, -90.0f, 0.0f), glm::vec3(0.2f));
-
-    Model *car = ImportModel("../data/models/car_scene.obj", game->mainShader, aiProcess_Triangulate);
-    Texture carDiffuseTexture = CreateTexture("../data/models/car_diffuse.png");
-    for(int i = 0; i < car->numOfMeshes; i++)
-        car->material[i].diffuseTexture = carDiffuseTexture;
-    AddNewEntityToScene(game, car, "car", glm::vec3(0.0f, 1.0f, -3.0f), glm::vec3(0.0f, -90.0f, 0.0f));
-
-    MaterialPhong containerMaterial = {};
-    containerMaterial.shader = game->mainShader;
-    containerMaterial.diffuseTexture = CreateTexture("../data/imgs/container2.png");
-    containerMaterial.specularTexture = CreateTexture("../data/imgs/container2_specular.png");
-    //containerMaterial.specularTexture = CreateTexture("../data/imgs/lighting_maps_specular_color.png");
-    containerMaterial.emissionTexture = CreateTexture("../data/imgs/matrix.jpg");
-    containerMaterial.shininess = 256.0f;
-
-    Model *cubeMesh = ImportModel("../data/models/cube.obj", game->mainShader, aiProcess_Triangulate);
-    cubeMesh->material[0] = containerMaterial;
-    game->cubeEntity = AddNewEntityToScene(game, cubeMesh, "cubeContainer", glm::vec3(-3.0f, 3.0f, -0.5f),
-                                           glm::vec3(0.0f), glm::vec3(0.5f));
-    AddNewEntityToScene(game, cubeMesh, "cubeContainer2", glm::vec3(1.0f, 0.0f, 3.0f),
-                        glm::vec3(0.0f, 180.0f, 0.0f), glm::vec3(0.2f));
-
-    Model *lightMesh = ImportModel("../data/models/cube.obj", lightSourceShader, aiProcess_Triangulate);
-
-    Model *tree = ImportModel("../data/extra/tree/t2.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree, "spherical", glm::vec3(-3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
-
-    Model *tree1 = ImportModel("../data/extra/tree/t0.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree1, "original", glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
-
-    Model *tree2 = ImportModel("../data/extra/tree/t3.fbx", game->mainShader, aiProcess_Triangulate, ModelType_Static);
-    AddNewEntityToScene(game, tree2, "spherical smoothed", glm::vec3(3.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
-
-    game->grass = ImportModel("../data/extra/grass2.fbx", game->mainShader, aiProcess_Triangulate |
-                              aiProcess_GlobalScale, ModelType_Static, 0.001f);
-    AddNewEntityToScene(game, game->grass, "grass", glm::vec3(0.0f, 6.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f));
-
+    //Scene Light
     glm::vec3 dirDiffuse = glm::vec3(0.9f);
     glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
-    //glm::vec3 dirSpecular = glm::vec3(0.8f, 0.7f, 0.0f);
-    //DirectionalLight dirLight = CreateDirLight(glm::vec3(1.5f, -1.0f, -0.8f), dirDiffuse, dirAmbient, dirSpecular);
     game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, game->dirLight);
     ShaderSetDirLight(game->animationShader, game->dirLight);
@@ -418,74 +371,22 @@ void LoadTestScene(Game *game)
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
 
-    //AddNewEntityToScene(game, lightMesh, "dirLightCube", -game->dirLight.direction * 200.0f, glm::vec3(0.0f), glm::vec3(50.0f));
-
-
-
-#if 0
-    PointLight pointLights[4] = {};
-    int width = 10;
-    int maxPointLights = 4;
-    for(int lightIndex = 0; lightIndex < maxPointLights; lightIndex++)
-    {
-        pointLights[lightIndex].position.x = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[lightIndex].position.y = ((float)SDL_rand(width) - width / 2.0f) * 2;
-        pointLights[lightIndex].position.z = ((float)SDL_rand(width) - width / 2.0f) * 2;
-
-        pointLights[lightIndex].diffuse = glm::vec3(0.5f);
-        pointLights[lightIndex].ambient = glm::vec3(0.05f);
-        pointLights[lightIndex].specular = glm::vec3(0.1f);
-
-        pointLights[lightIndex].constant = 1.0f;
-        pointLights[lightIndex].linear = 0.027f;
-        pointLights[lightIndex].quadratic = 0.0028f;
-
-        ShaderSetPointLight(game->mainShader, pointLights[lightIndex], lightIndex);
-        ShaderSetPointLight(game->animationShader, pointLights[lightIndex], lightIndex);
-
-        char lightTextId[20];
-        sprintf(lightTextId, "light%d", lightIndex);
-        AddNewEntityToScene(game, lightMesh, lightTextId, pointLights[lightIndex].position,
-                            glm::vec3(0.0f), glm::vec3(0.15f));
-    }
-
-    ShaderSetInt(game->mainShader, "u_pointLightCount", maxPointLights);
-    ShaderSetInt(game->animationShader, "u_pointLightCount", maxPointLights);
-#endif
-
     ShaderSetInt(game->mainShader, "u_pointLightCount", 0);
     ShaderSetInt(game->animationShader, "u_pointLightCount", 0);
 
-    for(int i = 0; i < 2; i++)
-    {
-        for(int j = 0; j < 10; j++)
-        {
-            glm::vec3 offset = glm::vec3(j, 0.0f, j);
-
-            char textId[25];
-            sprintf(textId, "container%d", i * j + j);
-            AddNewEntityToScene(game, cubeMesh, "container", glm::vec3(-10.0f / 2.0f, -i, -10.0f / 2.0f) + offset,
-                                glm::vec3(0.0f), glm::vec3(0.5f));
-        }
-    }
-
     //Terrain
     game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
-    game->terrain.splatMap = CreateTexture("../data/extra/noise0.png");
-    game->terrain.texture0 = CreateTexture("../data/extra/leaves.png");
-    //game->terrain.texture1 = CreateTexture("../data/extra/rocks.png");
-    game->terrain.texture1 = CreateTexture("../data/wispy-grass-meadow_albedo.png");
-    game->terrain.texture2 = CreateTexture("../data/extra/leaves.png");
-    game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
-    //game->terrain.texture3 = CreateTexture("../data/extra/sand.png");
+    game->terrain.texture1 = CreateTexture("../data/wispy-grass-meadow_albedo.bmp");
 
     //Particles
     LoadParticleSystem(game);
 
     //Skymap
-    int flags = TexturePreset_Common;
-    flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
-    game->skymapTexture = CreateTexture("../data/imgs/extra/sky.png", flags);
+    //StartProfiling();
+    //int flags = TexturePreset_Common;
+    //flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
+    //game->skymapTexture = CreateTexture("../data/imgs/extra/sky.jpg", flags);
+    //EndProfiling("Skymap");
 
     //Debug lines
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));

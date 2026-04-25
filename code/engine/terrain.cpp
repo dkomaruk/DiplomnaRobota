@@ -219,17 +219,17 @@ void RenderTerrain(Game *game)
     glUseProgram(game->terrainShader);
     ShaderSetMatrix4(game->terrainShader, "u_view", game->view);
 
-    SetTexture(game->terrain.splatMap.id, 0);
-    ShaderSetInt(game->terrainShader, "u_splatMap", 0);
+    //SetTexture(game->terrain.splatMap.id, 0);
+    //ShaderSetInt(game->terrainShader, "u_splatMap", 0);
 
-    SetTexture(game->terrain.texture0.id, 1);
-    ShaderSetInt(game->terrainShader, "u_texture0", 1);
+    //SetTexture(game->terrain.texture0.id, 1);
+    //ShaderSetInt(game->terrainShader, "u_texture0", 1);
     SetTexture(game->terrain.texture1.id, 2);
     ShaderSetInt(game->terrainShader, "u_texture1", 2);
-    SetTexture(game->terrain.texture2.id, 3);
-    ShaderSetInt(game->terrainShader, "u_texture2", 3);
-    SetTexture(game->terrain.texture3.id, 4);
-    ShaderSetInt(game->terrainShader, "u_texture3", 4);
+    //SetTexture(game->terrain.texture2.id, 3);
+    //ShaderSetInt(game->terrainShader, "u_texture2", 3);
+    //SetTexture(game->terrain.texture3.id, 4);
+    //ShaderSetInt(game->terrainShader, "u_texture3", 4);
 
     SetTexture(game->perlinNoise2.id, 5);
     ShaderSetInt(game->terrainShader, "u_noiseMap", 5);

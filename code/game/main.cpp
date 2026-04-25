@@ -53,7 +53,6 @@ struct GrassData
 
 int main(int argc, char *argv[])
 {
-
     Game *game = GetGame();
     if(!InitGame(game))
     {
@@ -95,6 +94,7 @@ int main(int argc, char *argv[])
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 
     game->lastFrame = SDL_GetPerformanceCounter();
     while(game->isRunning)
