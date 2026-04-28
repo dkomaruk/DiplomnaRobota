@@ -25,6 +25,8 @@ in vec2 TexCoords;
 in vec3 Normal;
 in vec4 FragPosLightSpace;
 
+out vec4 FragColor;
+
 //https://web.archive.org/web/20190211214453/https://www.iquilezles.org/www/articles/texturerepetition/texturerepetition.htm
 //https://www.shadertoy.com/view/Xtl3zf
 //Texture bombing to help with texture tiling pattern
@@ -88,5 +90,5 @@ void main()
 
     float shadow = CalculateShadow(FragPosLightSpace);
 
-    gl_FragColor = vec4((ambient + (1.0 - shadow) * diffuse), 1.0);
+    FragColor = vec4((ambient + (1.0 - shadow) * diffuse), 1.0);
 }

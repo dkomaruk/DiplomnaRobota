@@ -44,7 +44,7 @@ void RenderEntity(Entity *self, Game *game)
         glLineWidth(1.0f);
     }
 
-    RenderModel(game, self->model, self->modelMat, self->nodeTransforms, self->skinningMatrices);
+    RenderModel(game, self->model, self->modelMat, self->nodeTransforms, self->skinningMatrices, self->numOfMatrices);
 }
 
 Entity CreateEntity(Model *model)

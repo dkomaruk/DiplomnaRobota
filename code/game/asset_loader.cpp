@@ -260,6 +260,8 @@ void LoadTestScene(Game *game)
                                                 LoadShader("../data/shaders/particle.frag"));
     GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
                                                LoadShader("../data/shaders/terrain.frag"));
+                                            //   LoadShader("../data/shaders/terrain.tesc"),
+                                            //   LoadShader("../data/shaders/terrain.tese"));
     GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
                                                  LoadShader("../data/shaders/main.frag"));
     GLuint lineShader = CreateShaderProgram(LoadShader("../data/shaders/line.vert"),

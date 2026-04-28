@@ -410,7 +410,8 @@ glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 s
     return model;
 }
 
-void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms, glm::mat4 *skinningMatrices)
+void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms,
+                 glm::mat4 *skinningMatrices, int numOfMatrices)
 {
     GLuint shader = model->material[0].shader;
     if(game->outlinePass)
@@ -429,7 +430,7 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
             shader = game->skinnedShadowShader;
         }
 
-        ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), 100);
+        ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), numOfMatrices);
     }
 
     for(int meshIndex = 0; meshIndex < model->numOfMeshes; meshIndex++)
