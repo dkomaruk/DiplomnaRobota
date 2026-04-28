@@ -14,6 +14,12 @@ out vec3 Normal;
 out vec3 FragPos;
 out vec4 FragPosLightSpace;
 
+//out float vs_Height;
+//out vec2 vs_TexCoords;
+//out vec3 vs_Normal;
+//out vec3 vs_FragPos;
+//out vec4 vs_FragPosLightSpace;
+
 void main()
 {
     Height = pos.y;
@@ -21,6 +27,12 @@ void main()
     Normal = normal;
     FragPos = pos;
     FragPosLightSpace = u_lightViewProj * vec4(FragPos, 1.0);
+
+    //vs_Height = pos.y;
+    //vs_TexCoords = texCoords;
+    //vs_Normal = normal;
+    //vs_FragPos = pos;
+    //vs_FragPosLightSpace = u_lightViewProj * vec4(vs_FragPos, 1.0);
 
     gl_Position = u_projection * u_view * vec4(pos, 1.0);
 }

@@ -37,6 +37,11 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     ImGui::InputFloat("UV Multiplier", &game->terrainUVMultiplier, 0.05f);
 
+    static int meshStep = 8;
+    ImGui::InputInt("Mesh Step", &meshStep);
+
+    meshStep = SDL_clamp(meshStep, 1, 100);
+
     if(ImGui::Button("Generate"))
     {
         glDeleteTextures(1, &game->perlinNoise.id);
@@ -62,7 +67,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
             }
         }
 
-        Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, 4, 0.0f);
+        Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
 
         terrain.splatMap = game->terrain.splatMap;
         terrain.texture0 = game->terrain.texture0;

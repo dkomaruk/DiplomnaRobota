@@ -52,7 +52,8 @@ GLuint CompileShader(char *shaderCode, GLenum shaderType)
     return shader;
 }
 
-GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode)
+GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode,
+                           char *tessControlShaderCode, char *tessEvalShaderCode)
 {
     GLuint vertexShader = CompileShader(vertexShaderCode, GL_VERTEX_SHADER);
     GLuint fragmentShader = CompileShader(fragmentShaderCode, GL_FRAGMENT_SHADER);
@@ -60,6 +61,20 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode)
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
+
+    GLuint tescShader = 0;
+    if(tessControlShaderCode)
+    {
+        tescShader = CompileShader(tessControlShaderCode, GL_TESS_CONTROL_SHADER);
+        glAttachShader(shaderProgram, tescShader);
+    }
+
+    GLuint teseShader = 0;
+    if(tessEvalShaderCode)
+    {
+        teseShader = CompileShader(tessEvalShaderCode, GL_TESS_EVALUATION_SHADER);
+        glAttachShader(shaderProgram, teseShader);
+    }
 
     glLinkProgram(shaderProgram);
 
@@ -78,8 +93,21 @@ GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode)
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    if(tescShader)
+    {
+        glDetachShader(shaderProgram, tescShader);
+        glDeleteShader(tescShader);
+    }
+    if(teseShader)
+    {
+        glDetachShader(shaderProgram, teseShader);
+        glDeleteShader(teseShader);
+    }
+
     free(vertexShaderCode);
     free(fragmentShaderCode);
+    free(tessControlShaderCode);
+    free(tessEvalShaderCode);
 
     return shaderProgram;
 }

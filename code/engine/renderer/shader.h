@@ -14,7 +14,8 @@
 char *LoadShader(char *filepath);
 
 GLuint CompileShader(char *shaderCode, GLenum shaderType);
-GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode);
+GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode,
+                           char *tessControlShaderCode = 0, char *tessEvalShaderCode = 0);
 
 void UseShader(GLuint shader);
 GLuint GetCurrentShader();

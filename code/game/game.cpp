@@ -208,15 +208,16 @@ void RenderGame(Game *game)
     }
 
     //Render grass
-    UseShader(game->grassShader);
+    //UseShader(game->grassShader);
 
-    ShaderSetInt(game->grassShader, "u_texture", 0);
-    SetTexture(game->grass->material->diffuseTexture.id, 0);
+    //ShaderSetInt(game->grassShader, "u_texture", 0);
+    //SetTexture(game->grass->material->diffuseTexture.id, 0);
 
-    glBindVertexArray(game->grassQuad.vao);
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
-    glBindVertexArray(0);
+    //glBindVertexArray(game->grassQuad.vao);
+    //glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
+    //glBindVertexArray(0);
 
+    //Render skymap
     //if(game->polygonMode == GL_FILL)
     //{
     //    UseShader(game->skymapShader);
