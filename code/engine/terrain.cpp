@@ -36,7 +36,8 @@ float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::v
 }
 
 //Loads a 16-bit PNG heightmap and generates a terrain mesh
-Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPortion, float mapScale, int meshStep, float yShift)
+Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPortion,
+                               float mapScale, int meshStep, float yShift)
 {
     int x, y, channels;
     stbi_info(heightmapPath, &x, &y, &channels);
@@ -67,9 +68,14 @@ Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPo
     return CreateTerrainMesh(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
 }
 
-Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion, float mapScale, int meshStep, float yShift)
+Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion,
+                          float mapScale, int meshStep, float yShift)
 {
     Terrain t = {};
+
+    int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
+                       TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
+    t.heightmapTexture = CreateGLTexture(heightmap, (int)fullMapSize.x, (int)fullMapSize.y, textureFlags);
 
     t.mapSize = fullMapSize * mapPortion;
     t.yShift = yShift;
@@ -95,7 +101,12 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
         for(int x = 0; x < t.mapSize.x; x += meshStep)
         {
             TerrainVertex vertex = {};
-            vertex.position = glm::vec3(posX, t.heightmap[(int)(x + t.mapSize.x * y)], (x * t.mapScale) - center.y);
+
+            //float posY = t.heightmap[(int)(x + t.mapSize.x * y)];
+            float posY = 0.0f;
+            float posZ = (x * t.mapScale) - center.y;
+            vertex.position = glm::vec3(posX, posY, posZ);
+
             vertex.uv = glm::vec2(x, y) / (t.mapSize - 1.0f);
 
             int left  = std::max(0, x - meshStep);
@@ -118,8 +129,24 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
         }
     }
 
-    u32 restartIndex = 0xFF'FF'FF'FF;
     std::vector<u32> indices;
+#if 0 //When GL_PATCHES is used
+    GLenum drawMode = GL_PATCHES;
+    for (int i = 0; i < numOfVerticesX - 1; ++i)
+    {
+        for (int j = 0; j < numOfVerticesZ - 1; ++j)
+        {
+            u32 BL = j + (numOfVerticesZ * i);
+            u32 BR = j + (numOfVerticesZ * (i + 1));
+            u32 TR = (j + 1) + (numOfVerticesZ * (i + 1));
+            u32 TL = (j + 1) + (numOfVerticesZ * i);
+
+            indices.insert(indices.end(), {BL, BR, TR, TL});
+        }
+    }
+#else  //When GL_TRIANGLE_STRIP is used
+    u32 restartIndex = 0xFF'FF'FF'FF;
+    GLenum drawMode = GL_TRIANGLE_STRIP;
     for(int i = 0; i < numOfVerticesX - 1; ++i)
     {
         for(int j = 0; j < numOfVerticesZ; ++j)
@@ -133,10 +160,11 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
 
     glEnable(GL_PRIMITIVE_RESTART);
     glPrimitiveRestartIndex(restartIndex);
+#endif
 
     t.mesh = CreateMesh(&vertices[0], vertices.size(), terrainVertexAttribs[0].stride, &indices[0],
                         indices.size(), terrainVertexAttribs, ArrayCount(terrainVertexAttribs));
-    t.mesh.drawMode = GL_TRIANGLE_STRIP;
+    t.mesh.drawMode = drawMode;
 
     return t;
 }
@@ -214,33 +242,42 @@ glm::vec3 GetRayTerrainIntersection(Terrain *terrain, Ray *pickingRay, float max
 void RenderTerrain(Game *game)
 {
     glEnable(GL_CULL_FACE);
+    //glCullFace(GL_FRONT);
     glCullFace(GL_BACK);
 
-    glUseProgram(game->terrainShader);
-    ShaderSetMatrix4(game->terrainShader, "u_view", game->view);
+    glUseProgram(game->terrain.shader);
+    ShaderSetMatrix4(game->terrain.shader, "u_view", game->view);
+
+    SetTexture(game->terrain.heightmapTexture.id, 0);
+    ShaderSetInt(game->terrain.shader, "u_heightmap", 0);
+
+    //SetTexture(game->terrain..id, 0);
+    //ShaderSetInt(game->terrain.shader, "u_splatMap", 0);
 
     //SetTexture(game->terrain.splatMap.id, 0);
-    //ShaderSetInt(game->terrainShader, "u_splatMap", 0);
+    //ShaderSetInt(game->terrain.shader, "u_splatMap", 0);
 
     //SetTexture(game->terrain.texture0.id, 1);
-    //ShaderSetInt(game->terrainShader, "u_texture0", 1);
+    //ShaderSetInt(game->terrain.shader, "u_texture0", 1);
     SetTexture(game->terrain.texture1.id, 2);
-    ShaderSetInt(game->terrainShader, "u_texture1", 2);
+    ShaderSetInt(game->terrain.shader, "u_texture1", 2);
     //SetTexture(game->terrain.texture2.id, 3);
-    //ShaderSetInt(game->terrainShader, "u_texture2", 3);
+    //ShaderSetInt(game->terrain.shader, "u_texture2", 3);
     //SetTexture(game->terrain.texture3.id, 4);
-    //ShaderSetInt(game->terrainShader, "u_texture3", 4);
+    //ShaderSetInt(game->terrain.shader, "u_texture3", 4);
 
     SetTexture(game->perlinNoise2.id, 5);
-    ShaderSetInt(game->terrainShader, "u_noiseMap", 5);
+    ShaderSetInt(game->terrain.shader, "u_noiseMap", 5);
 
     SetTexture(game->shadowMapFbo.depth.id, 6);
-    ShaderSetInt(game->terrainShader, "u_shadowMap", 6);
+    ShaderSetInt(game->terrain.shader, "u_shadowMap", 6);
 
-    ShaderSetFloat(game->terrainShader, "u_texCoordsMultiplier", game->terrainUVMultiplier);
+    ShaderSetFloat(game->terrain.shader, "u_texCoordsMultiplier", game->terrainUVMultiplier);
 
     glBindVertexArray(game->terrain.mesh.vao);
     glDrawElements(GL_TRIANGLE_STRIP, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);
+    //glPatchParameteri(GL_PATCH_VERTICES, 4);
+    //glDrawElements(game->terrain.mesh.drawMode, game->terrain.mesh.indicesCount, GL_UNSIGNED_INT, 0);
 
     glDisable(GL_CULL_FACE);
 }

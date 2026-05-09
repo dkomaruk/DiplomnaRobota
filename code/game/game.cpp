@@ -581,6 +581,7 @@ void UpdateGame(Game *game)
     ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
     ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
     ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->tessellatedTerrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
 
     //Update timing counters
     float ms = game->deltaTime * 1000.0f;

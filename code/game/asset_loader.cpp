@@ -260,8 +260,10 @@ void LoadTestScene(Game *game)
                                                 LoadShader("../data/shaders/particle.frag"));
     GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
                                                LoadShader("../data/shaders/terrain.frag"));
-                                            //   LoadShader("../data/shaders/terrain.tesc"),
-                                            //   LoadShader("../data/shaders/terrain.tese"));
+    GLuint tessellatedTerrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain_tessellation.vert"),
+                                                          LoadShader("../data/shaders/terrain.frag"),
+                                                          LoadShader("../data/shaders/terrain.tesc"),
+                                                          LoadShader("../data/shaders/terrain.tese"));
     GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
                                                  LoadShader("../data/shaders/main.frag"));
     GLuint lineShader = CreateShaderProgram(LoadShader("../data/shaders/line.vert"),
@@ -297,6 +299,7 @@ void LoadTestScene(Game *game)
     game->shaders.push_back(skinnedOutlineShader);
     game->shaders.push_back(postProcessShader);
     game->shaders.push_back(terrainShader);
+    game->shaders.push_back(tessellatedTerrainShader);
     game->shaders.push_back(animationShader);
     game->shaders.push_back(lineShader);
     game->shaders.push_back(skymapShader);
@@ -324,6 +327,7 @@ void LoadTestScene(Game *game)
     game->uiTextShader = uiTextShader;
     game->particleShader = particleShader;
     game->terrainShader = terrainShader;
+    game->tessellatedTerrainShader = tessellatedTerrainShader;
     game->animationShader = animationShader;
     game->lineShader = lineShader;
     game->selectionBoxShader = selectionBoxShader;
@@ -370,6 +374,7 @@ void LoadTestScene(Game *game)
     ShaderSetDirLight(game->mainShader, game->dirLight);
     ShaderSetDirLight(game->animationShader, game->dirLight);
     ShaderSetDirLight(game->terrainShader, game->dirLight);
+    ShaderSetDirLight(game->tessellatedTerrainShader, game->dirLight);
     ShaderSetInt(game->mainShader, "u_dirLightCount", 1);
     ShaderSetInt(game->animationShader, "u_dirLightCount", 1);
 
@@ -378,6 +383,7 @@ void LoadTestScene(Game *game)
 
     //Terrain
     game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
+    game->terrain.shader = game->terrainShader;
     game->terrain.texture1 = CreateTexture("../data/wispy-grass-meadow_albedo.bmp");
 
     //Particles
