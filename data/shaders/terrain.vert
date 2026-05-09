@@ -8,31 +8,24 @@ uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform mat4 u_lightViewProj;
 
+layout(binding = 0) uniform sampler2D u_heightmap;
+
 out float Height;
 out vec2 TexCoords;
 out vec3 Normal;
 out vec3 FragPos;
 out vec4 FragPosLightSpace;
 
-//out float vs_Height;
-//out vec2 vs_TexCoords;
-//out vec3 vs_Normal;
-//out vec3 vs_FragPos;
-//out vec4 vs_FragPosLightSpace;
-
 void main()
 {
-    Height = pos.y;
+    vec3 position = pos;
+    position.y = texture(u_heightmap, texCoords).r;
+
+    Height = position.y;
     TexCoords = texCoords;
     Normal = normal;
-    FragPos = pos;
+    FragPos = position;
     FragPosLightSpace = u_lightViewProj * vec4(FragPos, 1.0);
 
-    //vs_Height = pos.y;
-    //vs_TexCoords = texCoords;
-    //vs_Normal = normal;
-    //vs_FragPos = pos;
-    //vs_FragPosLightSpace = u_lightViewProj * vec4(vs_FragPos, 1.0);
-
-    gl_Position = u_projection * u_view * vec4(pos, 1.0);
+    gl_Position = u_projection * u_view * vec4(position, 1.0);
 }

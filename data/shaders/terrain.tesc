@@ -24,11 +24,11 @@ void main()
     tsc_FragPos[gl_InvocationID] = vs_FragPos[gl_InvocationID];
     tsc_FragPosLightSpace[gl_InvocationID] = vs_FragPosLightSpace[gl_InvocationID];
 
-    gl_TessLevelOuter[0] = 1.0; //Outer Left
-    gl_TessLevelOuter[1] = 1.0; //Outer Bottom
-    gl_TessLevelOuter[2] = 1.0; //Outer Right
-    gl_TessLevelOuter[3] = 1.0; //Outer Top
+    gl_TessLevelOuter[0] = 2.0; //Outer Left
+    gl_TessLevelOuter[1] = 2.0; //Outer Bottom
+    gl_TessLevelOuter[2] = 2.0; //Outer Right
+    gl_TessLevelOuter[3] = 2.0; //Outer Top
 
-    gl_TessLevelInner[0] = 1.0; //Inner TopBottom
-    gl_TessLevelInner[1] = 1.0; //Inner LeftRight
+    gl_TessLevelInner[0] = 2.0; //Inner TopBottom
+    gl_TessLevelInner[1] = 2.0; //Inner LeftRight
 }

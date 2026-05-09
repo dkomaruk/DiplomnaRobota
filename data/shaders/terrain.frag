@@ -2,14 +2,14 @@
 
 //uniform sampler2D u_terrainMap;
 
-uniform sampler2D u_splatMap;
-uniform sampler2D u_texture0;
-uniform sampler2D u_texture1;
-uniform sampler2D u_texture2;
-uniform sampler2D u_texture3;
+//uniform sampler2D u_splatMap;
+layout(binding = 1) uniform sampler2D u_texture0;
+layout(binding = 2) uniform sampler2D u_texture1;
+layout(binding = 3) uniform sampler2D u_texture2;
+layout(binding = 4) uniform sampler2D u_texture3;
 
-uniform sampler2D u_noiseMap;
-uniform sampler2D u_shadowMap;
+layout(binding = 5) uniform sampler2D u_noiseMap;
+layout(binding = 6) uniform sampler2D u_shadowMap;
 
 uniform float u_texCoordsMultiplier;
 

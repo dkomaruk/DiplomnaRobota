@@ -11,11 +11,14 @@ struct Terrain
 {
     float *heightmap;
     glm::vec2 mapSize;
+    Texture heightmapTexture;
 
     glm::vec2 worldSize;
 
     float yShift;
     float mapScale;
+
+    GLuint shader;
 
     Mesh mesh;
     //Texture texture;

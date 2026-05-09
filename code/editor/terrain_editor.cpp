@@ -54,6 +54,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
         DeleteMesh(&game->terrain.mesh);
         free(game->terrain.heightmap);
+        glDeleteTextures(1, &game->terrain.heightmapTexture.id);
 
         float *heightmap = (float *)calloc((int)(size.x * size.y), sizeof(float));
         for(int i = 0; i < size.y; ++i)
@@ -68,6 +69,11 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
         }
 
         Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
+        terrain.shader = game->terrainShader;
+
+        int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
+                        TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
+        terrain.heightmapTexture = CreateGLTexture(heightmap, size.x, size.y, textureFlags);
 
         terrain.splatMap = game->terrain.splatMap;
         terrain.texture0 = game->terrain.texture0;

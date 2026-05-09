@@ -6,7 +6,7 @@
 #include <SDL3/SDL.h>
 #include <stb_image.h>
 
-Texture CreateGLTexture(u8 *image, int width, int height, int flags)
+Texture CreateGLTexture(void *image, int width, int height, int flags)
 {
     Texture texture = {};
     texture.x = width;
@@ -82,6 +82,12 @@ Texture CreateGLTexture(u8 *image, int width, int height, int flags)
     {
         internalFormat = GL_DEPTH_COMPONENT32F;
         format = GL_DEPTH_COMPONENT;
+        type = GL_FLOAT;
+    }
+    else if(FLAG_IS_SET(flags, TextureFlag_Heightmap))
+    {
+        internalFormat = GL_R32F;
+        format = GL_RED;
         type = GL_FLOAT;
     }
 

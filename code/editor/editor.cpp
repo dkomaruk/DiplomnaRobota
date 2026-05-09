@@ -95,6 +95,7 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
         ShaderSetDirLight(game->mainShader, game->dirLight);
         ShaderSetDirLight(game->animationShader, game->dirLight);
         ShaderSetDirLight(game->terrainShader, game->dirLight);
+        ShaderSetDirLight(game->tessellatedTerrainShader, game->dirLight);
     }
 
     ImGui::End();
