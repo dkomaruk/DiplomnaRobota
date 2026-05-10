@@ -2,7 +2,9 @@
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec2 texCoords;
-layout(location = 2) in vec3 normal;
+//layout(location = 2) in vec3 normal;
+
+layout(binding = 1) uniform sampler2D u_normalmap;
 
 uniform mat4 u_projection;
 uniform mat4 u_view;
@@ -18,7 +20,8 @@ void main()
 {
     vs_Height = pos.y;
     vs_TexCoords = texCoords;
-    vs_Normal = normal;
+    //vs_Normal = normal;
+    vs_Normal = texture(u_normalmap, texCoords).xyz;
     vs_FragPos = pos;
     vs_FragPosLightSpace = u_lightViewProj * vec4(vs_FragPos, 1.0);
 

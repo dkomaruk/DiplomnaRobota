@@ -3,7 +3,7 @@
 //uniform sampler2D u_terrainMap;
 
 //uniform sampler2D u_splatMap;
-layout(binding = 1) uniform sampler2D u_texture0;
+//layout(binding = 1) uniform sampler2D u_texture0;
 layout(binding = 2) uniform sampler2D u_texture1;
 layout(binding = 3) uniform sampler2D u_texture2;
 layout(binding = 4) uniform sampler2D u_texture3;

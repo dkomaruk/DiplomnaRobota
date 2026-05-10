@@ -71,7 +71,7 @@ struct TerrainVertex
 {
     glm::vec3 position;
     glm::vec2 uv;
-    glm::vec3 normal;
+    //glm::vec3 normal;
 };
 
 struct Mesh
@@ -85,7 +85,8 @@ struct Mesh
 extern AttribInfo vertexAttribs[3];
 extern AttribInfo skinnedVertexAttribs[5];
 extern AttribInfo textVertexAttribs[2];
-extern AttribInfo terrainVertexAttribs[3];
+//extern AttribInfo terrainVertexAttribs[3];
+extern AttribInfo terrainVertexAttribs[2];
 
 Mesh CreateVBO(void *vertexData, int vertexDataElements, AttribInfo *attribs,
                int numOfAttribs, GLenum usage = GL_STATIC_DRAW);
