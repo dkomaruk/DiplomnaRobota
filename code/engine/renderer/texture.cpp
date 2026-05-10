@@ -90,6 +90,12 @@ Texture CreateGLTexture(void *image, int width, int height, int flags)
         format = GL_RED;
         type = GL_FLOAT;
     }
+    else if(FLAG_IS_SET(flags, TextureFlag_NormalMap))
+    {
+        internalFormat = GL_RGB32F;
+        format = GL_RGB;
+        type = GL_FLOAT;
+    }
 
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, (const void *)image);
 

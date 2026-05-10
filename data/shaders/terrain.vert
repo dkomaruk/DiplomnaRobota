@@ -9,6 +9,7 @@ uniform mat4 u_view;
 uniform mat4 u_lightViewProj;
 
 layout(binding = 0) uniform sampler2D u_heightmap;
+layout(binding = 1) uniform sampler2D u_normalmap;
 
 out float Height;
 out vec2 TexCoords;
@@ -23,7 +24,8 @@ void main()
 
     Height = position.y;
     TexCoords = texCoords;
-    Normal = normal;
+    //Normal = normal;
+    Normal = texture(u_normalmap, texCoords).xyz;
     FragPos = position;
     FragPosLightSpace = u_lightViewProj * vec4(FragPos, 1.0);
 

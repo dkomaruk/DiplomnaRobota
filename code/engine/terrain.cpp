@@ -27,6 +27,11 @@ float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::v
             int sampleIndex = j + i * (int)fullMapSize.x;
             int destIndex = j + i * (int)mapSize.x;
 
+            //if(channels == 1)
+            //    heightmap[destIndex] = image16[sampleIndex] / 65535.0f;
+            //else
+            //    heightmap[destIndex] = image8[sampleIndex * channels] / 255.0f;
+
             u16 sample = (channels == 1) ? image16[sampleIndex] : image8[sampleIndex * channels];
             heightmap[destIndex] = sample * yScale - yShift;
         }
@@ -91,6 +96,9 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
 
     glm::vec2 center = t.worldSize / 2.0f;
 
+    std::vector<float> normals;
+    normals.reserve((int)t.mapSize.x * (int)t.mapSize.y * 3);
+
     for(int y = 0; y < t.mapSize.y; y += meshStep)
     {
         numOfVerticesX++;
@@ -122,12 +130,19 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
             glm::vec3 tangentX = glm::vec3((right - left) * t.mapScale, hR - hL, 0.0f);
             glm::vec3 tangentZ = glm::vec3(0.0f, hB - hT, (bottom - top) * t.mapScale);
 
-            vertex.normal = glm::normalize(glm::cross(tangentZ, tangentX));
+            //vertex.normal = glm::normalize(glm::cross(tangentZ, tangentX));
+
+            glm::vec3 normal = glm::normalize(glm::cross(tangentZ, tangentX));
+            normals.insert(normals.end(), {normal.x, normal.y, normal.z});
 
             vertices.push_back(vertex);
             numOfVerticesZ++;
         }
     }
+
+    textureFlags = TextureFlag_NormalMap | TextureFlag_Filter_Min_Linear |
+                   TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
+    t.normalmapTexture = CreateGLTexture(&normals[0], numOfVerticesZ, numOfVerticesX, textureFlags);
 
     std::vector<u32> indices;
 #if 0 //When GL_PATCHES is used
@@ -250,6 +265,9 @@ void RenderTerrain(Game *game)
 
     SetTexture(game->terrain.heightmapTexture.id, 0);
     ShaderSetInt(game->terrain.shader, "u_heightmap", 0);
+
+    SetTexture(game->terrain.normalmapTexture.id, 1);
+    ShaderSetInt(game->terrain.shader, "u_normalmap", 1);
 
     //SetTexture(game->terrain..id, 0);
     //ShaderSetInt(game->terrain.shader, "u_splatMap", 0);

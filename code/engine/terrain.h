@@ -11,7 +11,9 @@ struct Terrain
 {
     float *heightmap;
     glm::vec2 mapSize;
+
     Texture heightmapTexture;
+    Texture normalmapTexture;
 
     glm::vec2 worldSize;
 
