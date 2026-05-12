@@ -5,8 +5,8 @@ layout(binding = 1) uniform sampler2D u_color;
 layout(binding = 2) uniform sampler2D u_noiseMap;
 layout(binding = 3) uniform sampler2D u_shadowMap;
 
-uniform float u_mapScale;
 uniform float u_texCoordsMultiplier;
+uniform float u_mapScale;
 
 struct DirLight
 {

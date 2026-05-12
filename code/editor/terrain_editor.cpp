@@ -68,18 +68,18 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
             }
         }
 
-        Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
-        terrain.shader = game->terrainShader;
+        Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
+        terrain.shader = game->tessellatedTerrainShader;
 
-        int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
-                        TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
-        terrain.heightmapTexture = CreateGLTexture(heightmap, size.x, size.y, textureFlags);
+        //Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
+        //terrain.shader = game->terrainShader;
 
-        terrain.splatMap = game->terrain.splatMap;
-        terrain.texture0 = game->terrain.texture0;
-        terrain.texture1 = game->terrain.texture1;
-        terrain.texture2 = game->terrain.texture2;
-        terrain.texture3 = game->terrain.texture3;
+        terrain.colorTexture = game->terrain.colorTexture;
+
+        //int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
+        //                TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
+        //terrain.heightmapTexture = CreateGLTexture(heightmap, size.x, size.y, textureFlags);
+
         game->terrain = terrain;
 
         free(perlinNoise);

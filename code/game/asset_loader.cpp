@@ -261,7 +261,7 @@ void LoadTestScene(Game *game)
     GLuint terrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain.vert"),
                                                LoadShader("../data/shaders/terrain.frag"));
     GLuint tessellatedTerrainShader = CreateShaderProgram(LoadShader("../data/shaders/terrain_tessellation.vert"),
-                                                          LoadShader("../data/shaders/terrain.frag"),
+                                                          LoadShader("../data/shaders/terrain_tessellation.frag"),
                                                           LoadShader("../data/shaders/terrain.tesc"),
                                                           LoadShader("../data/shaders/terrain.tese"));
     GLuint animationShader = CreateShaderProgram(LoadShader("../data/shaders/main_skinned.vert"),
@@ -382,9 +382,12 @@ void LoadTestScene(Game *game)
     ShaderSetInt(game->animationShader, "u_pointLightCount", 0);
 
     //Terrain
-    game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 8, 22.0f);
-    game->terrain.shader = game->terrainShader;
-    game->terrain.texture1 = CreateTexture("../data/wispy-grass-meadow_albedo.bmp");
+    game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 1, 22.0f);
+    //game->terrain.shader = game->terrainShader;
+    //game->terrain = CreateTerrainFromImage("../data/heightmap.png", 100.0f, 1.0f, 10.2f, 8, 102.0f);
+    game->terrain.shader = game->tessellatedTerrainShader;
+
+    game->terrain.colorTexture = CreateTexture("../data/wispy-grass-meadow_albedo.bmp");
 
     //Particles
     LoadParticleSystem(game);
