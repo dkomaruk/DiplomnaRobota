@@ -1,6 +1,7 @@
 #version 460 core
 
-layout(quads) in;
+//layout(quads) in;
+layout(quads, fractional_odd_spacing) in;
 
 layout(binding = 0) uniform sampler2D u_heightmap;
 

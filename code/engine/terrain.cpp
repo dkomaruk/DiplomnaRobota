@@ -92,9 +92,6 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
 
     glm::vec2 center = t.worldSize / 2.0f;
 
-    std::vector<float> normals;
-    normals.reserve((int)t.mapSize.x * (int)t.mapSize.y * 3);
-
     for(int y = 0; y < t.mapSize.y; y += meshStep)
     {
         numOfVerticesX++;
@@ -106,39 +103,15 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
         {
             TerrainVertex vertex = {};
 
-            //float posY = t.heightmap[(int)(x + t.mapSize.x * y)];
-            float posY = 0.0f;
             float posZ = (x * t.mapScale) - center.y;
-            vertex.position = glm::vec3(posX, posY, posZ);
+            vertex.position = glm::vec3(posX, 0.0f, posZ);
 
             vertex.uv = glm::vec2(x, y) / (t.mapSize - 1.0f);
-
-            int left = std::max(0, x - meshStep);
-            int right = std::min((int)t.mapSize.x - 1, x + meshStep);
-            int top = std::max(0, y - meshStep);
-            int bottom = std::min((int)t.mapSize.y - 1, y + meshStep);
-
-            float hL = t.heightmap[(int)(left + t.mapSize.x * y)];
-            float hR = t.heightmap[(int)(right + t.mapSize.x * y)];
-            float hT = t.heightmap[(int)(x + t.mapSize.x * top)];
-            float hB = t.heightmap[(int)(x + t.mapSize.x * bottom)];
-
-            glm::vec3 tangentX = glm::vec3((right - left) * t.mapScale, hR - hL, 0.0f);
-            glm::vec3 tangentZ = glm::vec3(0.0f, hB - hT, (bottom - top) * t.mapScale);
-
-            //vertex.normal = glm::normalize(glm::cross(tangentZ, tangentX));
-
-            glm::vec3 normal = glm::normalize(glm::cross(tangentZ, tangentX));
-            normals.insert(normals.end(), {normal.x, normal.y, normal.z});
 
             vertices.push_back(vertex);
             numOfVerticesZ++;
         }
     }
-
-    textureFlags = TextureFlag_NormalMap | TextureFlag_Filter_Min_Linear |
-                   TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
-    t.normalmapTexture = CreateGLTexture(&normals[0], numOfVerticesZ, numOfVerticesX, textureFlags);
 
     std::vector<u32> indices;
     u32 restartIndex = 0xFF'FF'FF'FF;
@@ -177,16 +150,15 @@ Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 fullMapSize, fl
     t.yShift = yShift;
     t.heightmap = heightmap;
 
-    std::vector<TerrainVertex> vertices;
-
-    int numOfVerticesX = 0;
-    int numOfVerticesZ = 0;
-
     t.mapScale = mapScale;
     t.worldSize = (t.mapSize - 1.0f) * t.mapScale;
 
     glm::vec2 center = t.worldSize / 2.0f;
 
+    int numOfVerticesX = 0;
+    int numOfVerticesZ = 0;
+
+    std::vector<TerrainVertex> vertices;
     for(int y = 0; y < 32; y += 1)
     {
         numOfVerticesX++;

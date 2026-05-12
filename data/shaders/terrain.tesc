@@ -27,18 +27,18 @@ void main()
     float minDist = 2.0;
     float maxDist = 50.0;
 
-    float dist00 = clamp((l00 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float dist01 = clamp((l01 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float dist10 = clamp((l10 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float dist11 = clamp((l11 - minDist) / (maxDist - minDist), 0.0, 1.0);
+    float distBL = clamp((l00 - minDist) / (maxDist - minDist), 0.0, 1.0);
+    float distBR = clamp((l01 - minDist) / (maxDist - minDist), 0.0, 1.0);
+    float distTR = clamp((l10 - minDist) / (maxDist - minDist), 0.0, 1.0);
+    float distTL = clamp((l11 - minDist) / (maxDist - minDist), 0.0, 1.0);
 
-    float minTessLevel = 1;
-    float maxTessLevel = 8;
+    float minTessLevel = 1.0;
+    float maxTessLevel = 64.0;
 
-    float tessLevel0 = mix(maxTessLevel, minTessLevel, min(dist10, dist00));
-    float tessLevel1 = mix(maxTessLevel, minTessLevel, min(dist00, dist01));
-    float tessLevel2 = mix(maxTessLevel, minTessLevel, min(dist01, dist11));
-    float tessLevel3 = mix(maxTessLevel, minTessLevel, min(dist11, dist10));
+    float tessLevel0 = mix(maxTessLevel, minTessLevel, min(distTL, distBL));
+    float tessLevel1 = mix(maxTessLevel, minTessLevel, min(distBL, distBR));
+    float tessLevel2 = mix(maxTessLevel, minTessLevel, min(distBR, distTR));
+    float tessLevel3 = mix(maxTessLevel, minTessLevel, min(distTL, distTR));
 
     gl_TessLevelOuter[0] = tessLevel0; //Outer Left
     gl_TessLevelOuter[1] = tessLevel1; //Outer Bottom
