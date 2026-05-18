@@ -303,6 +303,11 @@ void RenderTerrain(Game *game)
     ShaderSetFloat(terrain->shader, "u_texCoordsMultiplier", game->terrainUVMultiplier);
     ShaderSetFloat(terrain->shader, "u_mapScale", terrain->mapScale);
 
+    ShaderSetFloat(terrain->shader, "u_minDist", terrain->minTessDist);
+    ShaderSetFloat(terrain->shader, "u_maxDist", terrain->maxTessDist);
+    ShaderSetFloat(terrain->shader, "u_minTessLevel", terrain->minTessLevel);
+    ShaderSetFloat(terrain->shader, "u_maxTessLevel", terrain->maxTessLevel);
+
     glBindVertexArray(terrain->mesh.vao);
 
     if(terrain->mesh.drawMode == GL_PATCHES)

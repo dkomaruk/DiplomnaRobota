@@ -23,6 +23,9 @@ struct Terrain
 
     Texture heightmapTexture;
     Texture colorTexture;
+
+    float minTessDist = 2.0f, maxTessDist = 100.0f;
+    float minTessLevel = 1.0f, maxTessLevel = 32.0f;
 };
 
 float *GetHeightmapData(void *image, int channels, glm::vec2 fullMapSize, glm::vec2 mapSize, float yScale, float yShift);
