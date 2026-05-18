@@ -2,6 +2,8 @@
 
 //layout(quads) in;
 layout(quads, fractional_odd_spacing) in;
+//layout(quads, fractional_even_spacing) in;
+//layout(quads, equal_spacing) in;
 
 layout(binding = 0) uniform sampler2D u_heightmap;
 

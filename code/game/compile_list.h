@@ -4,6 +4,7 @@
 
 #include "stb_image.cpp"
 #include "stb_image_write.cpp"
+#include "fast_noise.cpp"
 
 #include "input.cpp"
 #include "entity.cpp"

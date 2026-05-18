@@ -4,8 +4,7 @@ IF NOT EXIST build MKDIR build
 
 SET ENABLE_TRANSPARENCY=0
 SET ENABLE_FULLSCREEN=0
-SET LOAD_ASSETS=1
-SET DEBUG=1
+SET DEBUG=0
 SET PROFILER=0
 
 SET DEFINES=-DGLEW_STATIC -DGLM_ENABLE_EXPERIMENTAL
@@ -21,10 +20,6 @@ IF "%ENABLE_FULLSCREEN%"=="1" (
     SET DEFINES=%DEFINES% -DWINDOW_FULLSCREEN
 )
 
-IF "%LOAD_ASSETS%"=="1" (
-    SET DEFINES=%DEFINES% -DLOAD_ASSETS
-)
-
 if "%DEBUG%"=="1" (
     SET DEFINES=%DEFINES% -DDEBUG
     SET COMPILER_FLAGS=%COMPILER_FLAGS% -Zi
@@ -38,7 +33,7 @@ if "%PROFILER%"=="1" (
 
 SET PROJECT_INCLUDES=-I"..\code\game" -I"..\code\external" -I"..\code\engine" -I"..\code\engine\renderer" -I"..\code\engine\audio" -I"..\code\engine\shapes" -I"..\code\editor" -I"..\code\tracy-0.13.1"
 
-SET EXTERNAL_INCLUDES=-I"C:\vclibraries\SDL3-3.2.0\include" -I"C:\vclibraries\glew-2.1.0\include" -I"C:\vclibraries\glm-1.0.2\include" -I"C:\vclibraries\stb" -I"C:\vclibraries\assimp\include" -I"C:\vclibraries\OpenALSoft\include" -I"C:\vclibraries\SDL3_ttf-3.2.2\include" -I"C:\vclibraries\Imgui\imgui-1.92.5" -I"C:\vclibraries\Imgui\imgui-1.92.5\backends" -I"C:\vclibraries\Expat 2.7.3\include" -I"C:\vclibraries\nlohmann-json" -I"C:\vclibraries\ThreadPool"
+SET EXTERNAL_INCLUDES=-I"C:\vclibraries\SDL3-3.2.0\include" -I"C:\vclibraries\glew-2.1.0\include" -I"C:\vclibraries\glm-1.0.2\include" -I"C:\vclibraries\stb" -I"C:\vclibraries\assimp\include" -I"C:\vclibraries\OpenALSoft\include" -I"C:\vclibraries\SDL3_ttf-3.2.2\include" -I"C:\vclibraries\Imgui\imgui-1.92.5" -I"C:\vclibraries\Imgui\imgui-1.92.5\backends" -I"C:\vclibraries\Expat 2.7.3\include" -I"C:\vclibraries\nlohmann-json" -I"C:\vclibraries\ThreadPool" -I"C:\vclibraries\FastNoise"
 
 SET EXTERNAL_LIBRARIES=-LIBPATH:"C:\vclibraries\SDL3-3.2.0\lib\x64" -LIBPATH:"C:\vclibraries\glew-2.1.0\lib\Release\x64" -LIBPATH:"C:\vclibraries\assimp\lib\x64" -LIBPATH:"C:\vclibraries\OpenALSoft\lib\x64" -LIBPATH:"C:\vclibraries\SDL3_ttf-3.2.2\lib\x64" -LIBPATH:"C:\vclibraries\Imgui\imgui-1.92.5\build" -LIBPATH:"C:\vclibraries\Expat 2.7.3\Bin"
 

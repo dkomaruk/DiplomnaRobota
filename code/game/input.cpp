@@ -78,10 +78,21 @@ bool IsFirstPress(Input *input, SDL_Scancode key)
     return input->keys[key] && !input->prevKeys[key];
 }
 
+bool IsKeyDown(Input *input, SDL_Scancode key)
+{
+    return input->keys[key];
+}
+
 bool IsFirstClick(Input *input, u32 button)
 {
     Assert(button < MOUSE_BUTTONS_COUNT)
     return input->mouseButtons[button] && !input->prevMouseButtons[button];
+}
+
+bool IsButtonDown(Input *input, u32 button)
+{
+    Assert(button < MOUSE_BUTTONS_COUNT)
+    return input->mouseButtons[button];
 }
 
 bool IsMouseJustReleased(Input *input, u32 button)

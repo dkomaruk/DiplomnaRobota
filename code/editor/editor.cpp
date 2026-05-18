@@ -1,7 +1,6 @@
 #include "editor.h"
 
 #include "particle_editor.h"
-#include "terrain_editor.h"
 
 #include "game.h"
 #include "model.h"
@@ -19,6 +18,8 @@
 
 void UpdateMenuBar(Game *game)
 {
+    Editor *editor = &game->editor;
+
     if(ImGui::BeginMainMenuBar())
     {
         if(ImGui::BeginMenu("File")) { ImGui::EndMenu(); }
@@ -26,13 +27,13 @@ void UpdateMenuBar(Game *game)
 
         if(ImGui::BeginMenu("Windows"))
         {
-            if(ImGui::MenuItem("Particle Editor", "1")) game->particleEditorWindow = true;
-            if(ImGui::MenuItem("Terrain Generator", "2")) game->terrainGeneratorWindow = true;
-            if(ImGui::MenuItem("Selected Entity", "3")) game->selectedEntityWindow = true;
-            if(ImGui::MenuItem("Debug Settings", "4")) game->debugSettingsWindow = true;
-            if(ImGui::MenuItem("Lighting Settings", "5")) game->lightingSettingsWindow = true;
-            if(ImGui::MenuItem("Import Model", "6")) game->importModelWindow = true;
-            if(ImGui::MenuItem("Value Noise", "7")) game->valueNoiseWindow = true;
+            if(ImGui::MenuItem("Particle Editor", "1")) editor->particleEditorWindow = true;
+            if(ImGui::MenuItem("Terrain Generator", "2")) editor->terrainGeneratorWindow = true;
+            if(ImGui::MenuItem("Selected Entity", "3")) editor->selectedEntityWindow = true;
+            if(ImGui::MenuItem("Debug Settings", "4")) editor->debugSettingsWindow = true;
+            if(ImGui::MenuItem("Lighting Settings", "5")) editor->lightingSettingsWindow = true;
+            if(ImGui::MenuItem("Import Model", "6")) editor->importModelWindow = true;
+            if(ImGui::MenuItem("Value Noise", "7")) editor->valueNoiseWindow = true;
             ImGui::EndMenu();
         }
 
@@ -44,7 +45,7 @@ void UpdateMenuBar(Game *game)
 
 void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Debug Settings", &game->debugSettingsWindow, flags);
+    ImGui::Begin("Debug Settings", &game->editor.debugSettingsWindow, flags);
 
     ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
     ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
@@ -65,7 +66,7 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
 
 void UpdateValueNoise(Game *game, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Value Noise", &game->valueNoiseWindow, flags | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin("Value Noise", &game->editor.valueNoiseWindow, flags | ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Image(game->valueNoise.id, ImVec2((float)game->valueNoise.x, (float)game->valueNoise.y));
 
     if(ImGui::Button("Generate"))
@@ -82,7 +83,7 @@ void UpdateValueNoise(Game *game, ImGuiWindowFlags flags)
 
 void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Lighting settings", &game->lightingSettingsWindow, flags);
+    ImGui::Begin("Lighting settings", &game->editor.lightingSettingsWindow, flags);
 
     int lightingChanged = 0;
     lightingChanged += ImGui::DragFloat3("Ambient", &game->dirLight.ambient[0], 0.05f);
@@ -104,7 +105,7 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
 void UpdateSelectedEntity(Game *game, ImGuiWindowFlags flags)
 {
     ImGui::SetNextWindowSizeConstraints(ImVec2(200, 20), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::Begin("Selected Entity", &game->selectedEntityWindow, flags);
+    ImGui::Begin("Selected Entity", &game->editor.selectedEntityWindow, flags);
     if(game->lastSelectedId > 0)
     {
         int id = game->lastSelectedId;
@@ -161,9 +162,9 @@ void ImportModelCallback(void *userdata, const char * const *filelist, int filte
 
 void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
 {
-    ImGui::Begin("Import Model", &game->importModelWindow, flags);
+    ImGui::Begin("Import Model", &game->editor.importModelWindow, flags);
 
-    ImGui::InputFloat("Import Scale", &game->importScale);
+    ImGui::InputFloat("Import Scale", &game->editor.importScale);
 
     static ImportCallbackData importData = {};
 
@@ -173,7 +174,7 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
         {
             std::string& path = importData.queue.front();
             Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
-                                        ModelType_DetermineOnLoad, game->importScale);
+                                        ModelType_DetermineOnLoad, game->editor.importScale);
 
             if(model->type == ModelType_Static)
                 model->material->shader = game->mainShader;
@@ -205,6 +206,21 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
 
 void UpdateEditor(Game *game)
 {
+    Input *input = &game->input;
+    Editor *editor = &game->editor;
+
+    ImGuiIO &io = ImGui::GetIO();
+    if(!io.WantCaptureKeyboard)
+    {
+        if(IsFirstPress(input, SDL_SCANCODE_1)) editor->particleEditorWindow = !editor->particleEditorWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_2)) editor->terrainGeneratorWindow = !editor->terrainGeneratorWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_3)) editor->selectedEntityWindow = !editor->selectedEntityWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_4)) editor->debugSettingsWindow = !editor->debugSettingsWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_5)) editor->lightingSettingsWindow = !editor->lightingSettingsWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_6)) editor->importModelWindow = !editor->importModelWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_7)) editor->valueNoiseWindow = !editor->valueNoiseWindow;
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
@@ -214,31 +230,31 @@ void UpdateEditor(Game *game)
     ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize |
                              (game->input.isCursorHidden ? ImGuiWindowFlags_NoInputs : 0);
 
-    if(game->valueNoiseWindow)
+    if(editor->valueNoiseWindow)
     {
         UpdateValueNoise(game, flags);
     }
-    if(game->terrainGeneratorWindow)
+    if(editor->terrainGeneratorWindow)
     {
-        UpdateTerrainEditorUI(game, &game->terrainGeneratorWindow, flags);
+        UpdateTerrainEditor(game, flags);
     }
-    if(game->debugSettingsWindow)
+    if(editor->debugSettingsWindow)
     {
         UpdateDebugSettings(game, flags);
     }
-    if(game->particleEditorWindow)
+    if(editor->particleEditorWindow)
     {
-        UpdateParticleEditorUI(game, &game->particleEditorWindow, flags);
+        UpdateParticleEditorUI(game, &editor->particleEditorWindow, flags);
     }
-    if(game->lightingSettingsWindow)
+    if(editor->lightingSettingsWindow)
     {
         UpdateSceneLight(game, flags);
     }
-    if(game->selectedEntityWindow)
+    if(editor->selectedEntityWindow)
     {
         UpdateSelectedEntity(game, flags);
     }
-    if(game->importModelWindow)
+    if(editor->importModelWindow)
     {
         UpdateImportModel(game, flags);
     }
