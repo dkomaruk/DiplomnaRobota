@@ -2,6 +2,7 @@
 
 #include "text.h"
 #include "frustum.h"
+#include "debug.h"
 #include "shader.h"
 #include "camera.h"
 #include "asset_loader.h"
@@ -57,7 +58,8 @@ bool InitGame(Game *game)
     Uint64 windowFlags = SDL_WINDOW_OPENGL | (isFullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
                         (isTransparent ? SDL_WINDOW_TRANSPARENT : 0) ;
 
-    game->windowSize = glm::ivec2(1280, 720);
+    //game->windowSize = glm::ivec2(1280, 720);
+    game->windowSize = glm::ivec2(1920, 1080);
     game->window = SDL_CreateWindow("Komaruk Diplom", game->windowSize.x, game->windowSize.y, windowFlags);
     if(!game->window)
     {
@@ -201,7 +203,6 @@ void RenderGame(Game *game)
         }
     }
 
-#ifdef LOAD_ASSETS
     if(game->renderTerrain)
     {
         RenderTerrain(game);
@@ -248,7 +249,6 @@ void RenderGame(Game *game)
         RenderParticles(game);
         glViewport(0, 0, game->windowSize.x, game->windowSize.y);
     }
-#endif
 
     //Final pass, post-processing and combination of previously rendered framebuffers
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -277,7 +277,7 @@ void RenderGame(Game *game)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
-        !game->input.isMouseCapturedByImgui && !game->input.isCursorHidden)
+        !game->input.isMouseCapturedByImgui && !game->input.isCursorHidden && !game->editor.terrainGeneratorWindow)
     {
         RenderSelectionBox(game, &game->selectionBox);
     }
@@ -411,7 +411,6 @@ void UpdateGame(Game *game)
         Ray pickingRay = CastPickingRay(game, mousePos);
         SelectSingleObject(game, &pickingRay);
 
-#ifdef LOAD_ASSETS
         float visibleRayLength = 2000.0f;
         glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
@@ -426,7 +425,6 @@ void UpdateGame(Game *game)
             game->targetDirection = glm::normalize(game->targetDirection);
             game->targetAngle = glm::degrees(glm::atan(game->targetDirection.x, game->targetDirection.y));
         }
-#endif
     }
 
     if(game->input.mouseButtons[MOUSE_LEFT] && !input->isMouseCapturedByImgui && !game->input.isCursorHidden)
@@ -438,18 +436,6 @@ void UpdateGame(Game *game)
        RECT_HAS_SIZE(game->selectionBox.size))
     {
         SelectMultipleObjects(game);
-    }
-
-    ImGuiIO &io = ImGui::GetIO();
-    if(!io.WantCaptureKeyboard)
-    {
-        if(IsFirstPress(input, SDL_SCANCODE_1)) game->particleEditorWindow = !game->particleEditorWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_2)) game->terrainGeneratorWindow = !game->terrainGeneratorWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_3)) game->selectedEntityWindow = !game->selectedEntityWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_4)) game->debugSettingsWindow = !game->debugSettingsWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_5)) game->lightingSettingsWindow = !game->lightingSettingsWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_6)) game->importModelWindow = !game->importModelWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_7)) game->valueNoiseWindow = !game->valueNoiseWindow;
     }
 
     //Delete selected entities
@@ -478,9 +464,7 @@ void UpdateGame(Game *game)
         UpdateEntity(game, entity);
     }
 
-#ifdef LOAD_ASSETS
     UpdateTestScene(game);
-#endif
 
     //Change outline thickness
     if(input->keys[SDL_SCANCODE_DOWN])
@@ -557,7 +541,6 @@ void UpdateGame(Game *game)
         }
     }
 
-#ifdef LOAD_ASSETS
     //Update particles
     if(IsFirstPress(input, SDL_SCANCODE_Y))
     {
@@ -574,14 +557,6 @@ void UpdateGame(Game *game)
 
         SortAllParticles(game);
     }
-#endif
-
-    //Light
-    game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->tessellatedTerrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
 
     //Update timing counters
     float ms = game->deltaTime * 1000.0f;
@@ -592,6 +567,13 @@ void UpdateGame(Game *game)
 
     sprintf(buffer, "%.5f FPS", 1000.0f / ms);
     UpdateText(&game->fpsCounter, buffer);
+
+    //Light
+    game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    ShaderSetMatrix4(game->tessellatedTerrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

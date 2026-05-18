@@ -66,7 +66,7 @@ Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPo
     stbi_image_free(((channels == 1) ? image16 : (void *)image));
 
     //return CreateTerrainMesh(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
-    return CreateTessellatedTerrainMesh(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
+    return CreateTessellatedTerrainMesh(heightmap, fullMapSize, 16, mapScale, yShift);
 }
 
 Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion,
@@ -89,6 +89,7 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
 
     t.mapScale = mapScale;
     t.worldSize = (t.mapSize - 1.0f) * t.mapScale;
+    t.halfWorldSize = t.worldSize / 2.0f;
 
     glm::vec2 center = t.worldSize / 2.0f;
 
@@ -137,21 +138,22 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
     return t;
 }
 
-Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion,
-                                     float mapScale, int meshStep, float yShift)
+Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 mapSize, int patchSize,
+                                     float mapScale, float yShift)
 {
     Terrain t = {};
 
     int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
                        TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
-    t.heightmapTexture = CreateGLTexture(heightmap, (int)fullMapSize.x, (int)fullMapSize.y, textureFlags);
+    t.heightmapTexture = CreateGLTexture(heightmap, (int)mapSize.x, (int)mapSize.y, textureFlags);
 
-    t.mapSize = fullMapSize * mapPortion;
+    t.mapSize = mapSize;
     t.yShift = yShift;
     t.heightmap = heightmap;
 
     t.mapScale = mapScale;
     t.worldSize = (t.mapSize - 1.0f) * t.mapScale;
+    t.halfWorldSize = t.worldSize / 2.0f;
 
     glm::vec2 center = t.worldSize / 2.0f;
 
@@ -159,21 +161,24 @@ Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 fullMapSize, fl
     int numOfVerticesZ = 0;
 
     std::vector<TerrainVertex> vertices;
-    for(int y = 0; y < 32; y += 1)
+
+    for(int y = 0; y < patchSize; ++y)
     {
         numOfVerticesX++;
         numOfVerticesZ = 0;
 
-        float posX = ((y - 16.0f)) * 3.0f;
+        float v = (float)y / (patchSize - 1);
+        float posX = (t.worldSize.x * v) - center.x;
 
-        for(int x = 0; x < 32; x += 1)
+        for(int x = 0; x < patchSize; ++x)
         {
             TerrainVertex vertex = {};
 
-            float posZ = ((x - 16.0f)) * 3.0f;
-            vertex.position = glm::vec3(posX, 0.0f, posZ);
+            float u = (float)x / (patchSize - 1);
+            float posZ = (t.worldSize.y * u) - center.y;
 
-            vertex.uv = glm::vec2(x, y) / glm::vec2(32.0f, 32.0f);
+            vertex.position = glm::vec3(posX, 0.0f, posZ);
+            vertex.uv = glm::vec2(u, v);
 
             vertices.push_back(vertex);
             numOfVerticesZ++;
@@ -204,7 +209,7 @@ Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 fullMapSize, fl
 
 float GetTerrainHeight(Terrain *terrain, float x, float z)
 {
-    glm::vec2 worldPos = glm::vec2(x, z) + (terrain->worldSize / 2.0f);
+    glm::vec2 worldPos = glm::vec2(x, z) + terrain->halfWorldSize;
 
     glm::vec2 mapPos = (worldPos / terrain->worldSize) * terrain->mapSize;
     mapPos = glm::clamp(mapPos, glm::vec2(0.0f), terrain->mapSize - 1.001f);
@@ -220,8 +225,8 @@ float GetTerrainHeight(Terrain *terrain, float x, float z)
     return glm::mix(glm::mix(h00, h10, weights.x), glm::mix(h01, h11, weights.x), weights.y);
 }
 
-//Approximate intersection of a ray with the terrain mesh which is cheaper
-//than finding the intersection of each triangle of the terrain mesh with the ray
+//Approximate intersection of a ray with the terrain mesh which is much cheaper
+//than testing the intersection of each triangle of the terrain mesh with the ray
 glm::vec3 FindApproximateIntersectionPoint(Terrain *terrain, glm::vec3 origin, glm::vec3 dir,
                                            float low, float high, int iterations)
 {

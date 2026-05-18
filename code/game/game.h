@@ -5,6 +5,7 @@
 #include "input.h"
 #include "text.h"
 #include "particle_system.h"
+#include "editor.h"
 #include "terrain.h"
 #include "selection.h"
 #include "ray.h"
@@ -114,17 +115,6 @@ struct Game
     bool renderCounters = true;
     GLenum polygonMode = GL_FILL;
 
-    //Editor windows
-    bool particleEditorWindow;
-    bool terrainGeneratorWindow;
-    bool selectedEntityWindow;
-    bool debugSettingsWindow;
-    bool lightingSettingsWindow;
-    bool valueNoiseWindow;
-
-    float importScale = 1.0f;
-    bool importModelWindow;
-
     //Noise
     Texture valueNoise;
     Texture perlinNoise, perlinNoise2;
@@ -158,6 +148,9 @@ struct Game
     Mesh grassQuad;
     GLuint grassInstancesVbo;
     int grassCount;
+
+    //Editor
+    Editor editor;
 };
 
 bool InitGame(Game *game);

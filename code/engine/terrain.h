@@ -13,6 +13,7 @@ struct Terrain
 
     glm::vec2 mapSize;
     glm::vec2 worldSize;
+    glm::vec2 halfWorldSize;
 
     float yShift;
     float mapScale;
@@ -29,8 +30,8 @@ Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight = 6.0f, floa
                       float mapScale = 0.1f, int meshStep = 1, float yShift = 0.0f);
 Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion = 1.0f,
                           float mapScale = 0.1f, int meshStep = 1, float yShift = 0.0f);
-Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion = 1.0f,
-                                     float mapScale = 0.1f, int meshStep = 1, float yShift = 0.0f);
+Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 mapSize, int patchSize = 32,
+                                     float mapScale = 0.1f, float yShift = 0.0f);
 
 float GetTerrainHeight(Terrain *terrain, float x, float z);
 glm::vec3 GetRayTerrainIntersection(Terrain *terrain, Ray *pickingRay, float maxDist);

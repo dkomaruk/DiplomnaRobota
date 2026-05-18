@@ -16,6 +16,8 @@
 
 #include <ThreadPool.h>
 
+#include <FastNoiseLite.h>
+
 #include <AL/al.h>
 #include <AL/alext.h>
 
@@ -337,7 +339,6 @@ void LoadTestScene(Game *game)
     game->grassShader = grassShader;
 
     //MESHES
-#ifdef LOAD_ASSETS
     Model *abrams = ImportModel("../data/models/abrams/abrams.fbx", game->mainShader, aiProcess_Triangulate);
     Model *soldier = ImportModel("../data/models/soldier/Ginga Variation 3.fbx", game->animationShader,
                                  aiProcess_Triangulate | aiProcess_GlobalScale, ModelType_Animated, 0.01f);
@@ -403,14 +404,29 @@ void LoadTestScene(Game *game)
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->lineShader, glm::vec3(1.0f, 0.0f, 0.0f));
     CreateFrustumLines(game->frustumLines, game->frustumNormals, game->lineShader);
 
-#endif
-
     glm::vec2 size = glm::vec2(256.0f, 256.0f);
     u8 *valueNoise = GenerateValueNoise(size);
     game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
     free(valueNoise);
 
-    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
+    //float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
+
+    fnl_state noise = fnlCreateState();
+    noise.seed = rand();
+    noise.noise_type = FNL_NOISE_PERLIN;
+    noise.fractal_type = FNL_FRACTAL_FBM;
+    noise.octaves = 3;
+    noise.frequency = 0.04f;
+
+    float *perlinNoise = (float *)malloc((int)(size.x * size.y) * sizeof(float));
+    int index = 0;
+    for(int y = 0; y < (int)size.y; y++)
+    {
+        for(int x = 0; x < (int)size.x; x++)
+        {
+            perlinNoise[index++] = (fnlGetNoise2D(&noise, (float)x, (float)y) + 1.0f) / 2.0f;
+        }
+    }
 
     u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
     game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);

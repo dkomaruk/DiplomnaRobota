@@ -5,6 +5,8 @@
 #include <SDL3/SDL.h>
 #include <glm/gtx/quaternion.hpp>
 
+#include <FastNoiseLite.h>
+
 #include <stdlib.h>
 
 u8 *GenerateValueNoise(glm::vec2 size)
@@ -124,13 +126,8 @@ float *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, flo
             {
                 glm::vec2 p = (glm::vec2(x, y) / size) * glm::vec2(gridSize) * frequency;
 
-                if (i == 0)
-                {
-                    total += SamplePerlin(p, gradientTable, gradientTableSize);
-                } else
-                {
-                    total += SamplePerlin(p, gradientTable, gradientTableSize) * amplitude;
-                }
+                total += SamplePerlin(p, gradientTable, gradientTableSize) * amplitude;
+                maxAmplitude += amplitude;
 
                 amplitude *= persistence;
                 frequency *= lacunarity;
@@ -140,7 +137,8 @@ float *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, flo
             //Gradient vector is normalized and has length of 1
             //Thus the dot product between the two is in range +-1.414
             //The blend between the four dot products can at most be +-0.707 right at the center of the grid cell (0.5, 0.5)
-            float normalizedValue = glm::clamp(((total / 0.707f) + 1.0f) / 2.0f, 0.0f, 1.0f);
+            float currentMax = maxAmplitude * 0.707f;
+            float normalizedValue = glm::clamp(((total / currentMax) + 1.0f) / 2.0f, 0.0f, 1.0f);
 
             noise[x + (int)size.x * y] = normalizedValue;
         }
@@ -148,4 +146,29 @@ float *GeneratePerlinNoise(glm::vec2 size, glm::ivec2 gridSize, int octaves, flo
 
     free(gradientTable);
     return noise;
+}
+
+float *GeneratePerlinNoise2(glm::vec2 size, glm::ivec2 gridSize, int octaves, float persistence, float lacunarity)
+{
+    fnl_state noise = fnlCreateState();
+    noise.seed = rand();
+    noise.noise_type = FNL_NOISE_PERLIN;
+    noise.fractal_type = FNL_FRACTAL_FBM;
+    noise.octaves = octaves;
+    noise.frequency = 1.0f;
+    noise.gain = persistence;
+
+    glm::vec2 freq = glm::vec2(gridSize) / size;
+
+    float *perlinNoise = (float *)malloc((int)(size.x * size.y) * sizeof(float));
+    int index = 0;
+    for(int y = 0; y < (int)size.y; y++)
+    {
+        for(int x = 0; x < (int)size.x; x++)
+        {
+            perlinNoise[index++] = (fnlGetNoise2D(&noise, x * freq.x, y * freq.y) + 1.0f) / 2.0f;
+        }
+    }
+
+    return perlinNoise;
 }

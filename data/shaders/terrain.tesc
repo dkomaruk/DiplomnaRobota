@@ -2,6 +2,12 @@
 
 layout(vertices = 4) out;
 
+uniform float u_minDist = 2.0;
+uniform float u_maxDist = 100.0;
+
+uniform float u_minTessLevel = 1.0;
+uniform float u_maxTessLevel = 32.0;
+
 uniform mat4 u_view;
 
 in vec2 vs_TexCoords[];
@@ -24,21 +30,15 @@ void main()
     float l10 = length(vp10.xyz);
     float l11 = length(vp11.xyz);
 
-    float minDist = 2.0;
-    float maxDist = 50.0;
+    float distBL = clamp((l00 - u_minDist) / (u_maxDist - u_minDist), 0.0, 1.0);
+    float distBR = clamp((l01 - u_minDist) / (u_maxDist - u_minDist), 0.0, 1.0);
+    float distTR = clamp((l10 - u_minDist) / (u_maxDist - u_minDist), 0.0, 1.0);
+    float distTL = clamp((l11 - u_minDist) / (u_maxDist - u_minDist), 0.0, 1.0);
 
-    float distBL = clamp((l00 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float distBR = clamp((l01 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float distTR = clamp((l10 - minDist) / (maxDist - minDist), 0.0, 1.0);
-    float distTL = clamp((l11 - minDist) / (maxDist - minDist), 0.0, 1.0);
-
-    float minTessLevel = 1.0;
-    float maxTessLevel = 64.0;
-
-    float tessLevel0 = mix(maxTessLevel, minTessLevel, min(distTL, distBL));
-    float tessLevel1 = mix(maxTessLevel, minTessLevel, min(distBL, distBR));
-    float tessLevel2 = mix(maxTessLevel, minTessLevel, min(distBR, distTR));
-    float tessLevel3 = mix(maxTessLevel, minTessLevel, min(distTL, distTR));
+    float tessLevel0 = mix(u_maxTessLevel, u_minTessLevel, min(distTL, distBL));
+    float tessLevel1 = mix(u_maxTessLevel, u_minTessLevel, min(distBL, distBR));
+    float tessLevel2 = mix(u_maxTessLevel, u_minTessLevel, min(distBR, distTR));
+    float tessLevel3 = mix(u_maxTessLevel, u_minTessLevel, min(distTL, distTR));
 
     gl_TessLevelOuter[0] = tessLevel0; //Outer Left
     gl_TessLevelOuter[1] = tessLevel1; //Outer Bottom
