@@ -48,7 +48,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
     ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);
-    ImGui::DragFloat("Min tessellation level", &terrain->minTessLevel, 0.1f);
+    ImGui::DragFloat("Min tessellation level", &terrain->minTessLevel, 0.1f, 0.1f, 100.0f);
     ImGui::DragFloat("Max tessellation level", &terrain->maxTessLevel, 0.1f);
 
     TerrainBrush *brush = &editor->terrainBrush;
@@ -105,6 +105,10 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
         Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, patchSize, mapScale, 0.0f);
         terrain.shader = game->tessellatedTerrainShader;
+        terrain.minTessDist = game->terrain.minTessDist;
+        terrain.maxTessDist = game->terrain.maxTessDist;
+        terrain.minTessLevel = game->terrain.minTessLevel;
+        terrain.maxTessLevel = game->terrain.maxTessLevel;
 
         //Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
         //terrain.shader = game->terrainShader;
@@ -125,7 +129,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
 void SculptTerrain(Terrain *terrain, glm::vec3 intersectionPoint, TerrainBrush *brush, float deltaTime)
 {
-    glm::vec2 worldPos = glm::vec2(intersectionPoint.z, intersectionPoint.x) + terrain->halfWorldSize;
+    glm::vec2 worldPos = glm::vec2(intersectionPoint.x, intersectionPoint.z) + terrain->halfWorldSize;
     glm::vec2 mapCenter = (worldPos / terrain->worldSize) * terrain->mapSize;
 
     glm::ivec2 min = glm::max(glm::vec2(0.0f), glm::floor(mapCenter - brush->radius));

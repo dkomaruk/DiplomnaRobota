@@ -33,7 +33,8 @@ enum TextureFlags
     TextureFlag_FlipY                      = 0x00'00'80'00,
 
     TextureFlag_Heightmap                  = 0x00'01'00'00,
-    TextureFlag_NormalMap                  = 0x00'20'00'00
+    TextureFlag_NormalMap                  = 0x00'20'00'00,
+    TextureFlag_ClampToBorder              = 0x00'40'00'00
 };
 
 #define TexturePreset_Common (TextureFlag_Filter_Min_LinLin | \

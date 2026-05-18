@@ -39,7 +39,7 @@ struct Game
     std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
     GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, postProcessShader, uiTextShader,
            particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader, skymapShader,
-           shadowShader, skinnedShadowShader, grassShader, tessellatedTerrainShader;
+           shadowShader, skinnedShadowShader, grassShader, tessellatedTerrainShader, terrainShadowShader;
 
     bool outlinePass;
     float outlineThickness = 1.0f;

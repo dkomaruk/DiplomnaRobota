@@ -51,12 +51,21 @@ Texture CreateGLTexture(void *image, int width, int height, int flags)
     //glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLint)maxAniso);
 
-    if(FLAG_IS_SET(flags, TextureFlag_Repeat) || FLAG_IS_SET(flags, TextureFlag_ClampToEdge))
+    GLint wrapping = GL_REPEAT;
+    if(FLAG_IS_SET(flags, TextureFlag_ClampToEdge))
     {
-        GLint wrapping = FLAG_IS_SET(flags, TextureFlag_Repeat) ? GL_REPEAT : GL_CLAMP_TO_EDGE;
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
+        wrapping = GL_CLAMP_TO_EDGE;
     }
+    if(FLAG_IS_SET(flags, TextureFlag_ClampToBorder))
+    {
+        wrapping = GL_CLAMP_TO_BORDER;
+    }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
+
+    float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     if(FLAG_IS_SET(flags, TextureFlag_RGBA) && FLAG_IS_SET(flags, TextureFlag_RGB))
     {

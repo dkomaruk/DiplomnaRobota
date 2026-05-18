@@ -55,6 +55,9 @@ float CalculateShadow(vec4 fragPosLightSpace)
     projCoords = projCoords * 0.5 + 0.5;
     float closestDepth = texture(u_shadowMap, projCoords.xy).r;
     float currentDepth = projCoords.z;
+
+    if(currentDepth > 1.0) return 0.0f;
+
     float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
 
     return shadow;

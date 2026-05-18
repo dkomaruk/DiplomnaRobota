@@ -90,6 +90,7 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
     lightingChanged += ImGui::DragFloat3("Diffuse", &game->dirLight.diffuse[0], 0.05f);
     lightingChanged += ImGui::DragFloat3("Specular", &game->dirLight.specular[0], 0.05f);
     lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.05f);
+    //lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.001f);
 
     if(lightingChanged)
     {

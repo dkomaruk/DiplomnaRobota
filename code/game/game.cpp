@@ -113,9 +113,11 @@ bool InitGame(Game *game)
 
     game->camera = CreateFPSCamera();
 
-    game->perspectiveProjection = glm::perspective(glm::radians(game->camera.fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 1000.0f);
+    //game->perspectiveProjection = glm::perspective(glm::radians(game->camera.fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 1000.0f);
+    game->perspectiveProjection = glm::perspective(glm::radians(game->camera.fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 5000.0f);
     game->orthoProjection = glm::ortho(0.0f, (float)game->windowSize.x, (float)game->windowSize.y, 0.0f, -1.0f, 1.0f);
     game->orthoProjDirLight = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+    //game->orthoProjDirLight = glm::ortho(-500.0f, 500.0f, -500.0f, 500.0f, 1.0f, 1000.0f);
 
     game->view = glm::lookAt(game->camera.position, game->camera.position + game->camera.direction,
                              glm::vec3(0.0f, 1.0f, 0.0f));
@@ -219,20 +221,20 @@ void RenderGame(Game *game)
     //glBindVertexArray(0);
 
     //Render skymap
-    //if(game->polygonMode == GL_FILL)
-    //{
-    //    UseShader(game->skymapShader);
-    //    glDepthFunc(GL_LEQUAL);
+    if(game->polygonMode == GL_FILL)
+    {
+        UseShader(game->skymapShader);
+        glDepthFunc(GL_LEQUAL);
 
-    //    ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
+        ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
 
-    //    SetTexture(game->skymapTexture.id, 0);
-    //    ShaderSetInt(game->skymapShader, "u_skyMap", 0);
-    //    glBindVertexArray(game->fullscreenQuad.vao);
-    //    glDrawArrays(GL_TRIANGLES, 0, 6);
+        SetTexture(game->skymapTexture.id, 0);
+        ShaderSetInt(game->skymapShader, "u_skyMap", 0);
+        glBindVertexArray(game->fullscreenQuad.vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    //    glDepthFunc(GL_LESS);
-    //}
+        glDepthFunc(GL_LESS);
+    }
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -570,10 +572,12 @@ void UpdateGame(Game *game)
 
     //Light
     game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
-    ShaderSetMatrix4(game->tessellatedTerrainShader, "u_lightViewProj", game->orthoProjDirLight * game->dirLightView);
+    //game->dirLightView = lookAt(-game->dirLight.direction * 1000.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
+    ShaderSetMatrix4(game->shadowShader, "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(game->skinnedShadowShader, "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(game->terrainShader, "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(game->tessellatedTerrainShader, "u_lightViewProj", lightViewProj);
 
     //Update shaders
     ShaderSetVec3(game->mainShader, "u_viewPos", game->camera.position);

@@ -157,25 +157,30 @@ Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 mapSize, int pa
 
     glm::vec2 center = t.worldSize / 2.0f;
 
+    int patchSizeX, patchSizeY;
+    patchSizeX = patchSizeY = patchSize;
+    if(t.mapSize.y > t.mapSize.x) patchSizeY = patchSize * (int)(t.mapSize.y / t.mapSize.x);
+    else if(t.mapSize.x > t.mapSize.y) patchSizeX = patchSize * (int)(t.mapSize.x / t.mapSize.y);
+
     int numOfVerticesX = 0;
     int numOfVerticesZ = 0;
 
     std::vector<TerrainVertex> vertices;
 
-    for(int y = 0; y < patchSize; ++y)
+    for(int y = 0; y < patchSizeY; ++y)
     {
         numOfVerticesX++;
         numOfVerticesZ = 0;
 
-        float v = (float)y / (patchSize - 1);
-        float posX = (t.worldSize.x * v) - center.x;
+        float v = (float)y / (patchSizeY - 1);
+        float posZ = (t.worldSize.y * v) - center.y;
 
-        for(int x = 0; x < patchSize; ++x)
+        for(int x = 0; x < patchSizeX; ++x)
         {
             TerrainVertex vertex = {};
 
-            float u = (float)x / (patchSize - 1);
-            float posZ = (t.worldSize.y * u) - center.y;
+            float u = (float)x / (patchSizeX - 1);
+            float posX = (t.worldSize.x * u) - center.x;
 
             vertex.position = glm::vec3(posX, 0.0f, posZ);
             vertex.uv = glm::vec2(u, v);
@@ -204,7 +209,6 @@ Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 mapSize, int pa
     t.mesh.drawMode = GL_PATCHES;
 
     return t;
-
 }
 
 float GetTerrainHeight(Terrain *terrain, float x, float z)
@@ -217,10 +221,10 @@ float GetTerrainHeight(Terrain *terrain, float x, float z)
     glm::ivec2 mapPos0 = glm::ivec2(mapPos);
     glm::vec2 weights = glm::fract(mapPos);
 
-    float h00 = terrain->heightmap[mapPos0.t + (int)terrain->mapSize.x * mapPos0.s];
-    float h10 = terrain->heightmap[mapPos0.t + (int)terrain->mapSize.x * (mapPos0.s + 1)];
-    float h01 = terrain->heightmap[(mapPos0.t + 1) + (int)terrain->mapSize.x * mapPos0.s];
-    float h11 = terrain->heightmap[(mapPos0.t + 1) + (int)terrain->mapSize.x * (mapPos0.s + 1)];
+    float h00 = terrain->heightmap[mapPos0.s + (int)terrain->mapSize.x * mapPos0.t];
+    float h10 = terrain->heightmap[(mapPos0.s + 1) + (int)terrain->mapSize.x * mapPos0.t];
+    float h01 = terrain->heightmap[mapPos0.s + (int)terrain->mapSize.x * (mapPos0.t + 1)];
+    float h11 = terrain->heightmap[(mapPos0.s + 1) + (int)terrain->mapSize.x * (mapPos0.t + 1)];
 
     return glm::mix(glm::mix(h00, h10, weights.x), glm::mix(h01, h11, weights.x), weights.y);
 }
@@ -282,7 +286,7 @@ void RenderTerrain(Game *game)
     Terrain *terrain = &game->terrain;
 
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    glCullFace(GL_FRONT);
 
     glUseProgram(terrain->shader);
 

@@ -372,6 +372,7 @@ void LoadTestScene(Game *game)
     glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
     game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
+    //game->dirLight = CreateDirLight(glm::vec3(-0.064f, -0.103, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(game->mainShader, game->dirLight);
     ShaderSetDirLight(game->animationShader, game->dirLight);
     ShaderSetDirLight(game->terrainShader, game->dirLight);
@@ -395,9 +396,9 @@ void LoadTestScene(Game *game)
 
     //Skymap
     //StartProfiling();
-    //int flags = TexturePreset_Common;
-    //flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
-    //game->skymapTexture = CreateTexture("../data/imgs/extra/sky.jpg", flags);
+    int flags = TexturePreset_Common;
+    flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
+    game->skymapTexture = CreateTexture("../data/imgs/extra/sky.jpg", flags);
     //EndProfiling("Skymap");
 
     //Debug lines
