@@ -1,8 +1,10 @@
 #ifndef TERRAIN_EDITOR_H
 
-struct Game;
+#include <FastNoiseLite.h>
 
 #include <imgui.h>
+
+struct Game;
 
 enum TerrainBrushType
 {
@@ -17,7 +19,10 @@ struct TerrainBrush
     i32 type = TerrainBrush_Add;
     float radius = 75.0f;
     float strength = 50.0f;
-    int kernelSize = 3;
+    i32 kernelSize = 3;
+    i32 noiseType = FNL_NOISE_OPENSIMPLEX2;
+    float noiseFreq = 0.5f;
+    i32 octaves = 4;
 };
 
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags);

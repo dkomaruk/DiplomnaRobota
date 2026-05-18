@@ -5,8 +5,6 @@
 
 #include <glm/vec2.hpp>
 
-#include <FastNoiseLite.h>
-
 #include <GL/glew.h>
 
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
@@ -45,22 +43,32 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     static int patchSize = 16;
     ImGui::InputInt("Patch Size", &patchSize);
+    patchSize = SDL_clamp(patchSize, 4, 100);
 
     TerrainBrush *brush = &editor->terrainBrush;
     ImGui::Checkbox("Terrain Sculpting", &editor->terrainSculpting);
-    ImGui::InputFloat("Brush Strength", &brush->strength);
-    ImGui::InputFloat("Brush Radius", &brush->radius);
-
-    ImGui::Combo("Brush Type", &brush->type, "Add\0Flatten\0Smooth\0Noise\0\0");
-    if(brush->type == TerrainBrush_Smooth)
+    if(editor->terrainSculpting)
     {
-        const int kernels[] = {3, 5, 7, 9, 11, 13, 15};
-        static int kernelId = 0;
-        if(ImGui::Combo("Brush Kernel Size", &kernelId, " 3\0 5\0 7\0 9\0 11\0 13\0 15\0\0"))
-            brush->kernelSize = kernels[kernelId];
-    }
+        ImGui::InputFloat("Brush Strength", &brush->strength);
+        ImGui::InputFloat("Brush Radius", &brush->radius);
 
-    patchSize = SDL_clamp(patchSize, 4, 100);
+        ImGui::Combo("Brush Type", &brush->type, "Add\0Flatten\0Smooth\0Noise\0\0");
+        if(brush->type == TerrainBrush_Smooth)
+        {
+            const int kernels[] = {3, 5, 7, 9, 11, 13, 15};
+            static int kernelId = 0;
+            if(ImGui::Combo("Brush Kernel Size", &kernelId, " 3\0 5\0 7\0 9\0 11\0 13\0 15\0\0"))
+                brush->kernelSize = kernels[kernelId];
+        }
+        else if(brush->type == TerrainBrush_Noise)
+        {
+            ImGui::Combo("Brush Noise Type", &brush->noiseType,
+                         "Simplex2\0Simplex2S\0Cellular\0Perlin\0Value Cubic\0Value\0\0");
+
+            ImGui::DragFloat("Noise Frequency", &brush->noiseFreq, 0.005f, 0.001f, 1.0f);
+            ImGui::InputInt("Noise Octaves", &brush->octaves);
+        }
+    }
 
     if(ImGui::Button("Generate"))
     {
@@ -120,12 +128,15 @@ void SculptTerrain(Terrain *terrain, glm::vec3 intersectionPoint, TerrainBrush *
     glm::ivec2 center = glm::clamp(mapCenter, glm::vec2(0.0f), terrain->mapSize - 1.0f);
     float centerHeight = terrain->heightmap[center.x + center.y * (int)terrain->mapSize.x];
 
-    fnl_state brushNoise = fnlCreateState();
-    brushNoise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    brushNoise.fractal_type = FNL_FRACTAL_FBM;
-    brushNoise.octaves = 4;
-    brushNoise.seed = rand();
-    float noiseFrequency = 0.5f;
+    fnl_state brushNoise;
+    if(brush->type == TerrainBrush_Noise)
+    {
+        brushNoise = fnlCreateState();
+        brushNoise.noise_type = (fnl_noise_type)brush->noiseType;
+        brushNoise.fractal_type = FNL_FRACTAL_FBM;
+        brushNoise.octaves = brush->octaves;
+        brushNoise.seed = rand();
+    }
 
     for(int y = min.y; y <= max.y; ++y)
     {
@@ -177,11 +188,8 @@ void SculptTerrain(Terrain *terrain, glm::vec3 intersectionPoint, TerrainBrush *
 
                     case TerrainBrush_Noise:
                     {
-                        float noiseVal = fnlGetNoise2D(&brushNoise, x * noiseFrequency, y * noiseFrequency);
+                        float noiseVal = fnlGetNoise2D(&brushNoise, x * brush->noiseFreq, y * brush->noiseFreq);
                         terrain->heightmap[index] += noiseVal * brush->strength * falloff * deltaTime;
-
-                        //float randomVal = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-                        //terrain->heightmap[index] += randomVal * brush->strength * falloff * deltaTime;
                     } break;
                 }
             }
@@ -243,7 +251,10 @@ void UpdateTerrainEditor(Game *game, ImGuiWindowFlags flags)
             float visibleRayLength = 2000.0f;
             glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
-            SculptTerrain(&game->terrain, intersectionPoint, &editor->terrainBrush, game->deltaTime);
+            if((editor->terrainBrush.type != TerrainBrush_Noise) || IsFirstClick(input, MOUSE_LEFT))
+            {
+                SculptTerrain(&game->terrain, intersectionPoint, &editor->terrainBrush, game->deltaTime);
+            }
         }
     }
 
