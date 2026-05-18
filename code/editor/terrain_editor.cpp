@@ -10,6 +10,7 @@
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
     Editor *editor = &game->editor;
+    Terrain *terrain = &game->terrain;
 
     ImGui::Begin("Terrain Generator", windowState, flags | ImGuiWindowFlags_HorizontalScrollbar);
 
@@ -44,6 +45,11 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
     static int patchSize = 16;
     ImGui::InputInt("Patch Size", &patchSize);
     patchSize = SDL_clamp(patchSize, 4, 100);
+
+    ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
+    ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);
+    ImGui::DragFloat("Min tessellation level", &terrain->minTessLevel, 0.1f);
+    ImGui::DragFloat("Max tessellation level", &terrain->maxTessLevel, 0.1f);
 
     TerrainBrush *brush = &editor->terrainBrush;
     ImGui::Checkbox("Terrain Sculpting", &editor->terrainSculpting);
