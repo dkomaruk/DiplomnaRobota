@@ -11,7 +11,7 @@
 #include "game.cpp"
 #include "renderer.cpp"
 #include "audio.cpp"
-#include "asset_loader.cpp"
+#include "asset_manager.cpp"
 #include "timer.cpp"
 #include "text.cpp"
 #include "light.cpp"

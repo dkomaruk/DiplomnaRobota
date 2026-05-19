@@ -3,6 +3,7 @@
 #include "entity.h"
 #include "audio.h"
 #include "input.h"
+#include "asset_manager.h"
 #include "text.h"
 #include "particle_system.h"
 #include "editor.h"
@@ -32,15 +33,13 @@ struct Game
     SDL_Window *window;
     glm::ivec2 windowSize;
 
+    Editor editor;
+    AssetManager assets;
+
     //Application flags
     bool isRunning = true;
 
-    //Shaders and their uniforms
-    std::vector<GLuint> shaders; //Array of all shaders to update common uniforms in one loop
-    GLuint mainShader, lightSourceShader, skinnedOutlineShader, outlineShader, postProcessShader, uiTextShader,
-           particleShader, terrainShader, animationShader, lineShader, selectionBoxShader, aabbShader, skymapShader,
-           shadowShader, skinnedShadowShader, grassShader, tessellatedTerrainShader, terrainShadowShader;
-
+    //Rendering settings
     bool outlinePass;
     float outlineThickness = 1.0f;
 
@@ -148,9 +147,6 @@ struct Game
     Mesh grassQuad;
     GLuint grassInstancesVbo;
     int grassCount;
-
-    //Editor
-    Editor editor;
 };
 
 bool InitGame(Game *game);

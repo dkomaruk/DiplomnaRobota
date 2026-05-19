@@ -26,21 +26,21 @@ void RenderEntity(Entity *self, Game *game)
 
     if(game->shadowPass)
     {
-        ShaderSetMatrix4(game->shadowShader, "u_model", self->modelMat);
-        ShaderSetMatrix4(game->skinnedShadowShader, "u_model", self->modelMat);
+        ShaderSetMatrix4(game->assets.shaders["shadow"], "u_model", self->modelMat);
+        ShaderSetMatrix4(game->assets.shaders["skinned_shadow"], "u_model", self->modelMat);
     }
 
     if(game->renderAABB)
     {
-        ShaderSetVec4(game->lineShader, "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        ShaderSetVec4(game->assets.shaders["line"], "u_color", glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         glLineWidth(2.0f);
 
         //TODO: Figure out how to recalculate AABB correctly on animated and rotated entities. Maybe it doesn't matter that much tho since accurate collision detection isn't really needed in a strategy game because most collisions are resolved during pathfinding
 
         //NOTE: Use modelMatPosScale to display AABB, modelMat to display OBB.
         //Did this so that debug AABB responds to movements of animated characters that are manually rotated
-        //RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->lineShader, 0, self->meshAABB.drawMode);
-        RenderMesh(game, &self->meshAABB, self->modelMat, game->lineShader, 0, self->meshAABB.drawMode);
+        //RenderMesh(game, &self->meshAABB, self->modelMatPosScale, game->assets.shaders["line"], 0, self->meshAABB.drawMode);
+        RenderMesh(game, &self->meshAABB, self->modelMat, game->assets.shaders["line"], 0, self->meshAABB.drawMode);
         glLineWidth(1.0f);
     }
 

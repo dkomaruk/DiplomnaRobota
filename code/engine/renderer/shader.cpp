@@ -9,7 +9,7 @@
 
 GLuint currentShader = 0;
 
-char *LoadShader(char *filepath)
+char *LoadShader(const char *filepath)
 {
     FILE *file = fopen(filepath, "rb");
 

@@ -20,6 +20,8 @@ in vec2 TexCoords;
 
 const float offset = 1.0 / 300.0;
 
+out vec4 FragColor;
+
 void main()
 {
     vec2 u_texelSize = vec2(1.0 / 1280.0, 1.0 / 720.0);
@@ -50,7 +52,7 @@ void main()
 
         if(currentPixel < 0.5)
         {
-            gl_FragColor = sceneColor;
+            FragColor = sceneColor;
             return;
         }
 
@@ -81,10 +83,10 @@ void main()
 
         float minBrightness = 0.5;
         float pulse = (sinWave * (1.0 - minBrightness)) + minBrightness;
-        gl_FragColor = mix(sceneColor, vec4(outlineColor, 1.0), pulse);
+        FragColor = mix(sceneColor, vec4(outlineColor, 1.0), pulse);
     }
     else
     {
-        gl_FragColor = sceneColor;
+        FragColor = sceneColor;
     }
 }

@@ -63,8 +63,6 @@ struct Model
     };
 };
 
-Model *ImportModel(char *filepath, GLuint shader, u32 flags = 0, u16 type = ModelType_Static, float scale = 1.0f);
-
 glm::mat4 PrepareModelMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTransforms = 0,
                  glm::mat4 *skinningMatrices = 0, int numOfMatrices = 0);

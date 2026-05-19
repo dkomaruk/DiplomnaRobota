@@ -3,7 +3,7 @@
 #include "particle_editor.h"
 
 #include "game.h"
-#include "model.h"
+#include "asset_manager.h"
 #include "noise.h"
 #include "shader.h"
 
@@ -55,7 +55,7 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
 
     if(ImGui::Checkbox("Display Particles", &game->renderParticles))
     {
-        ShaderSetInt(game->postProcessShader, "u_showParticles", game->renderParticles);
+        ShaderSetInt(game->assets.shaders["post_process"], "u_showParticles", game->renderParticles);
     }
 
     ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
@@ -94,10 +94,10 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
 
     if(lightingChanged)
     {
-        ShaderSetDirLight(game->mainShader, game->dirLight);
-        ShaderSetDirLight(game->animationShader, game->dirLight);
-        ShaderSetDirLight(game->terrainShader, game->dirLight);
-        ShaderSetDirLight(game->tessellatedTerrainShader, game->dirLight);
+        ShaderSetDirLight(game->assets.shaders["main"], game->dirLight);
+        ShaderSetDirLight(game->assets.shaders["animation"], game->dirLight);
+        ShaderSetDirLight(game->assets.shaders["terrain"], game->dirLight);
+        ShaderSetDirLight(game->assets.shaders["tessellated_terrain"], game->dirLight);
     }
 
     ImGui::End();
@@ -174,13 +174,15 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
         while(importData.queue.size())
         {
             std::string& path = importData.queue.front();
-            Model *model = ImportModel((char *)path.c_str(), 0, aiProcess_Triangulate | aiProcess_GlobalScale,
-                                        ModelType_DetermineOnLoad, game->editor.importScale);
+            std::string modelName = RegisterAsset(&game->assets, path);
+            Model *model = LoadModel(&game->assets, (char *)path.c_str(), modelName, 0,
+                                     aiProcess_Triangulate | aiProcess_GlobalScale,
+                                     ModelType_DetermineOnLoad, game->editor.importScale);
 
             if(model->type == ModelType_Static)
-                model->material->shader = game->mainShader;
+                model->material->shader = game->assets.shaders["main"];
             else if(model->type == ModelType_Animated)
-                model->material->shader = game->animationShader;
+                model->material->shader = game->assets.shaders["animation"];
             else
                 InvalidCodepath
 

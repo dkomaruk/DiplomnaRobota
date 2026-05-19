@@ -20,7 +20,6 @@ void SetupFramebuffers(Game *game)
     game->particlesFbo = CreateFramebuffer(RECT_HALF(game->windowSize), FboTexturePreset_ColorLinearRGBA,
                                            FboTexturePreset_Depth32F);
 
-    //game->shadowMapFbo = CreateFramebuffer(glm::ivec2(8192, 8192), 0,
     game->shadowMapFbo = CreateFramebuffer(glm::ivec2(1024, 1024), 0,
                                            FboTexturePreset_Depth32F | TextureFlag_ClampToBorder);
 

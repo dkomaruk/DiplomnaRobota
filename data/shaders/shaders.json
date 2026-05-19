@@ -1,0 +1,72 @@
+{
+    "main": {
+        "vertex": "main.vert",
+        "fragment": "main.frag"
+    },
+    "light_source": {
+        "vertex": "main.vert",
+        "fragment": "colorFill.frag"
+    },
+    "outline": {
+        "vertex": "main.vert",
+        "fragment": "colorFill.frag"
+    },
+    "skinned_outline": {
+        "vertex": "main_skinned.vert",
+        "fragment": "colorFill.frag"
+    },
+    "ui_text": {
+        "vertex": "uiText.vert",
+        "fragment": "uiText.frag"
+    },
+    "post_process": {
+        "vertex": "post_processing.vert",
+        "fragment": "post_processing.frag"
+    },
+    "particle": {
+        "vertex": "particle.vert",
+        "fragment": "particle.frag"
+    },
+    "terrain": {
+        "vertex": "terrain.vert",
+        "fragment": "terrain.frag"
+    },
+    "tessellated_terrain": {
+        "vertex": "terrain_tessellation.vert",
+        "fragment": "terrain_tessellation.frag",
+        "tess_control": "terrain.tesc",
+        "tess_eval": "terrain.tese"
+    },
+    "animation": {
+        "vertex": "main_skinned.vert",
+        "fragment": "main.frag"
+    },
+    "line": {
+        "vertex": "line.vert",
+        "fragment": "colorFill.frag"
+    },
+    "selection_box": {
+        "vertex": "uiText.vert",
+        "fragment": "colorFill.frag"
+    },
+    "aabb": {
+        "vertex": "uiText.vert",
+        "fragment": "colorFill.frag"
+    },
+    "skymap": {
+        "vertex": "environment.vert",
+        "fragment": "environment.frag"
+    },
+    "shadow": {
+        "vertex": "shadow.vert",
+        "fragment": "shadow.frag"
+    },
+    "skinned_shadow": {
+        "vertex": "shadow_skinned.vert",
+        "fragment": "shadow.frag"
+    },
+    "grass": {
+        "vertex": "grass.vert",
+        "fragment": "grass.frag"
+    }
+}

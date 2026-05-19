@@ -72,7 +72,7 @@ void RenderMainPass(Game *game)
 
     glDepthMask(GL_TRUE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
-    ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(game->assets.shaders["light_source"], "u_color", glm::vec4(1.0f));
     RenderSceneEntities(game);
 
     if(game->renderTerrain)
@@ -80,26 +80,28 @@ void RenderMainPass(Game *game)
         RenderTerrain(game);
     }
 
+#if 0
     //Render grass
-    //UseShader(game->grassShader);
+    UseShader(game->assets.shaders["grass"]);
 
-    //ShaderSetInt(game->grassShader, "u_texture", 0);
-    //SetTexture(game->grass->material->diffuseTexture.id, 0);
+    ShaderSetInt(game->assets.shaders["grass"], "u_texture", 0);
+    SetTexture(game->grass->material->diffuseTexture.id, 0);
 
-    //glBindVertexArray(game->grassQuad.vao);
-    //glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
-    //glBindVertexArray(0);
+    glBindVertexArray(game->grassQuad.vao);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
+    glBindVertexArray(0);
+#endif
 
     //Render skymap
     if(game->polygonMode == GL_FILL)
     {
-        UseShader(game->skymapShader);
+        UseShader(game->assets.shaders["skymap"]);
         glDepthFunc(GL_LEQUAL);
 
-        ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
+        ShaderSetMatrix4(game->assets.shaders["skymap"], "u_viewProjInverse", game->projViewInverse);
 
         SetTexture(game->skymapTexture.id, 0);
-        ShaderSetInt(game->skymapShader, "u_skyMap", 0);
+        ShaderSetInt(game->assets.shaders["skymap"], "u_skyMap", 0);
         glBindVertexArray(game->fullscreenQuad.vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -121,13 +123,22 @@ void RenderParticlePass(Game *game)
     glViewport(0, 0, game->particlesFbo.color.x, game->particlesFbo.color.y);
 
     SetTexture(&game->fullSceneDepthTexture, 2);
-    ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
-    ShaderSetVec2(game->particleShader, "u_screenSize", game->particlesFbo.color.size);
+    ShaderSetInt(game->assets.shaders["particle"], "u_sceneDepth", 2);
+    ShaderSetVec2(game->assets.shaders["particle"], "u_screenSize", game->particlesFbo.color.size);
 
     RenderParticles(game);
 
     glViewport(0, 0, game->windowSize.x, game->windowSize.y);
 }
+
+enum PostProcessTextureUnit
+{
+    PostProcTexUnit_Outline,
+    PostProcTexUnit_Scene,
+    PostProcTexUnit_Particles,
+    PostProcTexUnit_SceneDepth,
+    PostProcTexUnit_ParticlesDepth,
+};
 
 void RenderPostProcessing(Game *game)
 {
@@ -136,22 +147,22 @@ void RenderPostProcessing(Game *game)
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    SetTexture(&game->outlineFbo.color, 0);
-    ShaderSetInt(game->postProcessShader, "u_outline", 0);
+    SetTexture(&game->outlineFbo.color, PostProcTexUnit_Outline);
+    ShaderSetInt(game->assets.shaders["post_process"], "u_outline", PostProcTexUnit_Outline);
 
-    SetTexture(&game->fullSceneTexture, 1);
-    ShaderSetInt(game->postProcessShader, "u_scene", 1);
+    SetTexture(&game->fullSceneTexture, PostProcTexUnit_Scene);
+    ShaderSetInt(game->assets.shaders["post_process"], "u_scene", PostProcTexUnit_Scene);
 
-    SetTexture(&game->particlesFbo.color, 2);
-    ShaderSetInt(game->postProcessShader, "u_particles", 2);
+    SetTexture(&game->particlesFbo.color, PostProcTexUnit_Particles);
+    ShaderSetInt(game->assets.shaders["post_process"], "u_particles", PostProcTexUnit_Particles);
 
-    SetTexture(&game->fullSceneDepthTexture, 3);
-    ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
+    SetTexture(&game->fullSceneDepthTexture, PostProcTexUnit_SceneDepth);
+    ShaderSetInt(game->assets.shaders["post_process"], "u_sceneDepth", PostProcTexUnit_SceneDepth);
 
-    SetTexture(&game->particlesFbo.depth, 4);
-    ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
+    SetTexture(&game->particlesFbo.depth, PostProcTexUnit_ParticlesDepth);
+    ShaderSetInt(game->assets.shaders["post_process"], "u_smokeDepth", PostProcTexUnit_ParticlesDepth);
 
-    ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->particlesFbo.color.size);
+    ShaderSetVec2(game->assets.shaders["post_process"], "u_lowResInvSize", 1.0f / (glm::vec2)game->particlesFbo.color.size);
 
     glBindVertexArray(game->fullscreenQuad.vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);

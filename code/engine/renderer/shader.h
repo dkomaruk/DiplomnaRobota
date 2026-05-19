@@ -11,7 +11,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 
-char *LoadShader(char *filepath);
+char *LoadShader(const char *filepath);
 
 GLuint CompileShader(char *shaderCode, GLenum shaderType);
 GLuint CreateShaderProgram(char *vertexShaderCode, char *fragmentShaderCode,
