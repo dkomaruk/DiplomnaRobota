@@ -1,0 +1,183 @@
+#include "renderer.h"
+
+#include "game.h"
+#include "entity.h"
+#include "shader.h"
+#include "line.h"
+
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdl3.h>
+
+#include <glm/vec4.hpp>
+#include <GL/glew.h>
+
+void RenderSceneEntities(Game *game)
+{
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    for(int i = 0; i < game->sceneEntities.size(); i++)
+    {
+        bool isSelected = (game->selectedIDs.find(game->sceneEntities[i]->id) != game->selectedIDs.end());
+        if((game->outlinePass && isSelected) || !game->outlinePass)
+        {
+            Entity *e = game->sceneEntities[i];
+            e->Render(e, game);
+        }
+    }
+}
+
+void RenderShadowPass(Game *game)
+{
+    game->shadowPass = true;
+    glBindFramebuffer(GL_FRAMEBUFFER, game->shadowMapFbo.id);
+    glViewport(0, 0, game->shadowMapFbo.depth.x, game->shadowMapFbo.depth.y);
+    RenderSceneEntities(game);
+    game->shadowPass = false;
+}
+
+void RenderOutlinePass(Game *game)
+{
+    game->outlinePass = true;
+    glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
+    glViewport(0, 0, game->windowSize.x, game->windowSize.y);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->outlineFbo.color.id, 0);
+    RenderSceneEntities(game);
+    game->outlinePass = false;
+}
+
+void RenderDebugGeometry(Game *game)
+{
+    if(game->renderPickingRay)
+    {
+        RenderLine(&game->pickingRay);
+    }
+    if(game->renderSelectionFrustum)
+    {
+        for(int i = 0; i < ArrayCount(game->frustumLines); i++)
+        {
+            RenderLine(&game->frustumLines[i]);
+        }
+        for(int i = 0; i < ArrayCount(game->frustumNormals); i++)
+        {
+            RenderLine(&game->frustumNormals[i]);
+        }
+    }
+}
+
+void RenderMainPass(Game *game)
+{
+    glPolygonMode(GL_FRONT_AND_BACK, game->polygonMode);
+
+    glDepthMask(GL_TRUE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, game->fullSceneTexture.id, 0);
+    ShaderSetVec4(game->lightSourceShader, "u_color", glm::vec4(1.0f));
+    RenderSceneEntities(game);
+
+    if(game->renderTerrain)
+    {
+        RenderTerrain(game);
+    }
+
+    //Render grass
+    //UseShader(game->grassShader);
+
+    //ShaderSetInt(game->grassShader, "u_texture", 0);
+    //SetTexture(game->grass->material->diffuseTexture.id, 0);
+
+    //glBindVertexArray(game->grassQuad.vao);
+    //glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, game->grassCount);
+    //glBindVertexArray(0);
+
+    //Render skymap
+    if(game->polygonMode == GL_FILL)
+    {
+        UseShader(game->skymapShader);
+        glDepthFunc(GL_LEQUAL);
+
+        ShaderSetMatrix4(game->skymapShader, "u_viewProjInverse", game->projViewInverse);
+
+        SetTexture(game->skymapTexture.id, 0);
+        ShaderSetInt(game->skymapShader, "u_skyMap", 0);
+        glBindVertexArray(game->fullscreenQuad.vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glDepthFunc(GL_LESS);
+    }
+
+    RenderDebugGeometry(game);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void RenderParticlePass(Game *game)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, game->particlesFbo.id);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glViewport(0, 0, game->particlesFbo.color.x, game->particlesFbo.color.y);
+
+    SetTexture(&game->fullSceneDepthTexture, 2);
+    ShaderSetInt(game->particleShader, "u_sceneDepth", 2);
+    ShaderSetVec2(game->particleShader, "u_screenSize", game->particlesFbo.color.size);
+
+    RenderParticles(game);
+
+    glViewport(0, 0, game->windowSize.x, game->windowSize.y);
+}
+
+void RenderPostProcessing(Game *game)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    SetTexture(&game->outlineFbo.color, 0);
+    ShaderSetInt(game->postProcessShader, "u_outline", 0);
+
+    SetTexture(&game->fullSceneTexture, 1);
+    ShaderSetInt(game->postProcessShader, "u_scene", 1);
+
+    SetTexture(&game->particlesFbo.color, 2);
+    ShaderSetInt(game->postProcessShader, "u_particles", 2);
+
+    SetTexture(&game->fullSceneDepthTexture, 3);
+    ShaderSetInt(game->postProcessShader, "u_sceneDepth", 3);
+
+    SetTexture(&game->particlesFbo.depth, 4);
+    ShaderSetInt(game->postProcessShader, "u_smokeDepth", 4);
+
+    ShaderSetVec2(game->postProcessShader, "u_lowResInvSize", 1.0f / (glm::vec2)game->particlesFbo.color.size);
+
+    glBindVertexArray(game->fullscreenQuad.vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void RenderUI(Game *game)
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
+        !game->input.isMouseCapturedByImgui && !game->input.isCursorHidden && !game->editor.terrainGeneratorWindow)
+    {
+        RenderSelectionBox(game, &game->selectionBox);
+    }
+
+    if(game->renderCounters)
+    {
+        RenderText(&game->aliveParticlesText);
+        RenderText(&game->deadParticlesText);
+        RenderText(&game->fpsCounter);
+        RenderText(&game->msPerFrame);
+    }
+
+    glDisable(GL_BLEND);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}

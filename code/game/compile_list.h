@@ -9,6 +9,7 @@
 #include "input.cpp"
 #include "entity.cpp"
 #include "game.cpp"
+#include "renderer.cpp"
 #include "audio.cpp"
 #include "asset_loader.cpp"
 #include "timer.cpp"
