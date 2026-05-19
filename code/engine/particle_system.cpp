@@ -266,15 +266,15 @@ void RenderParticles(Game *game)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    UseShader(game->assets.shaders["particle"]);
+    UseShader(GetShader(game, "particle"));
 
-    ShaderSetInt(game->assets.shaders["particle"], "u_texture", 0);
+    ShaderSetInt(GetShader(game, "particle"), "u_texture", 0);
     SetTexture(game->textureID, 0);
 
-    ShaderSetInt(game->assets.shaders["particle"], "u_atlas", 1);
+    ShaderSetInt(GetShader(game, "particle"), "u_atlas", 1);
     SetTexture(game->textureID, 1);
 
-    ShaderSetInt(game->assets.shaders["particle"], "u_axisAlignedBillboard", game->smokeSettings.axisAlignedBillboard);
+    ShaderSetInt(GetShader(game, "particle"), "u_axisAlignedBillboard", game->smokeSettings.axisAlignedBillboard);
     if(game->smokeSettings.axisAlignedBillboard)
     {
         glm::vec3 direction = game->particleSystems->particles[0].velocity;
@@ -283,7 +283,7 @@ void RenderParticles(Game *game)
             direction = glm::vec3(0.0f, 1.0f, 0.0f);
         }
 
-        ShaderSetVec3(game->assets.shaders["particle"], "u_direction", direction);
+        ShaderSetVec3(GetShader(game, "particle"), "u_direction", direction);
     }
 
     glBindVertexArray(game->particlesQuad.vao);

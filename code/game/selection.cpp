@@ -147,5 +147,5 @@ void SelectMultipleObjects(Game *game)
 
 void RenderSelectionBox(Game *game, SelectionBox *box)
 {
-    RenderRectUI(game, box->start, box->size, game->assets.shaders["selection_box"]);
+    RenderRectUI(game, box->start, box->size, GetShader(game, "selection_box"));
 }

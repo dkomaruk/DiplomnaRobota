@@ -225,7 +225,6 @@ Texture LoadModelTextures(const aiScene *scene, aiMaterial *material, const std:
 }
 
 void LoadVertexData(aiMesh *mesh, int vertexId, Vertex *vertex)
-
 {
     aiVector3D pos = mesh->mVertices[vertexId];
     aiVector3D norm = mesh->mNormals[vertexId];
@@ -643,10 +642,11 @@ void LoadShaderManifest(AssetManager *assets, const std::string &manifestPath)
     json manifestJson;
     file >> manifestJson;
 
+    Game *game = GetGame();
     for(auto &[shaderName, shaderStages] : manifestJson.items())
     {
         assets->shaderManifests[shaderName] = shaderStages.get<ShaderDefinition>();
-        GetShader(assets, shaderName);
+        GetShader(game, shaderName);
     }
 }
 
@@ -717,11 +717,12 @@ Texture GetTextureByPath(AssetManager *assets, const std::string &path)
     return texture;
 }
 
-GLuint GetShader(AssetManager *assets, const std::string &name)
+GLuint GetShader(Game *game, const std::string &name)
 {
-    if(assets->shaders.find(name) != assets->shaders.end())
-        return assets->shaders[name];
+    if(game->assets.shaders.find(name) != game->assets.shaders.end())
+        return game->assets.shaders[name];
 
+    AssetManager *assets = &game->assets;
     if(assets->shaderManifests.find(name) != assets->shaderManifests.end())
     {
         ShaderDefinition &def = assets->shaderManifests[name];
@@ -775,37 +776,38 @@ void LoadTestScene(Game *game)
     }
 
     //SHADERS
-
     std::unordered_map<std::string, GLuint> &shaders = assets->shaders;
-    ShaderSetVec2(shaders["main"], "u_viewport", game->windowSize);
-    ShaderSetVec2(shaders["animation"], "u_viewport", game->windowSize);
 
-    ShaderSetVec4(shaders["light_source"], "u_color", glm::vec4(1.0f));
-    ShaderSetVec4(shaders["skinned_outline"], "u_color", glm::vec4(1.0f));
-    ShaderSetVec4(shaders["selection_box"], "u_color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
+    ShaderSetVec2(GetShader(game, "main"), "u_viewport", game->windowSize);
+    ShaderSetVec2(GetShader(game, "animation"), "u_viewport", game->windowSize);
 
-    ShaderSetInt(shaders["post_process"], "u_outlineThickness", (int)game->outlineThickness);
-    ShaderSetInt(shaders["post_process"], "u_inverted", 0);
-    ShaderSetInt(shaders["post_process"], "u_grayscale", 0);
-    ShaderSetInt(shaders["post_process"], "u_showOutline", 1);
-    ShaderSetInt(shaders["post_process"], "u_showParticles", 1);
+    ShaderSetVec4(GetShader(game, "light_source"), "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(GetShader(game, "outline"), "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(GetShader(game, "skinned_outline"), "u_color", glm::vec4(1.0f));
+    ShaderSetVec4(GetShader(game, "selection_box"), "u_color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
+
+    ShaderSetInt(GetShader(game, "post_process"), "u_outlineThickness", (int)game->outlineThickness);
+    ShaderSetInt(GetShader(game, "post_process"), "u_inverted", 0);
+    ShaderSetInt(GetShader(game, "post_process"), "u_grayscale", 0);
+    ShaderSetInt(GetShader(game, "post_process"), "u_showOutline", 1);
+    ShaderSetInt(GetShader(game, "post_process"), "u_showParticles", 1);
 
     for(auto &shader : game->assets.shaders)
     {
         ShaderSetMatrix4(shader.second, "u_projection", game->perspectiveProjection);
     }
 
-    ShaderSetMatrix4(shaders["ui_text"], "u_projection", game->orthoProjection);
-    ShaderSetMatrix4(shaders["selection_box"], "u_projection", game->orthoProjection);
+    ShaderSetMatrix4(GetShader(game, "ui_text"), "u_projection", game->orthoProjection);
+    ShaderSetMatrix4(GetShader(game, "selection_box"), "u_projection", game->orthoProjection);
 
     //MESHES
-    Model *abrams = GetModel(assets, "abrams", game->assets.shaders["main"], ModelType_Static);
-    Model *soldier = GetModel(assets, "Ginga Variation 3", game->assets.shaders["animation"],
+    Model *abrams = GetModel(assets, "abrams", GetShader(game, "main"), ModelType_Static);
+    Model *soldier = GetModel(assets, "Ginga Variation 3", GetShader(game, "animation"),
                               ModelType_Animated, aiProcess_GlobalScale, 0.01f);
-    Model *soldierAnimated = GetModel(assets, "Rifle Run", game->assets.shaders["animation"],
+    Model *soldierAnimated = GetModel(assets, "Rifle Run", GetShader(game, "animation"),
                                       ModelType_Animated, aiProcess_GlobalScale, 0.01f);
 
-    //game->grass = LoadModel("../data/extra/grass2.fbx", game->assets.shaders["main"], aiProcess_Triangulate |
+    //game->grass = LoadModel("../data/extra/grass2.fbx", GetShader(game, "main"), aiProcess_Triangulate |
     //                          aiProcess_GlobalScale, ModelType_Static, 0.001f);
 
     game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
@@ -834,19 +836,19 @@ void LoadTestScene(Game *game)
     glm::vec3 dirSpecular = glm::vec3(1.0f);
     game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     //game->dirLight = CreateDirLight(glm::vec3(-0.064f, -0.103, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
-    ShaderSetDirLight(game->assets.shaders["main"], game->dirLight);
-    ShaderSetDirLight(game->assets.shaders["animation"], game->dirLight);
-    ShaderSetDirLight(game->assets.shaders["terrain"], game->dirLight);
-    ShaderSetDirLight(game->assets.shaders["tessellated_terrain"], game->dirLight);
-    ShaderSetInt(game->assets.shaders["main"], "u_dirLightCount", 1);
-    ShaderSetInt(game->assets.shaders["animation"], "u_dirLightCount", 1);
+    ShaderSetDirLight(GetShader(game, "main"), game->dirLight);
+    ShaderSetDirLight(GetShader(game, "animation"), game->dirLight);
+    ShaderSetDirLight(GetShader(game, "terrain"), game->dirLight);
+    ShaderSetDirLight(GetShader(game, "tessellated_terrain"), game->dirLight);
+    ShaderSetInt(GetShader(game, "main"), "u_dirLightCount", 1);
+    ShaderSetInt(GetShader(game, "animation"), "u_dirLightCount", 1);
 
-    ShaderSetInt(game->assets.shaders["main"], "u_pointLightCount", 0);
-    ShaderSetInt(game->assets.shaders["animation"], "u_pointLightCount", 0);
+    ShaderSetInt(GetShader(game, "main"), "u_pointLightCount", 0);
+    ShaderSetInt(GetShader(game, "animation"), "u_pointLightCount", 0);
 
     //Terrain
     game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 1, 22.0f);
-    game->terrain.shader = game->assets.shaders["tessellated_terrain"];
+    game->terrain.shader = GetShader(game, "tessellated_terrain");
     game->terrain.colorTexture = GetTexture(assets, "wispy-grass-meadow_albedo");
 
     //Particles
@@ -860,8 +862,8 @@ void LoadTestScene(Game *game)
     //EndProfiling("Skymap");
 
     //Debug lines
-    game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), game->assets.shaders["line"], glm::vec3(1.0f, 0.0f, 0.0f));
-    CreateFrustumLines(game->frustumLines, game->frustumNormals, game->assets.shaders["line"]);
+    game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), GetShader(game, "line"), glm::vec3(1.0f, 0.0f, 0.0f));
+    CreateFrustumLines(game->frustumLines, game->frustumNormals, GetShader(game, "line"));
 
     glm::vec2 size = glm::vec2(256.0f, 256.0f);
     u8 *valueNoise = GenerateValueNoise(size);
@@ -892,10 +894,10 @@ void LoadTestScene(Game *game)
     free(perlinNoiseImage);
 
     glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
-    game->fpsCounter = CreateText(&game->fonts[48], "0 FPS", glm::vec2(20.0f, 54.0f), game->assets.shaders["ui_text"], textColor);
-    game->msPerFrame = CreateText(&game->fonts[48], "0 ms/f", glm::vec2(400.0f, 54.0f), game->assets.shaders["ui_text"], textColor);
-    game->aliveParticlesText = CreateText(&game->fonts[48], "Alive Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f), game->assets.shaders["ui_text"], textColor);
-    game->deadParticlesText = CreateText(&game->fonts[48], "Dead Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f + 60.0f), game->assets.shaders["ui_text"], textColor);
+    game->fpsCounter = CreateText(&game->fonts[48], "0 FPS", glm::vec2(20.0f, 54.0f), GetShader(game, "ui_text"), textColor);
+    game->msPerFrame = CreateText(&game->fonts[48], "0 ms/f", glm::vec2(400.0f, 54.0f), GetShader(game, "ui_text"), textColor);
+    game->aliveParticlesText = CreateText(&game->fonts[48], "Alive Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f), GetShader(game, "ui_text"), textColor);
+    game->deadParticlesText = CreateText(&game->fonts[48], "Dead Particles: 0", glm::vec2(20.0f, 54.0f + 60.0f + 60.0f), GetShader(game, "ui_text"), textColor);
 
     game->fullscreenQuad = CreateQuadNDC(glm::vec2(0.0f), glm::vec2(game->windowSize), glm::vec2(game->windowSize));
 }

@@ -55,7 +55,7 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
 
     if(ImGui::Checkbox("Display Particles", &game->renderParticles))
     {
-        ShaderSetInt(game->assets.shaders["post_process"], "u_showParticles", game->renderParticles);
+        ShaderSetInt(GetShader(game, "post_process"), "u_showParticles", game->renderParticles);
     }
 
     ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
@@ -94,10 +94,10 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
 
     if(lightingChanged)
     {
-        ShaderSetDirLight(game->assets.shaders["main"], game->dirLight);
-        ShaderSetDirLight(game->assets.shaders["animation"], game->dirLight);
-        ShaderSetDirLight(game->assets.shaders["terrain"], game->dirLight);
-        ShaderSetDirLight(game->assets.shaders["tessellated_terrain"], game->dirLight);
+        ShaderSetDirLight(GetShader(game, "main"), game->dirLight);
+        ShaderSetDirLight(GetShader(game, "animation"), game->dirLight);
+        ShaderSetDirLight(GetShader(game, "terrain"), game->dirLight);
+        ShaderSetDirLight(GetShader(game, "tessellated_terrain"), game->dirLight);
     }
 
     ImGui::End();
@@ -180,9 +180,9 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
                                      ModelType_DetermineOnLoad, game->editor.importScale);
 
             if(model->type == ModelType_Static)
-                model->material->shader = game->assets.shaders["main"];
+                model->material->shader = GetShader(game, "main");
             else if(model->type == ModelType_Animated)
-                model->material->shader = game->assets.shaders["animation"];
+                model->material->shader = GetShader(game, "animation");
             else
                 InvalidCodepath
 

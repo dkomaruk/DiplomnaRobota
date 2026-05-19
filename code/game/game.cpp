@@ -334,12 +334,12 @@ void UpdateGame(Game *game)
         game->outlineThickness -= 5.0f * game->deltaTime;
         game->outlineThickness = SDL_max(game->outlineThickness, 0.0f);
 
-        ShaderSetInt(game->assets.shaders["post_process"], "u_outlineThickness", (int)game->outlineThickness);
+        ShaderSetInt(GetShader(game, "post_process"), "u_outlineThickness", (int)game->outlineThickness);
     }
     if(input->keys[SDL_SCANCODE_UP])
     {
         game->outlineThickness += 5.0f * game->deltaTime;
-        ShaderSetInt(game->assets.shaders["post_process"], "u_outlineThickness", (int)game->outlineThickness);
+        ShaderSetInt(GetShader(game, "post_process"), "u_outlineThickness", (int)game->outlineThickness);
     }
 
     //Toggle wireframe mode
@@ -434,32 +434,33 @@ void UpdateGame(Game *game)
     game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     //game->dirLightView = lookAt(-game->dirLight.direction * 1000.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
-    ShaderSetMatrix4(game->assets.shaders["shadow"], "u_lightViewProj", lightViewProj);
-    ShaderSetMatrix4(game->assets.shaders["skinned_shadow"], "u_lightViewProj", lightViewProj);
-    ShaderSetMatrix4(game->assets.shaders["terrain"], "u_lightViewProj", lightViewProj);
-    ShaderSetMatrix4(game->assets.shaders["tessellated_terrain"], "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(GetShader(game, "shadow"), "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(GetShader(game, "skinned_shadow"), "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(GetShader(game, "terrain"), "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(GetShader(game, "tessellated_terrain"), "u_lightViewProj", lightViewProj);
 
     //Update shaders
-    ShaderSetVec3(game->assets.shaders["main"], "u_viewPos", game->camera.position);
-    ShaderSetVec3(game->assets.shaders["main"], "u_viewDir", game->camera.direction);
+    ShaderSetVec3(GetShader(game, "main"), "u_viewPos", game->camera.position);
+    ShaderSetVec3(GetShader(game, "main"), "u_viewDir", game->camera.direction);
 
-    ShaderSetVec3(game->assets.shaders["animation"], "u_viewPos", game->camera.position);
-    ShaderSetVec3(game->assets.shaders["animation"], "u_viewDir", game->camera.direction);
+    ShaderSetVec3(GetShader(game, "animation"), "u_viewPos", game->camera.position);
+    ShaderSetVec3(GetShader(game, "animation"), "u_viewDir", game->camera.direction);
 
     float time = SDL_GetTicks() / 1000.0f;
-    ShaderSetFloat(game->assets.shaders["main"], "u_time", time);
-    ShaderSetFloat(game->assets.shaders["animation"], "u_time", time);
-    ShaderSetFloat(game->assets.shaders["post_process"], "u_time", time);
+    ShaderSetFloat(GetShader(game, "main"), "u_time", time);
+    ShaderSetFloat(GetShader(game, "animation"), "u_time", time);
+    ShaderSetFloat(GetShader(game, "post_process"), "u_time", time);
 
-    ShaderSetMatrix4(game->assets.shaders["main"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["animation"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["light_source"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["skinned_outline"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["particle"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["grass"], "u_view", game->view);
-    ShaderSetMatrix4(game->assets.shaders["line"], "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "main"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "animation"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "light_source"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "outline"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "skinned_outline"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "particle"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "grass"), "u_view", game->view);
+    ShaderSetMatrix4(GetShader(game, "line"), "u_view", game->view);
 
-    //ShaderSetMatrix4(game->assets.shaders["main"], "u_projection", game->projection);
+    //ShaderSetMatrix4(GetShader(game, "main"), "u_projection", game->projection);
 
     //Reset deltas
     input->mouseDelta = glm::vec2(0.0f);

@@ -33,18 +33,18 @@ void RenderModel(Game *game, Model *model, glm::mat4 modelMat, glm::mat4 *nodeTr
     GLuint shader = model->material[0].shader;
     if(game->outlinePass)
     {
-        shader = (model->type == ModelType_Static) ? game->assets.shaders["outline"] : game->assets.shaders["skinned_outline"];
+        shader = (model->type == ModelType_Static) ? GetShader(game, "outline") : GetShader(game, "skinned_outline");
     }
     if(game->shadowPass)
     {
-        shader = game->assets.shaders["shadow"];
+        shader = GetShader(game, "shadow");
     }
 
     if(model->type == ModelType_Animated)
     {
         if(game->shadowPass)
         {
-            shader = game->assets.shaders["skinned_shadow"];
+            shader = GetShader(game, "skinned_shadow");
         }
 
         ShaderSetMatrix4Array(shader, "u_skinning", glm::value_ptr(skinningMatrices[0]), numOfMatrices);

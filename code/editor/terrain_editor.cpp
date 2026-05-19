@@ -104,14 +104,14 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
         }
 
         Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, patchSize, mapScale, 0.0f);
-        terrain.shader = game->assets.shaders["tessellated_terrain"];
+        terrain.shader = GetShader(game, "tessellated_terrain");
         terrain.minTessDist = game->terrain.minTessDist;
         terrain.maxTessDist = game->terrain.maxTessDist;
         terrain.minTessLevel = game->terrain.minTessLevel;
         terrain.maxTessLevel = game->terrain.maxTessLevel;
 
         //Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
-        //terrain.shader = game->assets.shaders["terrain"];
+        //terrain.shader = GetShader(game, "terrain");
 
         terrain.colorTexture = game->terrain.colorTexture;
 

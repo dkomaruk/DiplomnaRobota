@@ -40,7 +40,7 @@ Model *GetModel(AssetManager *assets, const std::string &name, GLuint shader,
                 u16 type = ModelType_DetermineOnLoad, u32 flags = 0, float scale = 1.0f);
 Texture GetTexture(AssetManager *assets, const std::string &name, u32 flags = TexturePreset_Common);
 Texture GetTextureByPath(AssetManager *assets, const std::string &path);
-GLuint GetShader(AssetManager *assets, const std::string &name);
+GLuint GetShader(Game *game, const std::string &name);
 
 std::string RegisterAsset(AssetManager *assets, const std::filesystem::path &path);
 
