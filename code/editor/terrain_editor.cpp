@@ -239,6 +239,17 @@ void UpdateTerrainEditor(Game *game, ImGuiWindowFlags flags)
         //Hotkeys to change the radius/strength of the sculpting brush
         if(IsKeyDown(input, SDL_SCANCODE_F))
         {
+            if(IsKeyJustDown(input, SDL_SCANCODE_F))
+            {
+                editor->lastMousePos = input->mousePos;
+                SDL_HideCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, true);
+            }
+            else
+            {
+                SDL_WarpMouseInWindow(game->window, editor->lastMousePos.x, editor->lastMousePos.y);
+            }
+
             float dir = input->mouseDelta.x * game->deltaTime;
             if(IsKeyDown(input, SDL_SCANCODE_LSHIFT))
             {
@@ -251,21 +262,34 @@ void UpdateTerrainEditor(Game *game, ImGuiWindowFlags flags)
                 brush->radius = glm::clamp(brush->radius, 0.0f, 1000.0f);
             }
         }
-
-        if(IsButtonDown(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
+        else
         {
+            if(IsKeyJustUp(input, SDL_SCANCODE_F))
+            {
+                SDL_WarpMouseInWindow(game->window, editor->lastMousePos.x, editor->lastMousePos.y);
+                input->mousePos = editor->lastMousePos;
+                SDL_ShowCursor();
+                SDL_SetWindowRelativeMouseMode(game->window, false);
+            }
+
             glm::vec2 mousePos = input->isCursorHidden ? RECT_HALF(game->windowSize) : input->mousePos;
             mousePos.y = (int)game->windowSize.y - mousePos.y;
 
             Ray pickingRay = CastPickingRay(game, mousePos);
             float visibleRayLength = 2000.0f;
-            glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
 
-            if((editor->terrainBrush.type != TerrainBrush_Noise) || IsFirstClick(input, MOUSE_LEFT))
+            glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
+            editor->terrainBrush.center = intersectionPoint;
+
+            bool isMouseInPosition = IsButtonDown(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui;
+            bool shouldSculpt = (editor->terrainBrush.type != TerrainBrush_Noise) || IsFirstClick(input, MOUSE_LEFT);
+
+            if(isMouseInPosition && shouldSculpt)
             {
                 SculptTerrain(&game->terrain, intersectionPoint, &editor->terrainBrush, game->deltaTime);
             }
         }
+
     }
 
 }

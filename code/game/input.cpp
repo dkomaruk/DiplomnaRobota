@@ -83,6 +83,16 @@ bool IsKeyDown(Input *input, SDL_Scancode key)
     return input->keys[key];
 }
 
+bool IsKeyJustUp(Input *input, SDL_Scancode key)
+{
+    return !input->keys[key] && input->prevKeys[key];
+}
+
+bool IsKeyJustDown(Input *input, SDL_Scancode key)
+{
+    return input->keys[key] && !input->prevKeys[key];
+}
+
 bool IsFirstClick(Input *input, u32 button)
 {
     Assert(button < MOUSE_BUTTONS_COUNT)

@@ -20,6 +20,7 @@ struct Editor
     //Terrain sculpting
     TerrainBrush terrainBrush;
     bool terrainSculpting = true;
+    glm::vec2 lastMousePos;
 };
 
 void UpdateEditor(Game *game);

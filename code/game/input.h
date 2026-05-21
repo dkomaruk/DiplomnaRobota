@@ -40,6 +40,8 @@ void ProcessInput(Input *input);
 
 bool IsFirstPress(Input *input, SDL_Scancode key);
 bool IsKeyDown(Input *input, SDL_Scancode key);
+bool IsKeyJustUp(Input *input, SDL_Scancode key);
+bool IsKeyJustDown(Input *input, SDL_Scancode key);
 
 bool IsFirstClick(Input *input, u32 button);
 bool IsButtonDown(Input *input, u32 button);

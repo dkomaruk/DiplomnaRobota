@@ -3,6 +3,7 @@
 #include <FastNoiseLite.h>
 
 #include <imgui.h>
+#include <glm/vec3.hpp>
 
 struct Game;
 
@@ -17,6 +18,7 @@ enum TerrainBrushType
 struct TerrainBrush
 {
     i32 type = TerrainBrush_Add;
+    glm::vec3 center;
     float radius = 75.0f;
     float strength = 50.0f;
     i32 kernelSize = 3;

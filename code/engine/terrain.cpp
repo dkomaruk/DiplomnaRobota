@@ -312,6 +312,15 @@ void RenderTerrain(Game *game)
     ShaderSetFloat(terrain->shader, "u_minTessLevel", terrain->minTessLevel);
     ShaderSetFloat(terrain->shader, "u_maxTessLevel", terrain->maxTessLevel);
 
+    bool displayBrush = !game->input.isMouseCapturedByImgui &&
+                        game->editor.terrainSculpting &&
+                        game->editor.terrainGeneratorWindow;
+    ShaderSetInt(terrain->shader, "u_sculptingMode", displayBrush);
+    ShaderSetVec3(terrain->shader, "u_brushCenter", game->editor.terrainBrush.center);
+
+    float brushRadius = game->editor.terrainBrush.radius * (terrain->worldSize.x / (terrain->mapSize.y - 1.0f));
+    ShaderSetFloat(terrain->shader, "u_brushRadius", brushRadius);
+
     glBindVertexArray(terrain->mesh.vao);
 
     if(terrain->mesh.drawMode == GL_PATCHES)

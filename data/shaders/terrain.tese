@@ -15,6 +15,7 @@ uniform mat4 u_lightViewProj;
 
 out vec2 TexCoords;
 out vec4 FragPosLightSpace;
+out vec3 FragPosWorldSpace;
 
 void main()
 {
@@ -31,6 +32,7 @@ void main()
     pos.y = texture(u_heightmap, TexCoords).r;
 
     FragPosLightSpace = u_lightViewProj * pos;
+    FragPosWorldSpace = pos.xyz;
 
     gl_Position = u_projection * u_view * pos;
 }

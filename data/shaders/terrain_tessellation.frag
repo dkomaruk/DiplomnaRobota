@@ -8,6 +8,10 @@ layout(binding = 3) uniform sampler2D u_shadowMap;
 uniform float u_texCoordsMultiplier;
 uniform float u_mapScale;
 
+uniform bool u_sculptingMode;
+uniform vec3 u_brushCenter;
+uniform float u_brushRadius;
+
 struct DirLight
 {
     vec3 direction;
@@ -17,6 +21,7 @@ uniform DirLight u_dirLight;
 
 in vec2 TexCoords;
 in vec4 FragPosLightSpace;
+in vec3 FragPosWorldSpace;
 
 out vec4 FragColor;
 
@@ -84,6 +89,28 @@ void main()
     vec3 ambient = color * u_dirLight.ambient;
 
     float shadow = CalculateShadow(FragPosLightSpace);
+    vec4 baseColor = vec4((ambient + (1.0 - shadow) * diffuse), 1.0);
 
-    FragColor = vec4((ambient + (1.0 - shadow) * diffuse), 1.0);
+    float dist = distance(FragPosWorldSpace.xz, u_brushCenter.xz);
+    if(u_sculptingMode && dist < u_brushRadius)
+    {
+        float normDist = dist / u_brushRadius;
+
+        float gradientFactor = 1.0 - normDist;
+        float innerGradient = gradientFactor * 0.4;
+
+        float ringWidth = 0.3;
+        float ringStartDist = u_brushRadius - ringWidth;
+
+        float outlineFactor = smoothstep(ringStartDist, u_brushRadius, dist);
+
+        float brushAlpha = max(innerGradient, outlineFactor) * 1.0;
+        vec3 mixedColor = mix(baseColor.rgb, vec3(1.0, 1.0, 1.0), brushAlpha);
+
+        FragColor = vec4(mixedColor, baseColor.a);
+    }
+    else
+    {
+        FragColor = baseColor;
+    }
 }
