@@ -12,7 +12,6 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_gradient/imgui_gradient.hpp>
 
-#include <mutex>
 #include <queue>
 #include <string>
 
@@ -22,9 +21,6 @@ void UpdateMenuBar(Game *game)
 
     if(ImGui::BeginMainMenuBar())
     {
-        if(ImGui::BeginMenu("File")) { ImGui::EndMenu(); }
-        if(ImGui::BeginMenu("Edit")) { ImGui::EndMenu(); }
-
         if(ImGui::BeginMenu("Windows"))
         {
             if(ImGui::MenuItem("Particle Editor", "1")) editor->particleEditorWindow = true;
@@ -36,8 +32,6 @@ void UpdateMenuBar(Game *game)
             if(ImGui::MenuItem("Value Noise", "7")) editor->valueNoiseWindow = true;
             ImGui::EndMenu();
         }
-
-        if(ImGui::BeginMenu("Help")) { ImGui::EndMenu(); }
 
         ImGui::EndMainMenuBar();
     }
@@ -221,7 +215,6 @@ void UpdateEditor(Game *game)
         if(IsFirstPress(input, SDL_SCANCODE_4)) editor->debugSettingsWindow = !editor->debugSettingsWindow;
         if(IsFirstPress(input, SDL_SCANCODE_5)) editor->lightingSettingsWindow = !editor->lightingSettingsWindow;
         if(IsFirstPress(input, SDL_SCANCODE_6)) editor->importModelWindow = !editor->importModelWindow;
-        if(IsFirstPress(input, SDL_SCANCODE_7)) editor->valueNoiseWindow = !editor->valueNoiseWindow;
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -233,10 +226,6 @@ void UpdateEditor(Game *game)
     ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize |
                              (game->input.isCursorHidden ? ImGuiWindowFlags_NoInputs : 0);
 
-    if(editor->valueNoiseWindow)
-    {
-        UpdateValueNoise(game, flags);
-    }
     if(editor->terrainGeneratorWindow)
     {
         UpdateTerrainEditor(game, flags);

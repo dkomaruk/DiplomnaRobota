@@ -44,7 +44,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     static int patchSize = 16;
     ImGui::InputInt("Patch Size", &patchSize);
-    patchSize = SDL_clamp(patchSize, 4, 100);
+    patchSize = SDL_clamp(patchSize, 4, 1024);
 
     ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
     ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);

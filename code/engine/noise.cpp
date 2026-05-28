@@ -9,53 +9,6 @@
 
 #include <stdlib.h>
 
-u8 *GenerateValueNoise(glm::vec2 size)
-{
-    int numOfChannels = 4;
-    u8 *noise = (u8 *)calloc((int)(size.x * size.y) * numOfChannels, sizeof(u8));
-
-    glm::ivec2 gridSize = glm::ivec2(32);
-
-    u8 *values = (u8 *)calloc(gridSize.x * gridSize.y, sizeof(u8));
-    for(int y = 0; y < gridSize.y; y++)
-    {
-        for(int x = 0; x < gridSize.x; x++)
-        {
-            values[x + gridSize.x * y] = (u8)(((float)rand() / RAND_MAX) * 255.0f);
-        }
-    }
-
-    for(int y = 0; y < size.y; y++)
-    {
-        for(int x = 0; x < size.x; x++)
-        {
-            glm::vec2 pos = (glm::vec2(x, y) / size) * glm::vec2(gridSize);
-            pos = glm::clamp(pos, glm::vec2(0.0f), glm::vec2(gridSize));
-
-            glm::ivec2 pos0 = glm::ivec2(pos);
-            glm::vec2 weights = glm::fract(pos);
-
-            u8 v00 = values[pos0.x + gridSize.x * pos0.y];
-            u8 v01 = values[pos0.x + gridSize.x * (pos0.y + 1)];
-            u8 v10 = values[(pos0.x + 1) + gridSize.x * pos0.y];
-            u8 v11 = values[(pos0.x + 1) + gridSize.x * (pos0.y + 1)];
-
-            weights = glm::smoothstep(0.0f, 1.0f, weights);
-            u8 value = glm::mix(glm::mix(v00, v10, weights.x), glm::mix(v01, v11, weights.x), weights.y);
-
-            int id = (x + (int)size.x * y) * numOfChannels;
-            noise[id + 0] = value;
-            noise[id + 1] = value;
-            noise[id + 2] = value;
-            noise[id + 3] = 255;
-        }
-    }
-
-    free(values);
-
-    return noise;
-}
-
 u8 *NoiseToImage(float *noise, glm::vec2 size)
 {
     u8 *image = (u8 *)calloc((int)(size.x * size.y) * 4, sizeof(u8));

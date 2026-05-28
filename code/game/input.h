@@ -46,8 +46,6 @@ bool IsKeyJustDown(Input *input, SDL_Scancode key);
 bool IsFirstClick(Input *input, u32 button);
 bool IsButtonDown(Input *input, u32 button);
 bool IsMouseJustReleased(Input *input, u32 button);
-char *GetMouseButtonName(int button);
-
 
 #define INPUT_H
 #endif

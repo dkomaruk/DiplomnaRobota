@@ -110,29 +110,3 @@ bool IsMouseJustReleased(Input *input, u32 button)
     Assert(button < MOUSE_BUTTONS_COUNT)
     return !input->mouseButtons[button] && input->prevMouseButtons[button];
 }
-
-char *GetMouseButtonName(int button)
-{
-    Assert(button < MOUSE_BUTTONS_COUNT);
-
-    if(button == MOUSE_LEFT)
-    {
-        return "MOUSE_LEFT";
-    }
-    else if(button == MOUSE_RIGHT)
-    {
-        return "MOUSE_RIGHT";
-    }
-    else if(button == MOUSE_MIDDLE)
-    {
-        return "MOUSE_MIDDLE";
-    }
-    else if(button == MOUSE_SIDE1)
-    {
-        return "MOUSE_SIDE1";
-    }
-    else
-    {
-        return "MOUSE_SIDE2";
-    }
-}

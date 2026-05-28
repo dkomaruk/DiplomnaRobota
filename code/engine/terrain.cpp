@@ -65,10 +65,10 @@ Terrain CreateTerrainFromImage(char *heightmapPath, float maxHeight, float mapPo
 
     stbi_image_free(((channels == 1) ? image16 : (void *)image));
 
-    //return CreateTerrainMesh(heightmap, fullMapSize, mapPortion, mapScale, meshStep, yShift);
     return CreateTessellatedTerrainMesh(heightmap, fullMapSize, 16, mapScale, yShift);
 }
 
+//Create a static mesh once
 Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPortion,
                           float mapScale, int meshStep, float yShift)
 {
@@ -138,6 +138,8 @@ Terrain CreateTerrainMesh(float *heightmap, glm::vec2 fullMapSize, float mapPort
     return t;
 }
 
+//Create a flat mesh with the resolution of patchSize x patchSize then dynamically subdivide it using
+//OpenGL tessellation and sample height of each vertex in the tessellation evaluation shader
 Terrain CreateTessellatedTerrainMesh(float *heightmap, glm::vec2 mapSize, int patchSize,
                                      float mapScale, float yShift)
 {

@@ -167,9 +167,9 @@ void RenderGame(Game *game)
     SDL_GL_SwapWindow(game->window);
 }
 
+//Test code for the demo scene
 void UpdateTestScene(Game *game)
 {
-    //Test code for the test scene
     glm::mat4 turretTransform = glm::mat4(1.0f);
     turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f,
                                      0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
@@ -348,33 +348,10 @@ void UpdateGame(Game *game)
         game->polygonMode = (game->polygonMode == GL_LINE) ? GL_FILL : GL_LINE;
     }
 
-#if 0
-    if(IsFirstPress(input, SDL_SCANCODE_SPACE))
-    {
-        int sourceState;
-        alGetSourcei(game->source, AL_SOURCE_STATE, &sourceState);
-        if(sourceState == AL_PLAYING)
-        {
-            alSourcePause(game->source);
-        }
-        else
-        {
-            alSourcePlay(game->source);
-        }
-    }
-#endif
     //Save a screenshot of outline buffer
     if(IsFirstPress(input, SDL_SCANCODE_U))
     {
-        int w = game->windowSize.x;
-        int h = game->windowSize.y;
-        int bytesPerPixel = 3;
-
-        u8 *pixels = (u8 *)malloc(w * h * bytesPerPixel);
-        glBindFramebuffer(GL_FRAMEBUFFER, game->outlineFbo.id);
-        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        stbi_write_png("test2.png", w, h, bytesPerPixel, pixels, w * bytesPerPixel);
-        free(pixels);
+        SaveFramebufferContents(game->outlineFbo);
     }
 
     //Enable cursor and interaction with the ui
@@ -394,21 +371,7 @@ void UpdateGame(Game *game)
         input->isCursorHidden = !input->isCursorHidden;
     }
 
-    //Display mouse button name when it's pressed
-    for(int i = 0; i < MOUSE_BUTTONS_COUNT; i++)
-    {
-        if(IsFirstClick(input, i))
-        {
-            SDL_Log("%s", GetMouseButtonName(i));
-        }
-    }
-
     //Update particles
-    if(IsFirstPress(input, SDL_SCANCODE_Y))
-    {
-        game->renderParticles = !game->renderParticles;
-    }
-
     if(game->renderParticles)
     {
         for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
@@ -420,7 +383,7 @@ void UpdateGame(Game *game)
         SortAllParticles(game);
     }
 
-    //Update timing counters
+    //Update onscreen counters
     float ms = game->deltaTime * 1000.0f;
 
     char buffer[20];
@@ -462,7 +425,7 @@ void UpdateGame(Game *game)
 
     //ShaderSetMatrix4(GetShader(game, "main"), "u_projection", game->projection);
 
-    //Reset deltas
+    //Reset input deltas
     input->mouseDelta = glm::vec2(0.0f);
     input->mouseWheelDelta = glm::vec2(0.0f);
     input->typedText = "";

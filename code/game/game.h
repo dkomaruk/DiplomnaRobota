@@ -41,6 +41,7 @@ struct Game
 
     //Rendering settings
     bool outlinePass;
+    bool shadowPass;
     float outlineThickness = 1.0f;
 
     //Framebuffers
@@ -53,7 +54,6 @@ struct Game
     Framebuffer shadowMapFbo;
     glm::mat4 dirLightView;
     glm::mat4 orthoProjDirLight;
-    bool shadowPass = false;
 
     //Post-processing
     Mesh fullscreenQuad;
@@ -91,10 +91,6 @@ struct Game
     Terrain terrain;
     float terrainUVMultiplier = 16.0f;
 
-    //Audio
-    Audio audio; //TODO: Audio API
-    ALuint source;
-
     //Fonts
     std::map<int, Font> fonts;
 
@@ -114,8 +110,7 @@ struct Game
     bool renderCounters = true;
     GLenum polygonMode = GL_FILL;
 
-    //Noise
-    Texture valueNoise;
+    //Noise textures (first for the terrain generation and display in editor and second for the terrain fragment shader)
     Texture perlinNoise, perlinNoise2;
 
     //Game temp stuff
@@ -140,13 +135,6 @@ struct Game
 
     Texture particleTextures[13];
     int currentTexture = 1;
-
-    //Grass
-    Model *grass;
-
-    Mesh grassQuad;
-    GLuint grassInstancesVbo;
-    int grassCount;
 };
 
 bool InitGame(Game *game);

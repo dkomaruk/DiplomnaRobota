@@ -31,150 +31,6 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-#define TEXTURE_ATLAS_ELEMENT 0
-#define SPRITE_ELEMENT 1
-
-void XMLCALL ParseParticleSettingsStartElement(void *userData, const XML_Char *name, const XML_Char **atts)
-{
-    Atlas *atlas = (Atlas *)userData;
-
-    int element = -1;
-    if(strcmp(name, "TextureAtlas") == 0)
-    {
-        element = TEXTURE_ATLAS_ELEMENT;
-    }
-    else if(strcmp(name, "sprite") == 0)
-    {
-        element = SPRITE_ELEMENT;
-    }
-
-    switch(element)
-    {
-        case TEXTURE_ATLAS_ELEMENT:
-        {
-            atlas->size.x = StrToFloat(atts[3]);
-            atlas->size.y = StrToFloat(atts[5]);
-            //SDL_Log("x: %f; y:%f", atlas->size.x, atlas->size.y);
-        } break;
-
-        case SPRITE_ELEMENT:
-        {
-            Sprite sprite = {};
-            float pixelX = StrToFloat(atts[3]);
-            float pixelY = StrToFloat(atts[5]);
-            float pixelW = StrToFloat(atts[7]);
-            float pixelH = StrToFloat(atts[9]);
-
-            sprite.pos.x = pixelX / atlas->size.x;
-            sprite.pos.y = (atlas->size.y - pixelY - pixelH) / atlas->size.y;
-
-            sprite.size.x = pixelW / atlas->size.x;
-            sprite.size.y = pixelH / atlas->size.y;
-
-            atlas->sprites.push_back(sprite);
-
-            //SDL_Log("%d. (%f, %f), (%f, %f)", (int)atlas->sprites.size(), sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y);
-        } break;
-    }
-}
-
-void XMLCALL ParseParticleSettingsEndElement(void *userData, const XML_Char *name) { }
-
-void LoadParticleSystem(Game *game)
-{
-    size_t fileSize;
-    void *fileMemory = SDL_LoadFile("../data/imgs/animated_smoke/1.xml", &fileSize);
-    if(!fileMemory)
-    {
-        SDL_Log("Failed to load 1.xml. Error: %s", SDL_GetError());
-    }
-
-    XML_Parser parser = XML_ParserCreate(NULL);
-    if(!parser)
-    {
-        SDL_Log("Failed to create an XML parser");
-    }
-
-    XML_SetUserData(parser, (void *)&game->atlas);
-    XML_SetElementHandler(parser, ParseParticleSettingsStartElement, ParseParticleSettingsEndElement);
-
-    XML_Status parsingResult = XML_Parse(parser, (char *)fileMemory, (int)fileSize, XML_TRUE);
-    if(!parsingResult)
-    {
-        SDL_Log("Failed to parse 1.xml");
-    }
-    SDL_free(fileMemory);
-
-    AssetManager *assets = &game->assets;
-    game->particleTextures[0] = GetTexture(assets, "smoke");
-    game->particleTextures[1] = GetTexture(assets, "smoke2");
-    game->particleTextures[2] = GetTexture(assets, "smoke3");
-    game->particleTextures[3] = GetTexture(assets, "smoke4");
-    game->particleTextures[4] = GetTexture(assets, "smoke5");
-    game->particleTextures[5] = GetTexture(assets, "1");
-    game->particleTextures[6] = GetTexture(assets, "fire");
-    game->particleTextures[7] = GetTexture(assets, "fire2");
-    game->particleTextures[8] = GetTexture(assets, "circle_05_a");
-    game->particleTextures[9] = GetTexture(assets, "twirl_04_a");
-    game->particleTextures[10] = GetTexture(assets, "star_05_a");
-    game->particleTextures[11] = GetTexture(assets, "effect_02_a");
-    game->particleTextures[12] = GetTexture(assets, "trace_01_a");
-
-    for(int i = 0; i < ArrayCount(game->particleSystems); i++)
-    {
-        game->particleSystems[i] = InitParticleSystem(game, &game->smokeSettings);
-    }
-
-    game->particleSystems[0].pos = glm::vec3(0.0f);
-
-    int maxNumOfParticles = game->smokeSettings.maxNumOfParticles;
-    game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
-    game->textureID = game->particleTextures[game->currentTexture].id;
-
-    game->atlas.path = "../data/imgs/animated_smoke/1.png";
-    game->smokeSettings.atlas = &game->atlas;
-
-    game->particlesQuad = CreateUnitQuadStripes();
-    glBindVertexArray(game->particlesQuad.vao);
-
-    glGenBuffers(1, &game->vboInstances);
-    glBindBuffer(GL_ARRAY_BUFFER, game->vboInstances);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * maxNumOfParticles * ArrayCount(game->particleSystems),
-                 game->particleData, GL_STREAM_DRAW);
-
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, scale));
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, angle));
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvOffset));
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvScale));
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, offset));
-    glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, color));
-
-    glVertexAttribDivisor(3, 1);
-    glVertexAttribDivisor(4, 1);
-    glVertexAttribDivisor(5, 1);
-    glVertexAttribDivisor(6, 1);
-    glVertexAttribDivisor(7, 1);
-    glVertexAttribDivisor(8, 1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
-    {
-        if(game->smokeSettings.prewarm)
-        {
-            game->particleSystems[i].prewarmTimer = StartTimer(game->smokeSettings.prewarmSeconds);
-        }
-    }
-}
-
 Texture LoadModelTextures(const aiScene *scene, aiMaterial *material, const std::string &dirPath,
                           AssetManager *assets, const std::string &modelName, aiTextureType type)
 {
@@ -549,44 +405,150 @@ Model *LoadModel(AssetManager *assets, const std::string &filepath, const std::s
     return result;
 }
 
-void LoadAudio(Game *game)
-{
-    int channels, sampleRate;
-    int bytesPerStereoSample = 4;
-    short *output, *output2;
-    int samplesLoaded = stb_vorbis_decode_filename("../data/audio/test_sample.ogg", &channels, &sampleRate, &output);
+#define TEXTURE_ATLAS_ELEMENT 0
+#define SPRITE_ELEMENT 1
 
-    if(channels != 1)
+void XMLCALL ParseParticleSettingsStartElement(void *userData, const XML_Char *name, const XML_Char **atts)
+{
+    Atlas *atlas = (Atlas *)userData;
+
+    int element = -1;
+    if(strcmp(name, "TextureAtlas") == 0)
     {
-        int monoSamples = samplesLoaded;
-        short* mono = (short*)malloc(monoSamples * sizeof(short));
-        for (int i = 0; i < monoSamples; i++) {
-            int left  = output[2*i];
-            int right = output[2*i + 1];
-            mono[i] = (short)((left + right) / 2);
-        }
-        free(output);
-        output = mono;
-        channels = 1;
-        samplesLoaded = monoSamples;
+        element = TEXTURE_ATLAS_ELEMENT;
+    }
+    else if(strcmp(name, "sprite") == 0)
+    {
+        element = SPRITE_ELEMENT;
     }
 
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+    switch(element)
+    {
+        case TEXTURE_ATLAS_ELEMENT:
+        {
+            atlas->size.x = StrToFloat(atts[3]);
+            atlas->size.y = StrToFloat(atts[5]);
+            //SDL_Log("x: %f; y:%f", atlas->size.x, atlas->size.y);
+        } break;
 
-    ALuint buffer = 0;
-    alGenBuffers(1, &buffer);
-    alBufferData(buffer, AL_FORMAT_MONO16, output, samplesLoaded * channels * sizeof(short), sampleRate);
+        case SPRITE_ELEMENT:
+        {
+            Sprite sprite = {};
+            float pixelX = StrToFloat(atts[3]);
+            float pixelY = StrToFloat(atts[5]);
+            float pixelW = StrToFloat(atts[7]);
+            float pixelH = StrToFloat(atts[9]);
 
-    alGenSources(1, &game->source);
-    alSourcei(game->source, AL_BUFFER, buffer);
-    alSourcef(game->source, AL_GAIN, 0.5f);
+            sprite.pos.x = pixelX / atlas->size.x;
+            sprite.pos.y = (atlas->size.y - pixelY - pixelH) / atlas->size.y;
 
-    ALfloat srcPos[3] = {30.0f, 0.0f, 0.0f};
-    alSourcefv(game->source, AL_POSITION, srcPos);
-    alSourcef(game->source, AL_MAX_DISTANCE, 20.0f);
+            sprite.size.x = pixelW / atlas->size.x;
+            sprite.size.y = pixelH / atlas->size.y;
 
-    //alSourcePlay(game->source);
+            atlas->sprites.push_back(sprite);
+
+            //SDL_Log("%d. (%f, %f), (%f, %f)", (int)atlas->sprites.size(), sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y);
+        } break;
+    }
 }
+
+void XMLCALL ParseParticleSettingsEndElement(void *userData, const XML_Char *name) { }
+
+void LoadParticleSystem(Game *game)
+{
+    size_t fileSize;
+    void *fileMemory = SDL_LoadFile("../data/imgs/animated_smoke/1.xml", &fileSize);
+    if(!fileMemory)
+    {
+        SDL_Log("Failed to load 1.xml. Error: %s", SDL_GetError());
+    }
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    if(!parser)
+    {
+        SDL_Log("Failed to create an XML parser");
+    }
+
+    XML_SetUserData(parser, (void *)&game->atlas);
+    XML_SetElementHandler(parser, ParseParticleSettingsStartElement, ParseParticleSettingsEndElement);
+
+    XML_Status parsingResult = XML_Parse(parser, (char *)fileMemory, (int)fileSize, XML_TRUE);
+    if(!parsingResult)
+    {
+        SDL_Log("Failed to parse 1.xml");
+    }
+    SDL_free(fileMemory);
+
+    AssetManager *assets = &game->assets;
+    game->particleTextures[0] = GetTexture(assets, "smoke");
+    game->particleTextures[1] = GetTexture(assets, "smoke2");
+    game->particleTextures[2] = GetTexture(assets, "smoke3");
+    game->particleTextures[3] = GetTexture(assets, "smoke4");
+    game->particleTextures[4] = GetTexture(assets, "smoke5");
+    game->particleTextures[5] = GetTexture(assets, "1");
+    game->particleTextures[6] = GetTexture(assets, "fire");
+    game->particleTextures[7] = GetTexture(assets, "fire2");
+    game->particleTextures[8] = GetTexture(assets, "circle_05_a");
+    game->particleTextures[9] = GetTexture(assets, "twirl_04_a");
+    game->particleTextures[10] = GetTexture(assets, "star_05_a");
+    game->particleTextures[11] = GetTexture(assets, "effect_02_a");
+    game->particleTextures[12] = GetTexture(assets, "trace_01_a");
+
+    for(int i = 0; i < ArrayCount(game->particleSystems); i++)
+    {
+        game->particleSystems[i] = InitParticleSystem(game, &game->smokeSettings);
+    }
+
+    game->particleSystems[0].pos = glm::vec3(0.0f);
+
+    int maxNumOfParticles = game->smokeSettings.maxNumOfParticles;
+    game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
+    game->textureID = game->particleTextures[game->currentTexture].id;
+
+    game->atlas.path = "../data/imgs/animated_smoke/1.png";
+    game->smokeSettings.atlas = &game->atlas;
+
+    game->particlesQuad = CreateUnitQuadStripes();
+    glBindVertexArray(game->particlesQuad.vao);
+
+    glGenBuffers(1, &game->vboInstances);
+    glBindBuffer(GL_ARRAY_BUFFER, game->vboInstances);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * maxNumOfParticles * ArrayCount(game->particleSystems),
+                 game->particleData, GL_STREAM_DRAW);
+
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, scale));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, angle));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvOffset));
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, uvScale));
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, offset));
+    glEnableVertexAttribArray(8);
+    glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleData), (void *)offsetof(ParticleData, color));
+
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribDivisor(7, 1);
+    glVertexAttribDivisor(8, 1);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    for(int i = 0; i < ArrayCount(game->particleSystems); ++i)
+    {
+        if(game->smokeSettings.prewarm)
+        {
+            game->particleSystems[i].prewarmTimer = StartTimer(game->smokeSettings.prewarmSeconds);
+        }
+    }
+}
+
 
 Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position = glm::vec3(0.0f),
                             glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
@@ -756,9 +718,6 @@ void LoadTestScene(Game *game)
     AssetManager *assets = &game->assets;
     ParseAssetsDirectories(assets, "../data");
 
-    //AUDIO
-    //LoadAudio(game);
-
     //FONTS
     //int fontSizes[] = {4, 12, 18, 20, 24, 36, 48};
     int fontSizes[] = {48};
@@ -807,9 +766,6 @@ void LoadTestScene(Game *game)
     Model *soldierAnimated = GetModel(assets, "Rifle Run", GetShader(game, "animation"),
                                       ModelType_Animated, aiProcess_GlobalScale, 0.01f);
 
-    //game->grass = LoadModel("../data/extra/grass2.fbx", GetShader(game, "main"), aiProcess_Triangulate |
-    //                          aiProcess_GlobalScale, ModelType_Static, 0.001f);
-
     game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
     game->tank = AddNewEntityToScene(game, abrams, "tank");
     game->soldierAnimated = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
@@ -835,7 +791,6 @@ void LoadTestScene(Game *game)
     glm::vec3 dirAmbient = glm::vec3(0.4f);
     glm::vec3 dirSpecular = glm::vec3(1.0f);
     game->dirLight = CreateDirLight(glm::vec3(1.3f, -2.3f, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
-    //game->dirLight = CreateDirLight(glm::vec3(-0.064f, -0.103, -0.0f), dirDiffuse, dirAmbient, dirSpecular);
     ShaderSetDirLight(GetShader(game, "main"), game->dirLight);
     ShaderSetDirLight(GetShader(game, "animation"), game->dirLight);
     ShaderSetDirLight(GetShader(game, "terrain"), game->dirLight);
@@ -855,39 +810,16 @@ void LoadTestScene(Game *game)
     LoadParticleSystem(game);
 
     //Skymap
-    //StartProfiling();
     int flags = TexturePreset_Common;
     flags = FLAG_TOGGLE(flags, TextureFlag_Filter_Min_LinLin | TextureFlag_Filter_Min_Nearest | TextureFlag_FlipY);
     game->skymapTexture = GetTexture(assets, "sky", flags);
-    //EndProfiling("Skymap");
 
     //Debug lines
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), GetShader(game, "line"), glm::vec3(1.0f, 0.0f, 0.0f));
     CreateFrustumLines(game->frustumLines, game->frustumNormals, GetShader(game, "line"));
 
     glm::vec2 size = glm::vec2(256.0f, 256.0f);
-    u8 *valueNoise = GenerateValueNoise(size);
-    game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
-    free(valueNoise);
-
-    //float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
-
-    fnl_state noise = fnlCreateState();
-    noise.seed = rand();
-    noise.noise_type = FNL_NOISE_PERLIN;
-    noise.fractal_type = FNL_FRACTAL_FBM;
-    noise.octaves = 3;
-    noise.frequency = 0.04f;
-
-    float *perlinNoise = (float *)malloc((int)(size.x * size.y) * sizeof(float));
-    int index = 0;
-    for(int y = 0; y < (int)size.y; y++)
-    {
-        for(int x = 0; x < (int)size.x; x++)
-        {
-            perlinNoise[index++] = (fnlGetNoise2D(&noise, (float)x, (float)y) + 1.0f) / 2.0f;
-        }
-    }
+    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
 
     u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
     game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
