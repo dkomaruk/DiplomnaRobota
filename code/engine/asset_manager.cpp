@@ -485,7 +485,7 @@ void LoadParticleSystem(Game *game)
     game->particleTextures[2] = GetTexture(assets, "smoke3");
     game->particleTextures[3] = GetTexture(assets, "smoke4");
     game->particleTextures[4] = GetTexture(assets, "smoke5");
-    game->particleTextures[5] = GetTexture(assets, "1");
+    game->particleTextures[5] = GetTexture(assets, "animated_smoke.png");
     game->particleTextures[6] = GetTexture(assets, "fire");
     game->particleTextures[7] = GetTexture(assets, "fire2");
     game->particleTextures[8] = GetTexture(assets, "circle_05_a");
@@ -505,7 +505,7 @@ void LoadParticleSystem(Game *game)
     game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
     game->textureID = game->particleTextures[game->currentTexture].id;
 
-    game->atlas.path = "../data/imgs/animated_smoke/1.png";
+    game->atlas.path = "../data/imgs/animated_smoke/animated_smoke.png";
     game->smokeSettings.atlas = &game->atlas;
 
     game->particlesQuad = CreateUnitQuadStripes();

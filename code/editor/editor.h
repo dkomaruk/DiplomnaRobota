@@ -17,6 +17,9 @@ struct Editor
     float importScale = 1.0f;
     bool importModelWindow;
 
+    bool reloadParticles;
+    std::string particleSettingsPath;
+
     //Terrain sculpting
     TerrainBrush terrainBrush;
     bool terrainSculpting = true;

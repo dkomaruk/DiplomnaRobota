@@ -277,8 +277,8 @@ void LoadParticleSystemCallback(void *userdata, const char * const *filelist, in
     if(filelist && *filelist)
     {
         Game *game = (Game *)userdata;
-        LoadParticleSettings(game->smokeSettings, std::string(filelist[0]), game->smokeSettings.atlas);
-        ReallocParticles(game, &game->smokeSettings, game->smokeSettings.maxNumOfParticles);
+        game->editor.reloadParticles = true;
+        game->editor.particleSettingsPath = filelist[0];
     }
 }
 
@@ -401,6 +401,15 @@ void UpdateParticleEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flag
     if(ImGui::Button("Load"))
     {
         SDL_ShowOpenFileDialog(LoadParticleSystemCallback, (void *)game, game->window, filters, 1, 0, false);
+    }
+
+    if(game->editor.reloadParticles)
+    {
+        int oldMaxNumOfParticles = game->smokeSettings.maxNumOfParticles;
+        LoadParticleSettings(game->smokeSettings, game->editor.particleSettingsPath, game->smokeSettings.atlas);
+        ReallocParticles(game, &game->smokeSettings, oldMaxNumOfParticles);
+
+        game->editor.reloadParticles = false;
     }
 
     ImGui::End();
