@@ -58,23 +58,6 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
     ImGui::End();
 }
 
-void UpdateValueNoise(Game *game, ImGuiWindowFlags flags)
-{
-    ImGui::Begin("Value Noise", &game->editor.valueNoiseWindow, flags | ImGuiWindowFlags_HorizontalScrollbar);
-    ImGui::Image(game->valueNoise.id, ImVec2((float)game->valueNoise.x, (float)game->valueNoise.y));
-
-    if(ImGui::Button("Generate"))
-    {
-        glDeleteTextures(1, &game->valueNoise.id);
-        glm::vec2 size = glm::vec2(256.0f, 256.0f);
-        u8 *valueNoise = GenerateValueNoise(size);
-        game->valueNoise = CreateGLTexture(valueNoise, (int)size.x, (int)size.y);
-        free(valueNoise);
-    }
-
-    ImGui::End();
-}
-
 void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
 {
     ImGui::Begin("Lighting settings", &game->editor.lightingSettingsWindow, flags);

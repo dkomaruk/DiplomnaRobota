@@ -60,6 +60,8 @@ in vec3 Normal;
 in vec3 FragPos;
 //in vec3 DebugColor;
 
+out vec4 FragColor;
+
 vec3 CalculateDirLight(DirLight light, SampledTextures textures, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
@@ -121,5 +123,5 @@ void main()
     }
 
     //finalColor = DebugColor;
-    gl_FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(finalColor, 1.0);
 }

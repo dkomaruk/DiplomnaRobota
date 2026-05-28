@@ -128,21 +128,6 @@ bool InitGame(Game *game)
 
     SetupFramebuffers(game);
 
-    Audio *audio = &game->audio;
-    audio->device = alcOpenDevice(0);
-    if(!audio->device)
-    {
-        SDL_Log("Failed to open an audio playback device\n");
-        return false;
-    }
-
-    audio->context = alcCreateContext(audio->device, NULL);
-    if(!audio->context || alcMakeContextCurrent(audio->context) == ALC_FALSE)
-    {
-        SDL_Log("Failed to create an OpenAL context\n");
-        return false;
-    }
-
     return true;
 }
 
@@ -153,17 +138,14 @@ void RenderGame(Game *game)
     RenderMainPass(game);
 
     if(game->renderParticles)
-    {
         RenderParticlePass(game);
-    }
 
     glDisable(GL_DEPTH_TEST);
-
     RenderPostProcessing(game);
     RenderUI(game);
-
     glEnable(GL_DEPTH_TEST);
 
+    //Display rendered frame
     SDL_GL_SwapWindow(game->window);
 }
 
@@ -226,13 +208,6 @@ void UpdateTestScene(Game *game)
     glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 right = normalize(cross(forward, worldUp));
     glm::vec3 up = normalize(cross(right, forward));
-
-    ALfloat listenerOri[6] = {
-        camera->direction.x, camera->direction.y, camera->direction.z,
-        up.x, up.y, up.z
-    };
-    alListener3f(AL_POSITION, camera->position.x, camera->position.y, camera->position.z);
-    alListenerfv(AL_ORIENTATION, listenerOri);
 }
 
 void UpdateGame(Game *game)

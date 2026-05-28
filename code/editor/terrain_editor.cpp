@@ -2,94 +2,148 @@
 
 #include "game.h"
 #include "noise.h"
+#include "image.h"
 
 #include <glm/vec2.hpp>
 
+#include <stb_image.h>
+#include <stb_image_write.h>
+
 #include <GL/glew.h>
+
+void SaveHeightmapCallback(void *userdata, const char * const *filelist, int filter)
+{
+    if(filelist && *filelist)
+    {
+        Game *game = (Game *)userdata;
+
+        FILE *file = fopen(filelist[0], "wb");
+        if(file)
+        {
+            int width = (int)game->terrain.mapSize.x;
+            int height = (int)game->terrain.mapSize.y;
+
+            fwrite(&width, sizeof(int), 1, file);
+            fwrite(&height, sizeof(int), 1, file);
+            fwrite(game->terrain.heightmap, sizeof(float), width * height, file);
+
+            fclose(file);
+        }
+    }
+}
+
+void LoadHeightmapCallback(void *userdata, const char * const *filelist, int filter)
+{
+    if(filelist && *filelist)
+    {
+        Game *game = (Game *)userdata;
+
+        game->editor.regenerateTerrain = true;
+        game->editor.heightmapPath = std::string(filelist[0]);
+    }
+}
+
+void GenerateNewTerrain(Game *game, float *heightmap, glm::vec2 size, int patchSize, float mapScale)
+{
+    DeleteMesh(&game->terrain.mesh);
+    glDeleteTextures(1, &game->terrain.heightmapTexture.id);
+    free(game->terrain.heightmap);
+
+    Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, patchSize, mapScale, 0.0f);
+    terrain.shader = GetShader(game, "tessellated_terrain");
+    terrain.minTessDist = game->terrain.minTessDist;
+    terrain.maxTessDist = game->terrain.maxTessDist;
+    terrain.minTessLevel = game->terrain.minTessLevel;
+    terrain.maxTessLevel = game->terrain.maxTessLevel;
+    terrain.colorTexture = game->terrain.colorTexture;
+
+    game->terrain = terrain;
+}
 
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
     Editor *editor = &game->editor;
     Terrain *terrain = &game->terrain;
 
-    ImGui::Begin("Terrain Generator", windowState, flags | ImGuiWindowFlags_HorizontalScrollbar);
-
-    ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
+    ImGui::Begin("Terrain Editor", windowState, flags | ImGuiWindowFlags_HorizontalScrollbar);
 
     static glm::ivec2 gridSize = glm::ivec2(3);
-    ImGui::InputInt2("Initial Grid Size", &gridSize[0]);
-
     static int octaves = 3;
-    ImGui::InputInt("Octaves", &octaves);
-
     static float persistence = 0.5f;
-    ImGui::InputFloat("Persistence", &persistence, 0.05f);
-
     static float lacunarity = 2.0f;
-    ImGui::InputFloat("Lacunarity", &lacunarity, 0.05f);
-
     static float maxHeight = 20.0f;
-    ImGui::InputFloat("Max Height", &maxHeight, 0.05f);
-
     static glm::ivec2 size = glm::ivec2(1024, 1024);
-    ImGui::InputInt2("Texture Size", &size[0]);
-
     static float mapScale = 0.1f;
-    ImGui::InputFloat("Map Scale", &mapScale, 0.05f);
-
     static float yOffset = 0.0f;
-    ImGui::InputFloat("Y Offset", &yOffset, 0.05f);
-
-    ImGui::InputFloat("UV Multiplier", &game->terrainUVMultiplier, 0.05f);
-
     static int patchSize = 16;
-    ImGui::InputInt("Patch Size", &patchSize);
-    patchSize = SDL_clamp(patchSize, 4, 1024);
 
-    ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
-    ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);
-    ImGui::DragFloat("Min tessellation level", &terrain->minTessLevel, 0.1f, 0.1f, 100.0f);
-    ImGui::DragFloat("Max tessellation level", &terrain->maxTessLevel, 0.1f);
+    if(ImGui::CollapsingHeader("Terrain Generation", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
+
+        ImGui::InputInt2("Initial Grid Size", &gridSize[0]);
+        ImGui::InputInt("Octaves", &octaves);
+        ImGui::InputFloat("Persistence", &persistence, 0.05f);
+        ImGui::InputFloat("Lacunarity", &lacunarity, 0.05f);
+        ImGui::InputFloat("Max Height", &maxHeight, 0.05f);
+        ImGui::InputInt2("Texture Size", &size[0]);
+        ImGui::InputFloat("Map Scale", &mapScale, 0.05f);
+        ImGui::InputFloat("Y Offset", &yOffset, 0.05f);
+        ImGui::InputFloat("UV Multiplier", &game->terrainUVMultiplier, 0.05f);
+    }
+
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+    if(ImGui::CollapsingHeader("Terrain Tessellation Settings", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::InputInt("Patch Size", &patchSize);
+        patchSize = SDL_clamp(patchSize, 4, 1024);
+
+        ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
+        ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);
+        ImGui::DragFloat("Min tessellation level", &terrain->minTessLevel, 0.1f, 0.1f, 100.0f);
+        ImGui::DragFloat("Max tessellation level", &terrain->maxTessLevel, 0.1f);
+    }
+
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
 
     TerrainBrush *brush = &editor->terrainBrush;
-    ImGui::Checkbox("Terrain Sculpting", &editor->terrainSculpting);
-    if(editor->terrainSculpting)
+    if(ImGui::CollapsingHeader("Terrain Sculpting", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::InputFloat("Brush Strength", &brush->strength);
-        ImGui::InputFloat("Brush Radius", &brush->radius);
-
-        ImGui::Combo("Brush Type", &brush->type, "Add\0Flatten\0Smooth\0Noise\0\0");
-        if(brush->type == TerrainBrush_Smooth)
+        ImGui::Checkbox("Is Enabled", &editor->terrainSculpting);
+        if(editor->terrainSculpting)
         {
-            const int kernels[] = {3, 5, 7, 9, 11, 13, 15};
-            static int kernelId = 0;
-            if(ImGui::Combo("Brush Kernel Size", &kernelId, " 3\0 5\0 7\0 9\0 11\0 13\0 15\0\0"))
-                brush->kernelSize = kernels[kernelId];
-        }
-        else if(brush->type == TerrainBrush_Noise)
-        {
-            ImGui::Combo("Brush Noise Type", &brush->noiseType,
-                         "Simplex2\0Simplex2S\0Cellular\0Perlin\0Value Cubic\0Value\0\0");
+            ImGui::InputFloat("Brush Strength", &brush->strength);
+            ImGui::InputFloat("Brush Radius", &brush->radius);
 
-            ImGui::DragFloat("Noise Frequency", &brush->noiseFreq, 0.005f, 0.001f, 1.0f);
-            ImGui::InputInt("Noise Octaves", &brush->octaves);
+            ImGui::Combo("Brush Type", &brush->type, "Add\0Flatten\0Smooth\0Noise\0\0");
+            if(brush->type == TerrainBrush_Smooth)
+            {
+                const int kernels[] = {3, 5, 7, 9, 11, 13, 15};
+                static int kernelId = 0;
+                if(ImGui::Combo("Brush Kernel Size", &kernelId, " 3\0 5\0 7\0 9\0 11\0 13\0 15\0\0"))
+                    brush->kernelSize = kernels[kernelId];
+            }
+            else if(brush->type == TerrainBrush_Noise)
+            {
+                ImGui::Combo("Brush Noise Type", &brush->noiseType,
+                            "Simplex2\0Simplex2S\0Cellular\0Perlin\0Value Cubic\0Value\0\0");
+
+                ImGui::DragFloat("Noise Frequency", &brush->noiseFreq, 0.005f, 0.001f, 1.0f);
+                ImGui::InputInt("Noise Octaves", &brush->octaves);
+            }
         }
     }
 
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
     if(ImGui::Button("Generate"))
     {
-        glDeleteTextures(1, &game->perlinNoise.id);
-
-        //float *perlinNoise = GeneratePerlinNoise(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
         float *perlinNoise = GeneratePerlinNoise2(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
 
         u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
+        glDeleteTextures(1, &game->perlinNoise.id);
         game->perlinNoise = CreateGLTexture(perlinNoiseImage, size.x, size.y);
-        free(perlinNoiseImage);
-
-        DeleteMesh(&game->terrain.mesh);
-        free(game->terrain.heightmap);
-        glDeleteTextures(1, &game->terrain.heightmapTexture.id);
 
         float *heightmap = (float *)calloc((int)(size.x * size.y), sizeof(float));
         for(int i = 0; i < size.y; ++i)
@@ -103,25 +157,47 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
             }
         }
 
-        Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, patchSize, mapScale, 0.0f);
-        terrain.shader = GetShader(game, "tessellated_terrain");
-        terrain.minTessDist = game->terrain.minTessDist;
-        terrain.maxTessDist = game->terrain.maxTessDist;
-        terrain.minTessLevel = game->terrain.minTessLevel;
-        terrain.maxTessLevel = game->terrain.maxTessLevel;
-
-        //Terrain terrain = CreateTerrainMesh(heightmap, size, 1.0f, mapScale, meshStep, 0.0f);
-        //terrain.shader = GetShader(game, "terrain");
-
-        terrain.colorTexture = game->terrain.colorTexture;
-
-        //int textureFlags = TextureFlag_Heightmap | TextureFlag_Filter_Min_Linear |
-        //                TextureFlag_Filter_Mag_Linear | TextureFlag_ClampToEdge;
-        //terrain.heightmapTexture = CreateGLTexture(heightmap, size.x, size.y, textureFlags);
-
-        game->terrain = terrain;
+        GenerateNewTerrain(game, heightmap, size, patchSize, mapScale);
 
         free(perlinNoise);
+        free(perlinNoiseImage);
+    }
+
+    static SDL_DialogFileFilter filters[] = {{"Heightmap Data", "bin"}};
+
+    ImGui::SameLine();
+    if(ImGui::Button("Save"))
+    {
+        SDL_ShowSaveFileDialog(SaveHeightmapCallback, (void *)game, game->window, filters, 1, 0);
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Load"))
+    {
+        SDL_ShowOpenFileDialog(LoadHeightmapCallback, (void *)game, game->window, filters, 1, 0, false);
+    }
+    if(editor->regenerateTerrain)
+    {
+        FILE *file = fopen(editor->heightmapPath.c_str(), "rb");
+        if(file)
+        {
+            int x = 0, y = 0;
+            fread(&x, sizeof(int), 1, file);
+            fread(&y, sizeof(int), 1, file);
+
+            if(x > 0 && y > 0)
+            {
+                float *heightmapData = (float *)malloc(x * y * sizeof(float));
+                if(heightmapData)
+                {
+                    fread(heightmapData, sizeof(float), x * y, file);
+                    GenerateNewTerrain(game, heightmapData, glm::vec2(x, y), 16, 0.1f);
+                }
+            }
+
+            fclose(file);
+        }
+
+        editor->regenerateTerrain = false;
     }
 
     ImGui::End();

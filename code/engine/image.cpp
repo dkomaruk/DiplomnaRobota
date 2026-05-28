@@ -1,6 +1,7 @@
 #include "image.h"
 
 #include <SDL3/SDL.h>
+#include <stb_image_write.h>
 
 bool SaveImage(char *filepath, void *pixels, int width, int height, int bytesPerPixel, bool flipY)
 {

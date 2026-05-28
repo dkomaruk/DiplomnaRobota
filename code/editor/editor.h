@@ -21,6 +21,8 @@ struct Editor
     TerrainBrush terrainBrush;
     bool terrainSculpting = true;
     glm::vec2 lastMousePos;
+    bool regenerateTerrain;
+    std::string heightmapPath;
 };
 
 void UpdateEditor(Game *game);
