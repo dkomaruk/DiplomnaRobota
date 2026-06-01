@@ -50,16 +50,25 @@ bool InitGame(Game *game)
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
+
+    Uint64 windowFlags = SDL_WINDOW_OPENGL;
 #ifdef WINDOW_FULLSCREEN
-    bool isFullscreen = true;
+    windowFlags |= SDL_WINDOW_BORDERLESS;
+
+    SDL_DisplayID displayID = SDL_GetPrimaryDisplay();
+    const SDL_DisplayMode *displayMode = SDL_GetCurrentDisplayMode(displayID);
+    game->windowSize = glm::ivec2(displayMode->w, displayMode->h);
+
+    game->window = SDL_CreateWindow("Komaruk Diplomna Robota", game->windowSize.x, game->windowSize.y, windowFlags);
+    SDL_SetWindowFullscreen(game->window, true);
 #else
-    bool isFullscreen = false;
+    game->windowSize = glm::ivec2(1280, 720);
+    game->window = SDL_CreateWindow("Komaruk Diplom Robota", game->windowSize.x, game->windowSize.y, windowFlags);
 #endif
 
-    Uint64 windowFlags = SDL_WINDOW_OPENGL | (isFullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 
-    game->windowSize = glm::ivec2(1920, 1080);
-    game->window = SDL_CreateWindow("Komaruk Diplom", game->windowSize.x, game->windowSize.y, windowFlags);
+
+
     if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
@@ -168,13 +177,13 @@ void UpdateTestScene(Game *game)
     UpdateTransforms(tank);
 
     float speed = 3.0f;
-    float x = game->soldierAnimated->position.x + game->targetDirection.x * speed * game->deltaTime;
-    float z = game->soldierAnimated->position.z + game->targetDirection.y * speed * game->deltaTime;
+    float x = game->runningEntity->position.x + game->targetDirection.x * speed * game->deltaTime;
+    float z = game->runningEntity->position.z + game->targetDirection.y * speed * game->deltaTime;
     float y = GetTerrainHeight(&game->terrain, x, z);
 
-    game->soldierAnimated->position = glm::vec3(x, y, z);
+    game->runningEntity->position = glm::vec3(x, y, z);
 
-    float angleDiff = game->targetAngle - game->soldierAnimated->rotation.y;
+    float angleDiff = game->targetAngle - game->runningEntity->rotation.y;
 
     if(angleDiff < -180.0f)
         angleDiff += 360.0f;
@@ -184,9 +193,9 @@ void UpdateTestScene(Game *game)
     float rotationStep = 200.0f * game->deltaTime;
 
     if(glm::abs(angleDiff) <= rotationStep)
-        game->soldierAnimated->rotation.y = game->targetAngle;
+        game->runningEntity->rotation.y = game->targetAngle;
     else
-        game->soldierAnimated->rotation.y += glm::sign(angleDiff) * rotationStep;
+        game->runningEntity->rotation.y += glm::sign(angleDiff) * rotationStep;
 
     if(glm::distance(glm::vec2(x, z), game->target) < 0.1f)
     {
@@ -195,19 +204,12 @@ void UpdateTestScene(Game *game)
 
 #if 0
     glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank->position, tank->rotation, tank->scale);
-    glm::mat4 tipWorldMat = tankWorldMatrix * tank->nodeTransforms[tank->gunTipId];
+    glm::mat4 tipWorldMat = tankWorldMatrix * tank->nodeTransforms[tank->gunTip.nodeId];
     game->particleSystems[0].pos = tipWorldMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
     glm::mat4 tipRotation = glm::mat3(tipWorldMat);
     game->particleSystems[0].rotation = tipRotation;
 #endif
-
-    Camera *camera = &game->camera;
-    glm::vec3 forward = normalize(camera->direction);
-
-    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 right = normalize(cross(forward, worldUp));
-    glm::vec3 up = normalize(cross(right, forward));
 }
 
 void UpdateGame(Game *game)
@@ -254,8 +256,8 @@ void UpdateGame(Game *game)
         UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
 
         game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
-        game->targetDirection = game->target - glm::vec2(game->soldierAnimated->position.x,
-                                                         game->soldierAnimated->position.z);
+        game->targetDirection = game->target - glm::vec2(game->runningEntity->position.x,
+                                                         game->runningEntity->position.z);
 
         if(glm::length2(game->targetDirection) > 0.00001f)
         {

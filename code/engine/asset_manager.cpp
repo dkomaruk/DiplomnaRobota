@@ -226,8 +226,11 @@ Model *LoadModel(AssetManager *assets, const std::string &filepath, const std::s
     Model *result = (Model *)calloc(1, sizeof(Model));
     result->numOfMeshes = -1;
 
-    aiSetImportPropertyFloat(aiCreatePropertyStore(), AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
-    const aiScene *scene = aiImportFile(filepath.c_str(), flags | aiProcess_GenBoundingBoxes);
+    aiPropertyStore* props = aiCreatePropertyStore();
+    aiSetImportPropertyFloat(props, AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
+    const aiScene *scene = aiImportFileExWithProperties(filepath.c_str(), flags | aiProcess_GenBoundingBoxes, 0, props);
+    aiReleasePropertyStore(props);
+
     if(!scene)
     {
         SDL_Log("Failed to load %s. Error: %s", filepath.c_str(), aiGetErrorString());
@@ -325,6 +328,9 @@ Model *LoadModel(AssetManager *assets, const std::string &filepath, const std::s
 
         Texture diffuseTexture = LoadModelTextures(scene, material, dirPath, assets, modelName, aiTextureType_DIFFUSE);
         Texture specularTexture = LoadModelTextures(scene, material, dirPath, assets, modelName, aiTextureType_SPECULAR);
+
+        if(type == ModelType_DetermineOnLoad)
+            shader = (result->type == ModelType_Static) ? GetShader(assets, "main") : GetShader(assets, "animation");
 
         MaterialPhong phongMaterial = {shader, diffuseTexture, specularTexture, {}, 32.0f};
         result->material[meshIndex] = phongMaterial;
@@ -485,7 +491,7 @@ void LoadParticleSystem(Game *game)
     game->particleTextures[2] = GetTexture(assets, "smoke3");
     game->particleTextures[3] = GetTexture(assets, "smoke4");
     game->particleTextures[4] = GetTexture(assets, "smoke5");
-    game->particleTextures[5] = GetTexture(assets, "animated_smoke.png");
+    game->particleTextures[5] = GetTexture(assets, "animated_smoke");
     game->particleTextures[6] = GetTexture(assets, "fire");
     game->particleTextures[7] = GetTexture(assets, "fire2");
     game->particleTextures[8] = GetTexture(assets, "circle_05_a");
@@ -549,9 +555,8 @@ void LoadParticleSystem(Game *game)
     }
 }
 
-
-Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position = glm::vec3(0.0f),
-                            glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
+Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position,
+                            glm::vec3 rotation, glm::vec3 scale)
 {
     Entity *newEntity = (Entity *)calloc(1, sizeof(Entity));
     *newEntity = CreateEntity(model);
@@ -679,12 +684,11 @@ Texture GetTextureByPath(AssetManager *assets, const std::string &path)
     return texture;
 }
 
-GLuint GetShader(Game *game, const std::string &name)
+GLuint GetShader(AssetManager *assets, const std::string &name)
 {
-    if(game->assets.shaders.find(name) != game->assets.shaders.end())
-        return game->assets.shaders[name];
+    if(assets->shaders.find(name) != assets->shaders.end())
+        return assets->shaders[name];
 
-    AssetManager *assets = &game->assets;
     if(assets->shaderManifests.find(name) != assets->shaderManifests.end())
     {
         ShaderDefinition &def = assets->shaderManifests[name];
@@ -711,6 +715,11 @@ GLuint GetShader(Game *game, const std::string &name)
 
     SDL_Log("Shader not defined in manifest: %s", name.c_str());
     return 0;
+}
+
+GLuint GetShader(Game *game, const std::string &name)
+{
+    return GetShader(&game->assets, name);
 }
 
 void LoadTestScene(Game *game)
@@ -761,14 +770,14 @@ void LoadTestScene(Game *game)
 
     //MESHES
     Model *abrams = GetModel(assets, "abrams", GetShader(game, "main"), ModelType_Static);
-    Model *soldier = GetModel(assets, "Ginga Variation 3", GetShader(game, "animation"),
-                              ModelType_Animated, aiProcess_GlobalScale, 0.01f);
-    Model *soldierAnimated = GetModel(assets, "Rifle Run", GetShader(game, "animation"),
-                                      ModelType_Animated, aiProcess_GlobalScale, 0.01f);
+    Model *dancingModel = GetModel(assets, "Dancing", GetShader(game, "animation"),
+                                   ModelType_Animated, aiProcess_GlobalScale, 1.0f);
+    Model *runningModel = GetModel(assets, "Running", GetShader(game, "animation"),
+                                   ModelType_Animated, aiProcess_GlobalScale, 1.0f);
 
-    game->soldierEntity = AddNewEntityToScene(game, soldier, "soldier", glm::vec3(0.0f, 0.5f, 0.0f));
+    game->dancingEntity = AddNewEntityToScene(game, dancingModel, "dancing_entity", glm::vec3(0.0f, 0.5f, 0.0f));
     game->tank = AddNewEntityToScene(game, abrams, "tank");
-    game->soldierAnimated = AddNewEntityToScene(game, soldierAnimated, "animated_soldier");
+    game->runningEntity = AddNewEntityToScene(game, runningModel, "running_entity");
 
     Entity *tank = game->tank;
     for(int i = 0; i < tank->model->numOfNodes; i++)
@@ -783,6 +792,11 @@ void LoadTestScene(Game *game)
         {
             tank->gun.nodeId = i;
             tank->gun.transform = tank->model->nodes[i].localTransform;
+        }
+        else if(nodeName && strcmp(nodeName, "Fx_Tourelle1_Tir_01") == 0)
+        {
+            tank->gunTip.nodeId = i;
+            tank->gunTip.transform = tank->model->nodes[i].localTransform;
         }
     }
 

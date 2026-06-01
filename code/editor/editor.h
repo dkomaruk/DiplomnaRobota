@@ -13,6 +13,7 @@ struct Editor
     bool debugSettingsWindow;
     bool lightingSettingsWindow;
     bool valueNoiseWindow;
+    bool assetPlacementWindow;
 
     float importScale = 1.0f;
     bool importModelWindow;

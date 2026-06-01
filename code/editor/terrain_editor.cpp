@@ -302,12 +302,17 @@ void SculptTerrain(Terrain *terrain, glm::vec3 intersectionPoint, TerrainBrush *
 void UpdateTerrainEditor(Game *game, ImGuiWindowFlags flags)
 {
     Editor *editor = &game->editor;
+    Input *input = &game->input;
 
     UpdateTerrainEditorUI(game, &editor->terrainGeneratorWindow, flags);
 
+    if(IsFirstPress(input, SDL_SCANCODE_F1)) editor->terrainBrush.type = TerrainBrush_Add;
+    if(IsFirstPress(input, SDL_SCANCODE_F2)) editor->terrainBrush.type = TerrainBrush_Flatten;
+    if(IsFirstPress(input, SDL_SCANCODE_F3)) editor->terrainBrush.type = TerrainBrush_Smooth;
+    if(IsFirstPress(input, SDL_SCANCODE_F4)) editor->terrainBrush.type = TerrainBrush_Noise;
+
     if(editor->terrainSculpting)
     {
-        Input *input = &game->input;
         TerrainBrush *brush = &editor->terrainBrush;
 
         brush->strength = (IsKeyDown(input, SDL_SCANCODE_LCTRL) ? -1.0f : 1.0f) * abs(brush->strength);

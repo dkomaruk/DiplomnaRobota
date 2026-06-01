@@ -83,8 +83,8 @@ struct Game
     std::unordered_set<u16> selectedIDs;
     int lastSelectedId = -1;
 
-    Entity *soldierEntity;
-    Entity *soldierAnimated;
+    Entity *dancingEntity;
+    Entity *runningEntity;
     Entity *tank;
 
     Terrain terrain;

@@ -4,6 +4,7 @@
 
 #include "game.h"
 #include "asset_manager.h"
+#include "random.h"
 #include "noise.h"
 #include "shader.h"
 
@@ -13,6 +14,7 @@
 #include <imgui_gradient/imgui_gradient.hpp>
 
 #include <queue>
+#include <mutex>
 #include <string>
 
 void UpdateMenuBar(Game *game)
@@ -29,7 +31,7 @@ void UpdateMenuBar(Game *game)
             if(ImGui::MenuItem("Debug Settings", "4")) editor->debugSettingsWindow = true;
             if(ImGui::MenuItem("Lighting Settings", "5")) editor->lightingSettingsWindow = true;
             if(ImGui::MenuItem("Import Model", "6")) editor->importModelWindow = true;
-            if(ImGui::MenuItem("Value Noise", "7")) editor->valueNoiseWindow = true;
+            if(ImGui::MenuItem("Asset Placement", "7")) editor->assetPlacementWindow = true;
             ImGui::EndMenu();
         }
 
@@ -54,6 +56,8 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
 
     ImGui::InputFloat("Camera Speed", &game->camera.speed, 0.05f);
     ImGui::InputFloat("Camera Sensitivity", &game->camera.sensitivity, 0.05f);
+    ImGui::DragFloat3("Camera Position", &game->camera.position[0]);
+    ImGui::DragFloat3("Camera Direction", &game->camera.direction[0], 0.05f, -1.0f, 1.0f);
 
     ImGui::End();
 }
@@ -67,7 +71,6 @@ void UpdateSceneLight(Game *game, ImGuiWindowFlags flags)
     lightingChanged += ImGui::DragFloat3("Diffuse", &game->dirLight.diffuse[0], 0.05f);
     lightingChanged += ImGui::DragFloat3("Specular", &game->dirLight.specular[0], 0.05f);
     lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.05f);
-    //lightingChanged += ImGui::DragFloat3("Direction", &game->dirLight.direction[0], 0.001f);
 
     if(lightingChanged)
     {
@@ -98,6 +101,8 @@ void UpdateSelectedEntity(Game *game, ImGuiWindowFlags flags)
 
             if(ImGui::CollapsingHeader("Transform"))
             {
+                ImGui::Checkbox("Snap to Terrain", &selectedEntity->snapToTerrain);
+
                 ImGui::DragFloat3("Position", &selectedEntity->position[0], 0.1f);
                 if(ImGui::DragFloat3("Rotation", &selectedEntity->rotation[0], 0.1f))
                 {
@@ -184,6 +189,78 @@ void UpdateImportModel(Game *game, ImGuiWindowFlags flags)
     ImGui::End();
 }
 
+void UpdateAssetPlacement(Game *game, ImGuiWindowFlags flags)
+{
+    Editor *editor = &game->editor;
+    Input *input = &game->input;
+
+    ImGui::Begin("Place Assets", &editor->assetPlacementWindow, flags);
+
+    static std::string selectedModelName = "";
+    static Model *selectedModel = NULL;
+
+    ImGui::Text("Select a model to place:");
+    ImGui::Separator();
+
+    if(ImGui::BeginListBox("ModelsList"))
+    {
+        for(auto const &[name, path] : game->assets.modelPaths)
+        {
+            bool isSelected = (selectedModelName == name);
+            if(ImGui::Selectable(name.c_str(), isSelected))
+            {
+                selectedModelName = name;
+                selectedModel = GetModel(&game->assets, selectedModelName, 0, ModelType_DetermineOnLoad,
+                                         aiProcess_GlobalScale, editor->importScale);
+            }
+
+            if(isSelected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndListBox();
+    }
+
+    ImGui::InputFloat("Import Scale", &game->editor.importScale);
+
+    static float modelScale = 1.0f;
+    ImGui::InputFloat("Model Scale", &modelScale);
+    static bool snapOnLoad = true;
+    ImGui::Checkbox("Snap to Terrain", &snapOnLoad);
+    static bool randomRotationY = true;
+    ImGui::Checkbox("Random Rotation on Y Axis", &randomRotationY);
+
+    if(!selectedModelName.empty())
+    {
+        if(selectedModel)
+            ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "Ready to place selected model");
+        else
+            ImGui::TextColored(ImVec4(0.8f, 0.2f, 0.2f, 1.0f), "Failed to load model");
+    }
+    else
+    {
+        ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Select a model");
+    }
+
+    glm::vec2 mousePos = input->isCursorHidden ? RECT_HALF(game->windowSize) : input->mousePos;
+    mousePos.y = (int)game->windowSize.y - mousePos.y;
+
+    Ray pickingRay = CastPickingRay(game, mousePos);
+    float visibleRayLength = 2000.0f;
+    glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
+
+    if(IsFirstClick(input, MOUSE_LEFT) && selectedModel && !input->isMouseCapturedByImgui)
+    {
+        char entityId[128];
+        snprintf(entityId, sizeof(entityId), "%s_%d", selectedModelName.c_str(), (int)game->sceneEntities.size());
+
+        glm::vec3 rotation = randomRotationY ? glm::vec3(0.0f, RandomBetween(-360.0f, 360.0f), 0.0f) : glm::vec3(0.0f);
+        Entity *newEntity =AddNewEntityToScene(game, selectedModel, entityId, intersectionPoint,
+                                               rotation, glm::vec3(modelScale));
+        newEntity->snapToTerrain = snapOnLoad;
+    }
+
+    ImGui::End();
+}
+
 void UpdateEditor(Game *game)
 {
     Input *input = &game->input;
@@ -198,6 +275,7 @@ void UpdateEditor(Game *game)
         if(IsFirstPress(input, SDL_SCANCODE_4)) editor->debugSettingsWindow = !editor->debugSettingsWindow;
         if(IsFirstPress(input, SDL_SCANCODE_5)) editor->lightingSettingsWindow = !editor->lightingSettingsWindow;
         if(IsFirstPress(input, SDL_SCANCODE_6)) editor->importModelWindow = !editor->importModelWindow;
+        if(IsFirstPress(input, SDL_SCANCODE_7)) editor->assetPlacementWindow = !editor->assetPlacementWindow;
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -232,5 +310,9 @@ void UpdateEditor(Game *game)
     if(editor->importModelWindow)
     {
         UpdateImportModel(game, flags);
+    }
+    if(editor->assetPlacementWindow)
+    {
+        UpdateAssetPlacement(game, flags);
     }
 }

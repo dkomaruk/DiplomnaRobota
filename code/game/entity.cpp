@@ -101,7 +101,6 @@ void UpdateTransforms(Entity *entity)
 {
     for (int nodeIndex = 0; nodeIndex < entity->model->numOfNodes; ++nodeIndex) {
         Node *node = &entity->model->nodes[nodeIndex];
-        //glm::mat4 nodeTransform = entity->localTransforms[nodeIndex];
 
         glm::mat4 nodeTransform;
         if(entity->turret.nodeId == nodeIndex)
@@ -124,6 +123,11 @@ void UpdateEntity(Game *game, Entity *entity)
     if(entity->model && (entity->model->type == ModelType_Animated))
     {
         UpdateAnimation(entity, game->deltaTime);
+    }
+
+    if(entity->snapToTerrain)
+    {
+        entity->position.y = GetTerrainHeight(&game->terrain, entity->position.x, entity->position.z);
     }
 
     entity->modelMatPosScale = PrepareModelMatrix(entity->position, glm::vec3(0.0f), entity->scale);

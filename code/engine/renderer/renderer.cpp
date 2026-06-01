@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "entity.h"
+#include "debug.h"
 #include "shader.h"
 #include "line.h"
 

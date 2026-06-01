@@ -32,11 +32,14 @@ struct Entity
     glm::mat4 *nodeTransforms;
     TransformOverride turret;
     TransformOverride gun;
+    TransformOverride gunTip;
 
     glm::mat4 *skinningMatrices;
     int numOfMatrices;
     int currentAnimation;
     float time;
+
+    bool snapToTerrain = false;
 
     AABB aabb;
     Mesh meshAABB;
