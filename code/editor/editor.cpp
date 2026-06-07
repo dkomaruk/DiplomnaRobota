@@ -46,6 +46,7 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
     ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
     ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
     ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
+    ImGui::Checkbox("Display Shadow Volume", &game->renderShadowVolume);
     ImGui::Checkbox("Display Terrain", &game->renderTerrain);
     ImGui::Checkbox("Display Counters", &game->renderCounters);
 
@@ -58,6 +59,24 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
     ImGui::InputFloat("Camera Sensitivity", &game->camera.sensitivity, 0.05f);
     ImGui::DragFloat3("Camera Position", &game->camera.position[0]);
     ImGui::DragFloat3("Camera Direction", &game->camera.direction[0], 0.05f, -1.0f, 1.0f);
+
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+
+    int shadowVolumeChanged = 0;
+    shadowVolumeChanged += ImGui::InputFloat2("Shadow Volume X", &game->shadowVolumeX[0]);
+    shadowVolumeChanged += ImGui::InputFloat2("Shadow Volume Y", &game->shadowVolumeY[0]);
+    shadowVolumeChanged += ImGui::InputFloat2("Shadow Volume Z", &game->shadowVolumeZ[0]);
+    shadowVolumeChanged += ImGui::DragFloat("Shadow Volume Offset", &game->shadowVolumeOffset, 0.1f);
+    if(shadowVolumeChanged)
+    {
+        game->orthoProjDirLight = glm::ortho(game->shadowVolumeX.x, game->shadowVolumeX.y,
+                                             game->shadowVolumeY.x, game->shadowVolumeY.y,
+                                             game->shadowVolumeZ.x, game->shadowVolumeZ.y);
+        game->dirLightView = lookAt(-game->dirLight.direction * game->shadowVolumeOffset,
+                                    glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
+        UpdateShadowVolumeLines(game->shadowVolume, lightViewProj);
+    }
 
     ImGui::End();
 }

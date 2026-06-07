@@ -65,6 +65,14 @@ void RenderDebugGeometry(Game *game)
             RenderLine(&game->frustumNormals[i]);
         }
     }
+
+    if(game->renderShadowVolume)
+    {
+        for(int i = 0; i < 12; i++)
+        {
+            RenderLine(&game->shadowVolume[i]);
+        }
+    }
 }
 
 void RenderMainPass(Game *game)

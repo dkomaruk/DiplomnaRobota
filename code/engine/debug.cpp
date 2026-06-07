@@ -51,3 +51,47 @@ void SaveFramebufferContents(Framebuffer fbo)
     stbi_flip_vertically_on_write(1);
     stbi_write_png("depth_output.png", imgSize.x, imgSize.y, 1, pixelData.data(), imgSize.x);
 }
+
+const glm::vec4 shadowVolumeCornersNDC[8] = {
+    glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f),
+    glm::vec4( 1.0f, -1.0f, -1.0f, 1.0f),
+    glm::vec4( 1.0f,  1.0f, -1.0f, 1.0f),
+    glm::vec4(-1.0f,  1.0f, -1.0f, 1.0f),
+    glm::vec4(-1.0f, -1.0f,  1.0f, 1.0f),
+    glm::vec4( 1.0f, -1.0f,  1.0f, 1.0f),
+    glm::vec4( 1.0f,  1.0f,  1.0f, 1.0f),
+    glm::vec4(-1.0f,  1.0f,  1.0f, 1.0f)
+};
+
+void CreateShadowVolumeLines(Line *lines, GLuint shader)
+{
+    for(int i = 0; i < 12; i++)
+    {
+        lines[i] = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), shader, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+}
+
+void UpdateShadowVolumeLines(Line *lines, glm::mat4 lightViewProj)
+{
+    glm::mat4 invLightViewProj = glm::inverse(lightViewProj);
+    glm::vec3 worldCorners[8];
+
+    for(int i = 0; i < 8; i++)
+    {
+        glm::vec4 worldPos = invLightViewProj * shadowVolumeCornersNDC[i];
+        worldCorners[i] = glm::vec3(worldPos) / worldPos.w;
+    }
+
+    int edgeIndices[12][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
+
+    for(int i = 0; i < 12; i++)
+    {
+        glm::vec3 startPoint = worldCorners[edgeIndices[i][0]];
+        glm::vec3 endPoint = worldCorners[edgeIndices[i][1]];
+        UpdateLine(&lines[i], startPoint, endPoint);
+    }
+}

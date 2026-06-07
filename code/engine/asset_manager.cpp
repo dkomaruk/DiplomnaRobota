@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "framebuffer.h"
 #include "debug.h"
+#include "debug.h"
 #include "noise.h"
 #include "frustum.h"
 
@@ -838,6 +839,14 @@ void LoadTestScene(Game *game)
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), GetShader(game, "line"), glm::vec3(1.0f, 0.0f, 0.0f));
     CreateFrustumLines(game->frustumLines, game->frustumNormals, GetShader(game, "line"));
 
+    //Shadow volume lines
+    CreateShadowVolumeLines(game->shadowVolume, GetShader(game, "line"));
+    game->dirLightView = lookAt(-game->dirLight.direction * game->shadowVolumeOffset,
+                                 glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
+    UpdateShadowVolumeLines(game->shadowVolume, lightViewProj);
+
+    //Text
     glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
     game->fpsCounter = CreateText(&game->fonts[48], "0 FPS", glm::vec2(20.0f, 54.0f), GetShader(game, "ui_text"), textColor);
     game->msPerFrame = CreateText(&game->fonts[48], "0 ms/f", glm::vec2(400.0f, 54.0f), GetShader(game, "ui_text"), textColor);

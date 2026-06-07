@@ -53,6 +53,10 @@ struct Game
     Framebuffer shadowMapFbo;
     glm::mat4 dirLightView;
     glm::mat4 orthoProjDirLight;
+    glm::vec2 shadowVolumeX = glm::vec2(-50.0f, 50.0f), shadowVolumeY = glm::vec2(-50.0f, 50.0f),
+              shadowVolumeZ = glm::vec2(1.0f, 50.0f);
+    float shadowVolumeOffset = 5.0f;
+    Line shadowVolume[12];
 
     //Post-processing
     Mesh fullscreenQuad;
@@ -110,6 +114,7 @@ struct Game
     bool renderAABB = true;
     bool renderTerrain = true;
     bool renderSelectionFrustum = true;
+    bool renderShadowVolume = true;
     bool renderPickingRay = true;
     bool renderCounters = true;
     GLenum polygonMode = GL_FILL;

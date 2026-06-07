@@ -66,9 +66,6 @@ bool InitGame(Game *game)
     game->window = SDL_CreateWindow("Komaruk Diplom Robota", game->windowSize.x, game->windowSize.y, windowFlags);
 #endif
 
-
-
-
     if(!game->window)
     {
         SDL_Log("Failed to create a window. Error: %s", SDL_GetError());
@@ -123,7 +120,10 @@ bool InitGame(Game *game)
 
     game->perspectiveProjection = glm::perspective(glm::radians(game->camera.fov), RECT_ASPECT_RATIO(game->windowSize), 0.1f, 1000.0f);
     game->orthoProjection = glm::ortho(0.0f, (float)game->windowSize.x, (float)game->windowSize.y, 0.0f, -1.0f, 1.0f);
-    game->orthoProjDirLight = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+    //game->orthoProjDirLight = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+    game->orthoProjDirLight = glm::ortho(game->shadowVolumeX.x, game->shadowVolumeX.y,
+                                         game->shadowVolumeY.x, game->shadowVolumeY.y,
+                                         game->shadowVolumeZ.x, game->shadowVolumeZ.y);
 
     game->view = glm::lookAt(game->camera.position, game->camera.position + game->camera.direction,
                              glm::vec3(0.0f, 1.0f, 0.0f));
@@ -401,8 +401,9 @@ void UpdateGame(Game *game)
     UpdateText(&game->fpsCounter, buffer);
 
     //Light
-    game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    //game->dirLightView = lookAt(-game->dirLight.direction * 1000.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    //game->dirLightView = lookAt(-game->dirLight.direction * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    game->dirLightView = lookAt(-game->dirLight.direction * game->shadowVolumeOffset,
+                                 glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
     ShaderSetMatrix4(GetShader(game, "shadow"), "u_lightViewProj", lightViewProj);
     ShaderSetMatrix4(GetShader(game, "skinned_shadow"), "u_lightViewProj", lightViewProj);
