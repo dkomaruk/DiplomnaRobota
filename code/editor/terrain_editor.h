@@ -27,6 +27,7 @@ struct TerrainBrush
     i32 octaves = 4;
 };
 
+void UpdateTerrainEditorHeightmap(Game *game, float *noise, glm::vec2 &size);
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags);
 void UpdateTerrainEditor(Game *game, ImGuiWindowFlags flags);
 

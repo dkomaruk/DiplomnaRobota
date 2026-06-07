@@ -22,6 +22,7 @@ struct Editor
     std::string particleSettingsPath;
 
     //Terrain sculpting
+    Texture perlinNoise;
     TerrainBrush terrainBrush;
     bool terrainSculpting = true;
     glm::vec2 lastMousePos;

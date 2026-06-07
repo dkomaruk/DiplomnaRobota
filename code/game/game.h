@@ -90,6 +90,11 @@ struct Game
     Terrain terrain;
     float terrainUVMultiplier = 16.0f;
 
+    bool measuringTerrainPerf = false;
+    Timer terrainPerfTimer;
+    GLuint timeQuery;
+    std::vector<double> results;
+
     //Fonts
     std::map<int, Font> fonts;
 
@@ -109,8 +114,7 @@ struct Game
     bool renderCounters = true;
     GLenum polygonMode = GL_FILL;
 
-    //Noise textures (first for the terrain generation and display in editor and second for the terrain fragment shader)
-    Texture perlinNoise, perlinNoise2;
+    Texture perlinNoise;
 
     //Game temp stuff
     glm::vec2 target;

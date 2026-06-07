@@ -2,6 +2,7 @@
 
 #include "game.h"
 #include "noise.h"
+#include "terrain.h"
 #include "image.h"
 
 #include <glm/vec2.hpp>
@@ -43,14 +44,11 @@ void LoadHeightmapCallback(void *userdata, const char * const *filelist, int fil
     }
 }
 
-void GenerateNewTerrain(Game *game, float *heightmap, glm::vec2 size, int patchSize, float mapScale)
+void GenerateNewTerrain(Game *game, float *heightmap, glm::vec2 size, TerrainGenerationSettings *s)
 {
-    DeleteMesh(&game->terrain.mesh);
-    glDeleteTextures(1, &game->terrain.heightmapTexture.id);
-    free(game->terrain.heightmap);
+    DeleteTerrain(&game->terrain);
 
-    Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, patchSize, mapScale, 0.0f);
-    terrain.shader = GetShader(game, "tessellated_terrain");
+    Terrain terrain = CreateTessellatedTerrainMesh(heightmap, size, GetShader(game, "tessellated_terrain"), s);
     terrain.minTessDist = game->terrain.minTessDist;
     terrain.maxTessDist = game->terrain.maxTessDist;
     terrain.minTessLevel = game->terrain.minTessLevel;
@@ -60,35 +58,38 @@ void GenerateNewTerrain(Game *game, float *heightmap, glm::vec2 size, int patchS
     game->terrain = terrain;
 }
 
+void UpdateTerrainEditorHeightmap(Game *game, float *noise, glm::vec2 &size)
+{
+    u8 *noiseImage = NoiseToImage(noise, size);
+    glDeleteTextures(1, &game->editor.perlinNoise.id);
+    game->editor.perlinNoise = CreateGLTexture(noiseImage, (int)size.x, (int)size.y);
+
+    free(noise);
+    free(noiseImage);
+}
+
 void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags)
 {
     Editor *editor = &game->editor;
     Terrain *terrain = &game->terrain;
+    TerrainGenerationSettings *settings = &terrain->settings;
 
     ImGui::Begin("Terrain Editor", windowState, flags | ImGuiWindowFlags_HorizontalScrollbar);
 
-    static glm::ivec2 gridSize = glm::ivec2(3);
-    static int octaves = 3;
-    static float persistence = 0.5f;
-    static float lacunarity = 2.0f;
-    static float maxHeight = 20.0f;
     static glm::ivec2 size = glm::ivec2(1024, 1024);
-    static float mapScale = 0.1f;
-    static float yOffset = 0.0f;
-    static int patchSize = 16;
 
     if(ImGui::CollapsingHeader("Terrain Generation", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::Image(game->perlinNoise.id, ImVec2(256.0f, 256.0f));
+        ImGui::Image(game->editor.perlinNoise.id, ImVec2(256.0f, 256.0f));
 
-        ImGui::InputInt2("Initial Grid Size", &gridSize[0]);
-        ImGui::InputInt("Octaves", &octaves);
-        ImGui::InputFloat("Persistence", &persistence, 0.05f);
-        ImGui::InputFloat("Lacunarity", &lacunarity, 0.05f);
-        ImGui::InputFloat("Max Height", &maxHeight, 0.05f);
+        ImGui::InputInt2("Initial Grid Size", &settings->gridSize[0]);
+        ImGui::InputInt("Octaves", &settings->octaves);
+        ImGui::InputFloat("Persistence", &settings->persistence, 0.05f);
+        ImGui::InputFloat("Lacunarity", &settings->lacunarity, 0.05f);
+        ImGui::InputFloat("Max Height", &settings->maxHeight, 0.05f);
         ImGui::InputInt2("Texture Size", &size[0]);
-        ImGui::InputFloat("Map Scale", &mapScale, 0.05f);
-        ImGui::InputFloat("Y Offset", &yOffset, 0.05f);
+        ImGui::InputFloat("Map Scale", &settings->mapScale, 0.05f);
+        ImGui::InputFloat("Y Offset", &settings->yOffset, 0.05f);
         ImGui::InputFloat("UV Multiplier", &game->terrainUVMultiplier, 0.05f);
     }
 
@@ -96,8 +97,8 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     if(ImGui::CollapsingHeader("Terrain Tessellation Settings", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::InputInt("Patch Size", &patchSize);
-        patchSize = SDL_clamp(patchSize, 4, 1024);
+        ImGui::InputInt("Patch Size", &settings->patchSize);
+        settings->patchSize = SDL_clamp(settings->patchSize, 4, 1024);
 
         ImGui::DragFloat("Min tessellation distance", &terrain->minTessDist);
         ImGui::DragFloat("Max tessellation distance", &terrain->maxTessDist);
@@ -139,28 +140,12 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
 
     if(ImGui::Button("Generate"))
     {
-        float *perlinNoise = GeneratePerlinNoise2(glm::vec2(size), gridSize, octaves, persistence, lacunarity);
-
-        u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
-        glDeleteTextures(1, &game->perlinNoise.id);
-        game->perlinNoise = CreateGLTexture(perlinNoiseImage, size.x, size.y);
-
-        float *heightmap = (float *)calloc((int)(size.x * size.y), sizeof(float));
-        for(int i = 0; i < size.y; ++i)
-        {
-            for(int j = 0; j < size.x; ++j)
-            {
-                int sampleIndex = j + i * (int)size.x;
-                int destIndex = j + i * (int)size.x;
-
-                heightmap[destIndex] = perlinNoise[sampleIndex] * maxHeight - yOffset;
-            }
-        }
-
-        GenerateNewTerrain(game, heightmap, size, patchSize, mapScale);
-
-        free(perlinNoise);
-        free(perlinNoiseImage);
+        glm::vec2 sizef = glm::vec2(size);
+        float *perlinNoise = GeneratePerlinNoise2(sizef, settings->gridSize, settings->octaves,
+                                                  settings->persistence, settings->lacunarity);
+        float *heightmap = GenerateTerrainHeightmap(perlinNoise, size, settings);
+        UpdateTerrainEditorHeightmap(game, perlinNoise, sizef);
+        GenerateNewTerrain(game, heightmap, size, settings);
     }
 
     static SDL_DialogFileFilter filters[] = {{"Heightmap Data", "bin"}};
@@ -190,7 +175,7 @@ void UpdateTerrainEditorUI(Game *game, bool *windowState, ImGuiWindowFlags flags
                 if(heightmapData)
                 {
                     fread(heightmapData, sizeof(float), x * y, file);
-                    GenerateNewTerrain(game, heightmapData, glm::vec2(x, y), 16, 0.1f);
+                    GenerateNewTerrain(game, heightmapData, glm::vec2(x, y), &terrain->settings);
                 }
             }
 

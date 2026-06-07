@@ -137,6 +137,8 @@ bool InitGame(Game *game)
 
     SetupFramebuffers(game);
 
+    glGenQueries(1, &game->timeQuery);
+
     return true;
 }
 
@@ -239,6 +241,34 @@ void UpdateGame(Game *game)
     {
         game->deltaTime = 0.0f;
     }
+
+    UpdateTimer(&game->terrainPerfTimer, game->deltaTime);
+    if(IsFirstPress(input, SDL_SCANCODE_O))
+    {
+        game->terrainPerfTimer = StartTimer(5.0f);
+        game->measuringTerrainPerf = true;
+        game->results.clear();
+    }
+    if(game->measuringTerrainPerf)
+    {
+        GLint available = 0;
+        glGetQueryObjectiv(game->timeQuery, GL_QUERY_RESULT_AVAILABLE, &available);
+        if(available)
+        {
+            GLuint64 timeElapsed = 0;
+            glGetQueryObjectui64v(game->timeQuery, GL_QUERY_RESULT, &timeElapsed);
+            double ms = timeElapsed / 1000000.0;
+            game->results.push_back(ms);
+        }
+
+        if(game->terrainPerfTimer.isFinished)
+        {
+            game->measuringTerrainPerf = false;
+            double sum = std::accumulate(game->results.begin(), game->results.end(), 0.0);
+            SDL_Log("%f", sum / game->results.size());
+        }
+    }
+
 
     //Cast picking ray, perform selection, calculate intersection with the terrain
     if(IsFirstClick(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)

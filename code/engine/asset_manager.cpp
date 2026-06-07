@@ -12,8 +12,6 @@
 
 #include <SDL3_ttf/SDL_ttf.h>
 
-#include <ThreadPool.h>
-
 #include <stb_image.h>
 
 #include <FastNoiseLite.h>
@@ -463,7 +461,7 @@ void XMLCALL ParseParticleSettingsEndElement(void *userData, const XML_Char *nam
 void LoadParticleSystem(Game *game)
 {
     size_t fileSize;
-    void *fileMemory = SDL_LoadFile("../data/imgs/animated_smoke/1.xml", &fileSize);
+    void *fileMemory = SDL_LoadFile("../data/textures/particles/animated/1.xml", &fileSize);
     if(!fileMemory)
     {
         SDL_Log("Failed to load 1.xml. Error: %s", SDL_GetError());
@@ -511,7 +509,7 @@ void LoadParticleSystem(Game *game)
     game->particleData = (ParticleData *)calloc(maxNumOfParticles * ArrayCount(game->particleSystems), sizeof(ParticleData));
     game->textureID = game->particleTextures[game->currentTexture].id;
 
-    game->atlas.path = "../data/imgs/animated_smoke/animated_smoke.png";
+    game->atlas.path = "../data/textures/particles/animated/animated_smoke.png";
     game->smokeSettings.atlas = &game->atlas;
 
     game->particlesQuad = CreateUnitQuadStripes();
@@ -816,8 +814,16 @@ void LoadTestScene(Game *game)
     ShaderSetInt(GetShader(game, "animation"), "u_pointLightCount", 0);
 
     //Terrain
-    game->terrain = CreateTerrainFromImage("../data/heightmap.png", 20.0f, 1.0f, 0.1f, 1, 22.0f);
-    game->terrain.shader = GetShader(game, "tessellated_terrain");
+    glm::vec2 terrainSize = glm::vec2(1024, 1024);
+    TerrainGenerationSettings settings = { .maxHeight = 20.0f, .yOffset = 22.0f };
+
+    float *perlinNoise = GeneratePerlinNoise2(terrainSize, settings.gridSize, settings.octaves,
+                                                settings.persistence, settings.lacunarity);
+    float *heightmap = GenerateTerrainHeightmap(perlinNoise, terrainSize, &settings);
+    UpdateTerrainEditorHeightmap(game, perlinNoise, terrainSize);
+
+    game->terrain = CreateTessellatedTerrainMesh(heightmap, terrainSize, GetShader(game, "tessellated_terrain"),
+                                                 &settings);
     game->terrain.colorTexture = GetTexture(assets, "wispy-grass-meadow_albedo");
 
     //Particles
@@ -831,13 +837,6 @@ void LoadTestScene(Game *game)
     //Debug lines
     game->pickingRay = CreateLine(glm::vec3(0.0f), glm::vec3(0.0f), GetShader(game, "line"), glm::vec3(1.0f, 0.0f, 0.0f));
     CreateFrustumLines(game->frustumLines, game->frustumNormals, GetShader(game, "line"));
-
-    glm::vec2 size = glm::vec2(256.0f, 256.0f);
-    float *perlinNoise = GeneratePerlinNoise(size, glm::ivec2(32), 4, 0.5f, 2.0f);
-
-    u8 *perlinNoiseImage = NoiseToImage(perlinNoise, size);
-    game->perlinNoise = CreateGLTexture(perlinNoiseImage, (int)size.x, (int)size.y);
-    free(perlinNoiseImage);
 
     glm::vec3 textColor = glm::vec3(1.0f, 0.0f, 0.0f);
     game->fpsCounter = CreateText(&game->fonts[48], "0 FPS", glm::vec2(20.0f, 54.0f), GetShader(game, "ui_text"), textColor);
