@@ -1,6 +1,7 @@
 #version 460 core
 
 layout(location = 0) in vec3 pos;
+layout(location = 2) in vec2 texCoords;
 layout(location = 3) in ivec4 boneId;
 layout(location = 4) in vec4 bnWeight;
 
@@ -10,6 +11,8 @@ uniform mat4 u_lightViewProj;
 const int MAX_BONES = 206;
 const int MAX_BONE_INFLUENCE = 4;
 uniform mat4 u_skinning[MAX_BONES];
+
+out vec2 TexCoords;
 
 void main()
 {
@@ -30,5 +33,6 @@ void main()
         blendedPos += boneTransform * vec4(pos, 1.0) * bnWeight[i];
     }
 
+    TexCoords = texCoords;
     gl_Position = u_lightViewProj * u_model * vec4(blendedPos.xyz, 1.0);
 }
