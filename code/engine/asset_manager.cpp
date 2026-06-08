@@ -554,7 +554,7 @@ void LoadParticleSystem(Game *game)
     }
 }
 
-Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position,
+Entity *AddNewEntityToScene(Game *game, Model *model, char *modelName, char *textId, glm::vec3 position,
                             glm::vec3 rotation, glm::vec3 scale)
 {
     Entity *newEntity = (Entity *)calloc(1, sizeof(Entity));
@@ -565,8 +565,10 @@ Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 po
     newEntity->scale = scale;
 
     strcpy(newEntity->textId, textId);
-    newEntity->id = game->sceneEntities.size() ? (game->sceneEntities.back()->id + 1) : 1;
+    strncpy(newEntity->modelName, modelName, sizeof(newEntity->modelName) - 1);
+    newEntity->modelName[sizeof(newEntity->modelName) - 1] = '\0';
 
+    newEntity->id = game->sceneEntities.size() ? (game->sceneEntities.back()->id + 1) : 1;
     game->sceneEntities.push_back(newEntity);
 
     return newEntity;
@@ -774,9 +776,9 @@ void LoadTestScene(Game *game)
     Model *runningModel = GetModel(assets, "Running", GetShader(game, "animation"),
                                    ModelType_Animated, aiProcess_GlobalScale, 1.0f);
 
-    game->dancingEntity = AddNewEntityToScene(game, dancingModel, "dancing_entity", glm::vec3(0.0f, 0.5f, 0.0f));
-    game->tank = AddNewEntityToScene(game, abrams, "tank");
-    game->runningEntity = AddNewEntityToScene(game, runningModel, "running_entity");
+    game->dancingEntity = AddNewEntityToScene(game, dancingModel, "Dancing", "dancing_entity", glm::vec3(0.0f, 0.5f, 0.0f));
+    game->tank = AddNewEntityToScene(game, abrams, "abrams", "tank");
+    game->runningEntity = AddNewEntityToScene(game, runningModel, "Running", "running_entity");
 
     Entity *tank = game->tank;
     for(int i = 0; i < tank->model->numOfNodes; i++)

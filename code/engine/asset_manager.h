@@ -44,7 +44,7 @@ GLuint GetShader(Game *game, const std::string &name);
 GLuint GetShader(AssetManager *assets, const std::string &name);
 
 std::string RegisterAsset(AssetManager *assets, const std::filesystem::path &path);
-Entity *AddNewEntityToScene(Game *game, Model *model, char *textId, glm::vec3 position = glm::vec3(0.0f),
+Entity *AddNewEntityToScene(Game *game, Model *model, char *modelName, char *textId, glm::vec3 position = glm::vec3(0.0f),
                             glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f));
 
 void LoadTestScene(Game *game);

@@ -163,6 +163,35 @@ void RenderGame(Game *game)
 //Test code for the demo scene
 void UpdateTestScene(Game *game)
 {
+    Input *input = &game->input;
+
+    //Cast picking ray, perform selection, calculate intersection with the terrain
+    if(IsFirstClick(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
+    {
+        glm::vec2 mousePos = input->isCursorHidden ? RECT_HALF(game->windowSize) : input->mousePos;
+        game->selectionBox.start = mousePos;
+
+        mousePos.y = (int)game->windowSize.y - mousePos.y;
+        Ray pickingRay = CastPickingRay(game, mousePos);
+        SelectSingleObject(game, &pickingRay);
+
+        float visibleRayLength = 2000.0f;
+        glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
+
+        UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
+
+        game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
+        game->targetDirection = game->target - glm::vec2(game->runningEntity->position.x,
+                                                         game->runningEntity->position.z);
+
+        if(glm::length2(game->targetDirection) > 0.00001f)
+        {
+            game->targetDirection = glm::normalize(game->targetDirection);
+            game->targetAngle = glm::degrees(glm::atan(game->targetDirection.x, game->targetDirection.y));
+        }
+    }
+
+#if 0
     glm::mat4 turretTransform = glm::mat4(1.0f);
     turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f,
                                      0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
@@ -203,6 +232,7 @@ void UpdateTestScene(Game *game)
     {
         game->targetDirection = glm::vec2(0, 0);
     }
+#endif
 
 #if 0
     glm::mat4 tankWorldMatrix = PrepareModelMatrix(tank->position, tank->rotation, tank->scale);
@@ -266,33 +296,6 @@ void UpdateGame(Game *game)
             game->measuringTerrainPerf = false;
             double sum = std::accumulate(game->results.begin(), game->results.end(), 0.0);
             SDL_Log("%f", sum / game->results.size());
-        }
-    }
-
-
-    //Cast picking ray, perform selection, calculate intersection with the terrain
-    if(IsFirstClick(input, MOUSE_LEFT) && !input->isMouseCapturedByImgui)
-    {
-        glm::vec2 mousePos = input->isCursorHidden ? RECT_HALF(game->windowSize) : input->mousePos;
-        game->selectionBox.start = mousePos;
-
-        mousePos.y = (int)game->windowSize.y - mousePos.y;
-        Ray pickingRay = CastPickingRay(game, mousePos);
-        SelectSingleObject(game, &pickingRay);
-
-        float visibleRayLength = 2000.0f;
-        glm::vec3 intersectionPoint = GetRayTerrainIntersection(&game->terrain, &pickingRay, visibleRayLength);
-
-        UpdateLine(&game->pickingRay, pickingRay.origin, pickingRay.origin + pickingRay.direction * visibleRayLength);
-
-        game->target = glm::vec2(intersectionPoint.x, intersectionPoint.z);
-        game->targetDirection = game->target - glm::vec2(game->runningEntity->position.x,
-                                                         game->runningEntity->position.z);
-
-        if(glm::length2(game->targetDirection) > 0.00001f)
-        {
-            game->targetDirection = glm::normalize(game->targetDirection);
-            game->targetAngle = glm::degrees(glm::atan(game->targetDirection.x, game->targetDirection.y));
         }
     }
 

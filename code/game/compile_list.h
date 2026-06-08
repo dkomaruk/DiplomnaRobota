@@ -10,6 +10,7 @@
 #include "entity.cpp"
 #include "game.cpp"
 #include "renderer.cpp"
+#include "scene.cpp"
 #include "asset_manager.cpp"
 #include "timer.cpp"
 #include "text.cpp"

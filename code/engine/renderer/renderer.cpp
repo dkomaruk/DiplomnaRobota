@@ -183,7 +183,7 @@ void RenderUI(Game *game)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if(game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
+    if(game->renderSelectionBox && game->input.mouseButtons[MOUSE_LEFT] && RECT_HAS_SIZE(game->selectionBox.size) &&
         !game->input.isMouseCapturedByImgui && !game->input.isCursorHidden && !game->editor.terrainGeneratorWindow)
     {
         RenderSelectionBox(game, &game->selectionBox);

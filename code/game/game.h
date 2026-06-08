@@ -114,6 +114,7 @@ struct Game
     bool renderAABB = true;
     bool renderTerrain = true;
     bool renderSelectionFrustum = true;
+    bool renderSelectionBox = true;
     bool renderShadowVolume = true;
     bool renderPickingRay = true;
     bool renderCounters = true;

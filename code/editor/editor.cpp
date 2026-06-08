@@ -3,6 +3,7 @@
 #include "particle_editor.h"
 
 #include "game.h"
+#include "scene.h"
 #include "asset_manager.h"
 #include "random.h"
 #include "noise.h"
@@ -23,6 +24,12 @@ void UpdateMenuBar(Game *game)
 
     if(ImGui::BeginMainMenuBar())
     {
+        if(ImGui::BeginMenu("File"))
+        {
+            if(ImGui::MenuItem("Save Scene")) SaveScene(game, "scene.json");
+            if(ImGui::MenuItem("Load Scene")) LoadScene(game, "scene.json");
+            ImGui::EndMenu();
+        }
         if(ImGui::BeginMenu("Windows"))
         {
             if(ImGui::MenuItem("Particle Editor", "1")) editor->particleEditorWindow = true;
@@ -46,6 +53,7 @@ void UpdateDebugSettings(Game *game, ImGuiWindowFlags flags)
     ImGui::Checkbox("Display Entity AABB", &game->renderAABB);
     ImGui::Checkbox("Display Picking Ray", &game->renderPickingRay);
     ImGui::Checkbox("Display Selection Frustum", &game->renderSelectionFrustum);
+    ImGui::Checkbox("Display Selection Box", &game->renderSelectionBox);
     ImGui::Checkbox("Display Shadow Volume", &game->renderShadowVolume);
     ImGui::Checkbox("Display Terrain", &game->renderTerrain);
     ImGui::Checkbox("Display Counters", &game->renderCounters);
@@ -283,7 +291,7 @@ void UpdateAssetPlacement(Game *game, ImGuiWindowFlags flags)
         glm::vec3 rotation = randomRotationY ? glm::vec3(0.0f, RandomBetween(-360.0f, 360.0f), 0.0f) : glm::vec3(0.0f);
         glm::vec3 scale = randomScale ? glm::vec3(RandomBetween(scaleInterval.x, scaleInterval.y)) : glm::vec3(modelScale);
 
-        Entity *newEntity = AddNewEntityToScene(game, selectedModel, entityId, intersectionPoint, rotation, scale);
+        Entity *newEntity = AddNewEntityToScene(game, selectedModel, (char *)selectedModelName.c_str(), entityId, intersectionPoint, rotation, scale);
         newEntity->snapToTerrain = snapOnLoad;
         newEntity->isSelectable = isSelectable;
     }

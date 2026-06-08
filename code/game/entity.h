@@ -27,6 +27,7 @@ struct Entity
     u16 id;
     u16 type;
     char textId[25];
+    char modelName[64];
 
     Model *model;
     glm::mat4 *nodeTransforms;
