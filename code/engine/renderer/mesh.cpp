@@ -190,6 +190,9 @@ void RenderMesh(Game *game, Mesh *mesh, glm::mat4 model, GLuint shader, Material
         SetTexture(&material->specularTexture, 1);
     }
 
+    SetTexture(game->shadowMapFbo.depth.id, 3);
+    ShaderSetInt(shader, "u_shadowMap", 3);
+
     glBindVertexArray(mesh->vao);
     if(mesh->indicesCount > 0)
     {

@@ -9,6 +9,7 @@ layout(location = 4) in vec4 bnWeight;
 uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
+uniform mat4 u_lightViewProj;
 
 const int MAX_BONES = 206;
 const int MAX_BONE_INFLUENCE = 4;
@@ -17,6 +18,7 @@ uniform mat4 u_skinning[MAX_BONES];
 out vec3 FragPos;
 out vec3 Normal;
 out vec2 TexCoords;
+out vec4 FragPosLightSpace;
 //out vec3 DebugColor;
 
 void main()
@@ -46,6 +48,7 @@ void main()
     TexCoords = texCoords;
     Normal = normalize((u_model * blendedNormal).xyz);
     FragPos = vec3(u_model * blendedPos);
+    FragPosLightSpace = u_lightViewProj * vec4(FragPos, 1.0);
     //DebugColor = bnWeight.xyz;
     gl_Position = u_projection * u_view * u_model * vec4(blendedPos.xyz, 1.0);
 }

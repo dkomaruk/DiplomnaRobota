@@ -8,8 +8,6 @@ uniform vec3 u_viewDir;
 
 uniform float u_time;
 
-uniform sampler2D u_outlineTexture;
-uniform bool u_outlinePass;
 
 struct Material
 {
@@ -47,6 +45,7 @@ struct SpotLight
 };
 
 uniform Material u_material;
+layout(binding = 3) uniform sampler2DShadow u_shadowMap;
 
 uniform int u_dirLightCount;
 uniform DirLight u_dirLight;
@@ -58,9 +57,34 @@ uniform PointLight u_pointLights[16];
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 FragPos;
+in vec4 FragPosLightSpace;
 //in vec3 DebugColor;
 
 out vec4 FragColor;
+
+float CalculateShadow(vec4 fragPosLightSpace, float bias)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float currentDepth = projCoords.z - bias;
+    if(currentDepth > 1.0) return 0.0f;
+
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(u_shadowMap, 0);
+
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            vec2 offset = vec2(x, y) * texelSize;
+            shadow += texture(u_shadowMap, vec3(projCoords.xy + offset, currentDepth));
+        }
+    }
+    shadow /= 9.0;
+
+    return 1.0 - shadow;
+}
 
 vec3 CalculateDirLight(DirLight light, SampledTextures textures, vec3 normal, vec3 viewDir)
 {
@@ -74,7 +98,9 @@ vec3 CalculateDirLight(DirLight light, SampledTextures textures, vec3 normal, ve
     float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
     vec3 specular = specularStrength * textures.specular.rgb * light.specular;
 
-    return diffuse + ambient + specular;
+    float shadow = CalculateShadow(FragPosLightSpace, 0.005);
+
+    return ambient + (1.0 - shadow) * diffuse + specular;
 }
 
 vec3 CalculatePointLight(PointLight light, SampledTextures textures, vec3 normal, vec3 fragPos, vec3 viewDir)

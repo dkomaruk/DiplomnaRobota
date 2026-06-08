@@ -191,7 +191,7 @@ void UpdateTestScene(Game *game)
         }
     }
 
-#if 0
+#if 1
     glm::mat4 turretTransform = glm::mat4(1.0f);
     turretTransform = glm::translate(turretTransform, glm::vec3(0.0f, 0.0f,
                                      0.25f + (sinf((float)SDL_GetTicks() / 1000.0f) + 1.0f) / 2.0f));
@@ -408,6 +408,8 @@ void UpdateGame(Game *game)
     game->dirLightView = lookAt(-game->dirLight.direction * game->shadowVolumeOffset,
                                  glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 lightViewProj = game->orthoProjDirLight * game->dirLightView;
+    ShaderSetMatrix4(GetShader(game, "main"), "u_lightViewProj", lightViewProj);
+    ShaderSetMatrix4(GetShader(game, "animation"), "u_lightViewProj", lightViewProj);
     ShaderSetMatrix4(GetShader(game, "shadow"), "u_lightViewProj", lightViewProj);
     ShaderSetMatrix4(GetShader(game, "skinned_shadow"), "u_lightViewProj", lightViewProj);
     ShaderSetMatrix4(GetShader(game, "terrain"), "u_lightViewProj", lightViewProj);
