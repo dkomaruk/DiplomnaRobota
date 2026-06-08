@@ -40,6 +40,7 @@ struct Entity
     float time;
 
     bool snapToTerrain = false;
+    bool isSelectable = true;
 
     AABB aabb;
     Mesh meshAABB;

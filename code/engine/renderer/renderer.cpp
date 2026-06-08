@@ -20,10 +20,11 @@ void RenderSceneEntities(Game *game)
 
     for(int i = 0; i < game->sceneEntities.size(); i++)
     {
-        bool isSelected = (game->selectedIDs.find(game->sceneEntities[i]->id) != game->selectedIDs.end());
-        if((game->outlinePass && isSelected) || !game->outlinePass)
+        Entity *e = game->sceneEntities[i];
+
+        bool isSelected = (game->selectedIDs.find(e->id) != game->selectedIDs.end());
+        if((game->outlinePass && e->isSelectable && isSelected) || !game->outlinePass)
         {
-            Entity *e = game->sceneEntities[i];
             e->Render(e, game);
         }
     }

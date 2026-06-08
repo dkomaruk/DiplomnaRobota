@@ -246,6 +246,15 @@ void UpdateAssetPlacement(Game *game, ImGuiWindowFlags flags)
     ImGui::Checkbox("Snap to Terrain", &snapOnLoad);
     static bool randomRotationY = true;
     ImGui::Checkbox("Random Rotation on Y Axis", &randomRotationY);
+    static bool randomScale = true;
+    ImGui::Checkbox("Random Scale", &randomScale);
+    static glm::vec2 scaleInterval = glm::vec2(1.0f, 1.0f);
+    if(randomScale)
+    {
+        ImGui::DragFloat2("Scale Interval", &scaleInterval[0], 0.05f, 0.0f, 100.0f);
+    }
+    static bool isSelectable = true;
+    ImGui::Checkbox("Is Selectable", &isSelectable);
 
     if(!selectedModelName.empty())
     {
@@ -272,9 +281,11 @@ void UpdateAssetPlacement(Game *game, ImGuiWindowFlags flags)
         snprintf(entityId, sizeof(entityId), "%s_%d", selectedModelName.c_str(), (int)game->sceneEntities.size());
 
         glm::vec3 rotation = randomRotationY ? glm::vec3(0.0f, RandomBetween(-360.0f, 360.0f), 0.0f) : glm::vec3(0.0f);
-        Entity *newEntity =AddNewEntityToScene(game, selectedModel, entityId, intersectionPoint,
-                                               rotation, glm::vec3(modelScale));
+        glm::vec3 scale = randomScale ? glm::vec3(RandomBetween(scaleInterval.x, scaleInterval.y)) : glm::vec3(modelScale);
+
+        Entity *newEntity = AddNewEntityToScene(game, selectedModel, entityId, intersectionPoint, rotation, scale);
         newEntity->snapToTerrain = snapOnLoad;
+        newEntity->isSelectable = isSelectable;
     }
 
     ImGui::End();
